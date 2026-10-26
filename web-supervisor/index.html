@@ -77,10 +77,13 @@
   .fila.nueva { animation: resalte 3s ease-out; }
   .fila-wrap { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
   .fila-wrap .fila { flex: 1; width: auto; margin-bottom: 0; min-width: 0; }
-  .btn-borrar { border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 0 14px; cursor: pointer; }
+  .btn-borrar { border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 0 14px; cursor: pointer; display: flex; align-items: center; }
   .btn-borrar:hover { background: #FEE2E2; }
   .marca { font-weight: 800; font-size: 18px; width: 22px; text-align: center; }
   .marca.ok { color: #15803D; } .marca.corr { color: #DC2626; }
+  .seccion .vaciar { margin-left: auto; border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .seccion .vaciar:hover { background: #FEE2E2; }
+  .btn-borrar svg, .vaciar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .seccion { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; font-size: 16px; }
   .seccion b { font-size: 16px; } .seccion span.n { background: #E2E8F0; border-radius: 999px; padding: 1px 10px; font-size: 13px; font-weight: 700; }
   @keyframes resalte { from { background: #FEF9C3; } to { background: var(--blanco); } }
@@ -359,11 +362,14 @@
       '<div class="info"><b>' + esc(m.codigo) + ' · Línea ' + String(m.linea).padStart(2, '0') + ' · Tren ' + esc(m.tren) + '</b>' +
       '<span>' + esc(centro(m)) + ' · ' + esc(m.operador) + ' · ' + esc(fecha(m.registradaEn)) + '</span></div>' +
       '<div class="num">' + m.conteoIndM + ' ind/m<br>' + m.tallaMm + ' mm</div>' + etiqueta(m.estado) + '</button>' +
-      '<button class="btn-borrar" data-eliminar-id="' + esc(m.id) + '" title="Eliminar muestra" aria-label="Eliminar ' + esc(m.codigo) + '">Eliminar</button></div>';
+      '<button class="btn-borrar" data-eliminar-id="' + esc(m.id) + '" title="Eliminar muestra" aria-label="Eliminar ' + esc(m.codigo) + '">' + ICONO_BASURA + '</button></div>';
   }
 
-  function seccion(titulo, lista) {
-    return '<div class="seccion"><b>' + titulo + '</b><span class="n">' + lista.length + '</span></div>' +
+  var ICONO_BASURA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+
+  function seccion(titulo, lista, textoVaciar) {
+    return '<div class="seccion"><b>' + titulo + '</b><span class="n">' + lista.length + '</span>' +
+      (lista.length && textoVaciar ? '<button class="vaciar" data-vaciar="' + lista.map(function (m) { return esc(m.id); }).join(',') + '" data-nombre="' + esc(textoVaciar) + '">' + ICONO_BASURA + ' ' + esc(textoVaciar) + '</button>' : '') + '</div>' +
       (lista.length ? lista.map(filaMuestra).join('') : '<div class="vacio">Sin muestras.</div>');
   }
 
@@ -395,8 +401,8 @@
       '</div><div class="chips">' + chips + '</div>' +
       (!r.visibles.length ? '<div class="vacio">No hay muestras con estos filtros.</div>' :
         filtro.estado === 'TODOS'
-          ? seccion('Nuevas solicitudes (pendientes)', r.visibles.filter(function (m) { return m.estado === 'PENDIENTE'; })) +
-            seccion('Ya revisadas', r.visibles.filter(function (m) { return m.estado !== 'PENDIENTE'; }))
+          ? seccion('Nuevas solicitudes (pendientes)', r.visibles.filter(function (m) { return m.estado === 'PENDIENTE'; }), 'Eliminar todas') +
+            seccion('Ya revisadas', r.visibles.filter(function (m) { return m.estado !== 'PENDIENTE'; }), 'Eliminar todas')
           : r.visibles.map(filaMuestra).join(''));
     if (foco) { var b = $('buscar'); b.focus(); try { b.setSelectionRange(pos, pos); } catch (e) {} }
   }
@@ -406,9 +412,9 @@
     var hechas = muestras.filter(function (m) { return m.estado !== 'PENDIENTE'; }).sort(function (a, b) { return (b.revisadaEn || b.registradaEn) - (a.revisadaEn || a.registradaEn); });
     $('contenido').innerHTML = '<h2>Revisión de muestras</h2>' +
       '<p style="color:var(--suave);margin-top:-8px">Arriba, las nuevas solicitudes de los operarios (de la más antigua a la más reciente). Toca una para validarla o corregirla.</p>' +
-      '<div class="seccion"><b>Nuevas solicitudes</b><span class="n">' + cola.length + '</span></div>' +
-      (cola.length ? cola.map(filaMuestra).join('') : '<div class="vacio"><b>No hay muestras pendientes.</b><br>Cuando un operario suba una muestra, aparecerá aquí al instante.</div>') +
-      seccion('Ya revisadas', hechas);
+      (cola.length ? seccion('Nuevas solicitudes', cola, 'Eliminar todas')
+        : '<div class="seccion"><b>Nuevas solicitudes</b><span class="n">0</span></div><div class="vacio"><b>No hay muestras pendientes.</b><br>Cuando un operario suba una muestra, aparecerá aquí al instante.</div>') +
+      seccion('Ya revisadas', hechas, 'Eliminar todas');
   }
 
   function herramientasDemo() {
@@ -518,6 +524,13 @@
     coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.codigo, 'ok'); if (detalleId === m.id) cerrarDetalle(); })
       .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
   }
+  function eliminarVarias(ids) {
+    if (!db || !ids.length) return;
+    if (!confirm('¿Eliminar ' + ids.length + ' muestra(s) de esta lista? Esta acción no se puede deshacer.')) return;
+    var b = db.batch(); ids.forEach(function (id) { b.delete(coleccion.doc(id)); });
+    b.commit().then(function () { toast('Listo', 'Se eliminaron ' + ids.length + ' muestra(s).', 'ok'); })
+      .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
+  }
   function borrarTodas() {
     if (!db) return;
     if (!confirm('¿Eliminar TODAS las muestras de la nube? Esta acción no se puede deshacer.')) return;
@@ -529,7 +542,7 @@
 
   // ── Eventos ───────────────────────────────────────────────────────────
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-vista],[data-abrir],[data-estado],[data-dictamen],[data-demo],[data-eliminar],[data-eliminar-id],[data-ir],#cerrar-detalle,#salir');
+    var t = e.target.closest('[data-vista],[data-abrir],[data-estado],[data-dictamen],[data-demo],[data-eliminar],[data-eliminar-id],[data-vaciar],[data-ir],#cerrar-detalle,#salir');
     if (!t) { if (e.target.id === 'fondo-detalle') cerrarDetalle(); return; }
     if (t.dataset.vista) { vista = t.dataset.vista; dibujar(); }
     else if (t.dataset.ir) { vista = t.dataset.ir; dibujar(); }
@@ -541,6 +554,7 @@
     else if (t.dataset.demo === 'todas') borrarTodas();
     else if (t.dataset.eliminar) eliminarMuestra();
     else if (t.dataset.eliminarId) eliminarMuestra(t.dataset.eliminarId);
+    else if (t.dataset.vaciar) eliminarVarias(t.dataset.vaciar.split(','));
     else if (t.id === 'cerrar-detalle') cerrarDetalle();
     else if (t.id === 'salir') { sessionStorage.removeItem('sup'); location.reload(); }
   });
