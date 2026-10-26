@@ -2,6 +2,7 @@ package cl.aldemar.musselapp
 
 import android.content.Context
 import cl.aldemar.musselapp.data.local.MusselDatabase
+import cl.aldemar.musselapp.data.nube.Conectividad
 import cl.aldemar.musselapp.data.nube.NubeSync
 import cl.aldemar.musselapp.data.repository.AuthRepository
 import cl.aldemar.musselapp.data.repository.BloqueoLogin
@@ -13,6 +14,8 @@ import cl.aldemar.musselapp.util.AlmacenFotos
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 /**
  * Contenedor manual de dependencias: crea una sola vez la base de datos
@@ -28,6 +31,17 @@ class AppContainer(context: Context) {
     val database: MusselDatabase by lazy { MusselDatabase.crear(context, alcanceApp) }
 
     val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext)) }
+
+    val conectividad: Conectividad by lazy { Conectividad(appContext) }
+
+    init {
+        // Al volver la conexión se envían solas las muestras que quedaron pendientes
+        alcanceApp.launch {
+            conectividad.enLinea.distinctUntilChanged().collect { enLinea ->
+                if (enLinea) runCatching { muestraRepository.sincronizar() }
+            }
+        }
+    }
 
     val authRepository: AuthRepository by lazy {
         RoomAuthRepository(database.usuarioDao(), bloqueo = BloqueoLogin(PreferenciasIntentos(appContext)))
