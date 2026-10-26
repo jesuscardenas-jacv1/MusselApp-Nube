@@ -77,13 +77,22 @@
   .fila.nueva { animation: resalte 3s ease-out; }
   .fila-wrap { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
   .fila-wrap .fila { flex: 1; width: auto; margin-bottom: 0; min-width: 0; }
-  .btn-borrar { border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 0 14px; cursor: pointer; display: flex; align-items: center; }
+  .btn-borrar { flex: none; align-self: center; width: 30px; height: 30px; padding: 0; border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .btn-borrar svg { width: 14px; height: 14px; }
+  .panel { background: #fff; border: 1.5px solid var(--borde); border-radius: 16px; padding: 4px 16px 6px; margin: 18px 0; box-shadow: 0 2px 10px rgba(15,23,42,.05); }
+  .panel.entrante { border-top: 5px solid var(--espera-ac); }
+  .panel.revisadas { border-top: 5px solid var(--ok-ac); }
+  .panel .lista { overflow-y: auto; padding: 2px 4px 2px 0; }
+  .panel.entrante .lista { max-height: 300px; }
+  .panel.revisadas .lista { max-height: 62vh; min-height: 220px; }
+  .panel .seccion { margin: 12px 0 10px; }
+  .panel .vacio { margin: 8px 0 14px; }
   .btn-borrar:hover { background: #FEE2E2; }
   .marca { font-weight: 800; font-size: 18px; width: 22px; text-align: center; }
   .marca.ok { color: #15803D; } .marca.corr { color: #DC2626; }
-  .seccion .vaciar { margin-left: auto; border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+  .seccion .vaciar { margin-left: auto; border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 4px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
   .seccion .vaciar:hover { background: #FEE2E2; }
-  .btn-borrar svg, .vaciar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .vaciar svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .seccion { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; font-size: 16px; }
   .seccion b { font-size: 16px; } .seccion span.n { background: #E2E8F0; border-radius: 999px; padding: 1px 10px; font-size: 13px; font-weight: 700; }
   @keyframes resalte { from { background: #FEF9C3; } to { background: var(--blanco); } }
@@ -367,10 +376,10 @@
 
   var ICONO_BASURA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
 
-  function seccion(titulo, lista, textoVaciar) {
-    return '<div class="seccion"><b>' + titulo + '</b><span class="n">' + lista.length + '</span>' +
+  function seccion(titulo, lista, textoVaciar, clase) {
+    return '<section class="panel ' + (clase || '') + '"><div class="seccion"><b>' + titulo + '</b><span class="n">' + lista.length + '</span>' +
       (lista.length && textoVaciar ? '<button class="vaciar" data-vaciar="' + lista.map(function (m) { return esc(m.id); }).join(',') + '" data-nombre="' + esc(textoVaciar) + '">' + ICONO_BASURA + ' ' + esc(textoVaciar) + '</button>' : '') + '</div>' +
-      (lista.length ? lista.map(filaMuestra).join('') : '<div class="vacio">Sin muestras.</div>');
+      (lista.length ? '<div class="lista">' + lista.map(filaMuestra).join('') + '</div>' : '<div class="vacio">Sin muestras.</div>') + '</section>';
   }
 
   function aplicarFiltro() {
@@ -401,8 +410,8 @@
       '</div><div class="chips">' + chips + '</div>' +
       (!r.visibles.length ? '<div class="vacio">No hay muestras con estos filtros.</div>' :
         filtro.estado === 'TODOS'
-          ? seccion('Nuevas solicitudes (pendientes)', r.visibles.filter(function (m) { return m.estado === 'PENDIENTE'; }), 'Eliminar todas') +
-            seccion('Ya revisadas', r.visibles.filter(function (m) { return m.estado !== 'PENDIENTE'; }), 'Eliminar todas')
+          ? seccion('Solicitudes entrantes', r.visibles.filter(function (m) { return m.estado === 'PENDIENTE'; }), 'Eliminar todas', 'entrante') +
+            seccion('Muestras revisadas', r.visibles.filter(function (m) { return m.estado !== 'PENDIENTE'; }), 'Eliminar todas', 'revisadas')
           : r.visibles.map(filaMuestra).join(''));
     if (foco) { var b = $('buscar'); b.focus(); try { b.setSelectionRange(pos, pos); } catch (e) {} }
   }
@@ -411,10 +420,10 @@
     var cola = pendientes().sort(function (a, b) { return a.registradaEn - b.registradaEn; });
     var hechas = muestras.filter(function (m) { return m.estado !== 'PENDIENTE'; }).sort(function (a, b) { return (b.revisadaEn || b.registradaEn) - (a.revisadaEn || a.registradaEn); });
     $('contenido').innerHTML = '<h2>Revisión de muestras</h2>' +
-      '<p style="color:var(--suave);margin-top:-8px">Arriba, las nuevas solicitudes de los operarios (de la más antigua a la más reciente). Toca una para validarla o corregirla.</p>' +
-      (cola.length ? seccion('Nuevas solicitudes', cola, 'Eliminar todas')
-        : '<div class="seccion"><b>Nuevas solicitudes</b><span class="n">0</span></div><div class="vacio"><b>No hay muestras pendientes.</b><br>Cuando un operario suba una muestra, aparecerá aquí al instante.</div>') +
-      seccion('Ya revisadas', hechas, 'Eliminar todas');
+      '<p style="color:var(--suave);margin-top:-8px">Arriba llegan las solicitudes de los operarios (de la más antigua a la más reciente); abajo quedan las ya revisadas. Toca una para abrirla.</p>' +
+      (cola.length ? seccion('Solicitudes entrantes', cola, 'Eliminar todas', 'entrante')
+        : '<section class="panel entrante"><div class="seccion"><b>Solicitudes entrantes</b><span class="n">0</span></div><div class="vacio"><b>No hay solicitudes pendientes.</b><br>Cuando un operario suba una muestra, aparecerá aquí al instante.</div></section>') +
+      seccion('Muestras revisadas', hechas, 'Eliminar todas', 'revisadas');
   }
 
   function herramientasDemo() {
