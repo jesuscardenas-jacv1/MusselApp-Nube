@@ -115,6 +115,17 @@ fun MusselNavHost(
         }
     }
 
+    // Un aviso de revisión pidió ir al Historial
+    val irAHistorial by cl.aldemar.musselapp.MusselApplication.contenedor.irAHistorial.collectAsStateWithLifecycle()
+    LaunchedEffect(irAHistorial) {
+        if (irAHistorial) {
+            cl.aldemar.musselapp.MusselApplication.contenedor.irAHistorial.value = false
+            if (usuario != null && navController.currentDestination?.route != Rutas.LOGIN) {
+                navegarDesdeMenu(Destino.HISTORIAL)
+            }
+        }
+    }
+
     NavHost(navController = navController, startDestination = Rutas.LOGIN) {
 
         composable(Rutas.LOGIN) {

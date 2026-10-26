@@ -56,11 +56,24 @@ class MainActivity : ComponentActivity() {
                                 .padding(horizontal = 16.dp, vertical = 6.dp),
                         )
                     }
+                    val avisos by MusselApplication.contenedor.avisos.collectAsStateWithLifecycle()
                     Box(
                         Modifier
                             .weight(1f)
                             .then(if (!enLinea) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier),
-                    ) { MusselNavHost() }
+                    ) {
+                        MusselNavHost()
+                        if (avisos.isNotEmpty()) {
+                            BannerRevision(
+                                avisos = avisos,
+                                alCerrar = { MusselApplication.contenedor.avisos.value = emptyList() },
+                                alVerHistorial = {
+                                    MusselApplication.contenedor.avisos.value = emptyList()
+                                    MusselApplication.contenedor.irAHistorial.value = true
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }

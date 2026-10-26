@@ -2,6 +2,7 @@ package cl.aldemar.musselapp
 
 import android.content.Context
 import cl.aldemar.musselapp.data.local.MusselDatabase
+import cl.aldemar.musselapp.data.nube.AvisoRevision
 import cl.aldemar.musselapp.data.nube.Conectividad
 import cl.aldemar.musselapp.data.nube.Notificador
 import cl.aldemar.musselapp.data.nube.NubeSync
@@ -15,6 +16,8 @@ import cl.aldemar.musselapp.util.AlmacenFotos
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -30,10 +33,19 @@ class AppContainer(context: Context) {
 
     val database: MusselDatabase by lazy { MusselDatabase.crear(context, alcanceApp) }
 
+    /** Dictámenes recién llegados; la pantalla los muestra como aviso hasta que el operario los cierra. */
+    val avisos = MutableStateFlow<List<AvisoRevision>>(emptyList())
+
+    /** El aviso pidió abrir el Historial; la navegación lo consume. */
+    val irAHistorial = MutableStateFlow(false)
+
     private val notificador by lazy { Notificador(appContext) }
 
     val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext),
-            alRevisar = notificador::avisarRevision) }
+            alRevisar = { muestra, estado, comentario ->
+                notificador.avisarRevision(muestra, estado, comentario)
+                avisos.update { it + AvisoRevision(muestra.codigo, muestra.codigoLinea, estado, comentario) }
+            }) }
 
     val conectividad: Conectividad by lazy { Conectividad(appContext) }
 

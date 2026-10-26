@@ -43,7 +43,7 @@ class Notificador(context: Context) {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             val n = NotificationCompat.Builder(app, CANAL)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setSmallIcon(cl.aldemar.musselapp.R.drawable.ic_notificacion)
                 .setContentTitle(titulo)
                 .setContentText(detalle)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(detalle))
