@@ -15,7 +15,6 @@ import cl.aldemar.musselapp.util.AlmacenFotos
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 /**
@@ -41,7 +40,7 @@ class AppContainer(context: Context) {
     init {
         // Al volver la conexión se envían solas las muestras que quedaron pendientes
         alcanceApp.launch {
-            conectividad.enLinea.distinctUntilChanged().collect { enLinea ->
+            conectividad.enLinea.collect { enLinea ->
                 if (enLinea) runCatching { muestraRepository.sincronizar() }
             }
         }
