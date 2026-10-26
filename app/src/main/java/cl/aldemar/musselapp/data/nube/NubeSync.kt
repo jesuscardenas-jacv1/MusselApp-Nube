@@ -41,14 +41,26 @@ class NubeSync(context: Context) {
         ?: UUID.randomUUID().toString().take(8).also { prefs.edit().putString("instalacion", it).apply() }
 
     private val firestore: FirebaseFirestore? =
-        if (ACTIVA) runCatching { FirebaseFirestore.getInstance() }.getOrNull() else null
+        if (ACTIVA) {
+            try {
+                FirebaseFirestore.getInstance()
+            } catch (e: Exception) {
+                Log.e(TAG, "Firebase NO inicializado (revisar google-services.json y plugin)", e)
+                null
+            }
+        } else null
+
+    init {
+        Log.i(TAG, "Nube lista=${firestore != null}, instalacion=$instalacion")
+    }
 
     private fun docId(muestraId: Long) = "${instalacion}_$muestraId"
 
     /** Sube (o actualiza) la muestra. Devuelve true si el servidor la confirmó. */
     suspend fun subir(m: Muestra): Boolean {
-        val db = firestore ?: return false
+        val db = firestore ?: run { Log.e(TAG, "subir: sin Firestore"); return false }
         return try {
+            Log.i(TAG, "Subiendo ${docId(m.id)}")
             val datos = hashMapOf<String, Any?>(
                 "codigo" to m.codigo,
                 "centroId" to m.centroId,
@@ -73,8 +85,8 @@ class NubeSync(context: Context) {
                 suspendCancellableCoroutine { cont ->
                     db.collection(COLECCION).document(docId(m.id))
                         .set(datos, SetOptions.merge())
-                        .addOnSuccessListener { if (cont.isActive) cont.resume(true) }
-                        .addOnFailureListener { if (cont.isActive) cont.resume(false) }
+                        .addOnSuccessListener { Log.i(TAG, "Subida OK ${docId(m.id)}"); if (cont.isActive) cont.resume(true) }
+                        .addOnFailureListener { Log.e(TAG, "Subida FALLÓ", it); if (cont.isActive) cont.resume(false) }
                 }
             }
         } catch (e: Exception) {
