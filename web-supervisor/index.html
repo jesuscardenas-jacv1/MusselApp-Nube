@@ -78,7 +78,10 @@
   .fila-wrap { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
   .fila-wrap .fila { flex: 1; width: auto; margin-bottom: 0; min-width: 0; }
   .btn-borrar { flex: none; align-self: center; width: 30px; height: 30px; padding: 0; border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-  .btn-borrar svg { width: 14px; height: 14px; }
+  .btn-borrar svg, .vaciar svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn-borrar svg { width: 15px; height: 15px; }
+  .btn-borrar { background: rgba(220,38,38,.08); border-color: rgba(220,38,38,.28); color: #DC2626; transition: background .15s, color .15s, transform .1s; }
+  .btn-borrar:hover { background: #DC2626; border-color: #DC2626; color: #fff; transform: scale(1.08); }
   .panel { background: #fff; border: 1.5px solid var(--borde); border-radius: 16px; padding: 4px 16px 6px; margin: 18px 0; box-shadow: 0 2px 10px rgba(15,23,42,.05); }
   .panel.entrante { border-top: 5px solid var(--espera-ac); }
   .panel.revisadas { border-top: 5px solid var(--ok-ac); }
@@ -374,7 +377,7 @@
       '<button class="btn-borrar" data-eliminar-id="' + esc(m.id) + '" title="Eliminar muestra" aria-label="Eliminar ' + esc(m.codigo) + '">' + ICONO_BASURA + '</button></div>';
   }
 
-  var ICONO_BASURA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+  var ICONO_BASURA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 
   function seccion(titulo, lista, textoVaciar, clase) {
     return '<section class="panel ' + (clase || '') + '"><div class="seccion"><b>' + titulo + '</b><span class="n">' + lista.length + '</span>' +
