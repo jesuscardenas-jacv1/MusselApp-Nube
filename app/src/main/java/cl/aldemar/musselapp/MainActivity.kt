@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cl.aldemar.musselapp.ui.componentes.BannerRevision
 import cl.aldemar.musselapp.ui.navegacion.MusselNavHost
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
 
