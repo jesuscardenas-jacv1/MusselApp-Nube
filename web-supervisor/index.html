@@ -75,6 +75,14 @@
   .fila .info span { color: var(--suave); font-size: 13px; }
   .fila .num { text-align: right; font-size: 13px; color: var(--suave); }
   .fila.nueva { animation: resalte 3s ease-out; }
+  .fila-wrap { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
+  .fila-wrap .fila { flex: 1; width: auto; margin-bottom: 0; min-width: 0; }
+  .btn-borrar { border: 1.5px solid #FCA5A5; background: #FEF2F2; color: #B91C1C; border-radius: 10px; font-weight: 700; padding: 0 14px; cursor: pointer; }
+  .btn-borrar:hover { background: #FEE2E2; }
+  .marca { font-weight: 800; font-size: 18px; width: 22px; text-align: center; }
+  .marca.ok { color: #15803D; } .marca.corr { color: #DC2626; }
+  .seccion { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; font-size: 16px; }
+  .seccion b { font-size: 16px; } .seccion span.n { background: #E2E8F0; border-radius: 999px; padding: 1px 10px; font-size: 13px; font-weight: 700; }
   @keyframes resalte { from { background: #FEF9C3; } to { background: var(--blanco); } }
   .etiqueta { display: inline-block; border-radius: 8px; padding: 3px 9px; font-size: 11px; font-weight: 800; letter-spacing: .04em; border: 1.5px solid; white-space: nowrap; }
   .etiqueta.PENDIENTE, .etiqueta.CORREGIDO { background: var(--espera-bg); color: var(--espera-tx); border-color: var(--espera-ac); }
@@ -346,10 +354,17 @@
   }
 
   function filaMuestra(m) {
-    return '<button class="fila ' + (m.estado === 'VALIDADO' ? 'validado' : '') + (idsNuevos[m.id] ? ' nueva' : '') + '" data-abrir="' + esc(m.id) + '">' +
+    var marca = m.estado === 'VALIDADO' ? '<span class="marca ok" title="Validada">✓</span>' : m.estado === 'CORREGIDO' ? '<span class="marca corr" title="Corregida">✗</span>' : '';
+    return '<div class="fila-wrap"><button class="fila ' + (m.estado === 'VALIDADO' ? 'validado' : '') + (idsNuevos[m.id] ? ' nueva' : '') + '" data-abrir="' + esc(m.id) + '">' + marca +
       '<div class="info"><b>' + esc(m.codigo) + ' · Línea ' + String(m.linea).padStart(2, '0') + ' · Tren ' + esc(m.tren) + '</b>' +
       '<span>' + esc(centro(m)) + ' · ' + esc(m.operador) + ' · ' + esc(fecha(m.registradaEn)) + '</span></div>' +
-      '<div class="num">' + m.conteoIndM + ' ind/m<br>' + m.tallaMm + ' mm</div>' + etiqueta(m.estado) + '</button>';
+      '<div class="num">' + m.conteoIndM + ' ind/m<br>' + m.tallaMm + ' mm</div>' + etiqueta(m.estado) + '</button>' +
+      '<button class="btn-borrar" data-eliminar-id="' + esc(m.id) + '" title="Eliminar muestra" aria-label="Eliminar ' + esc(m.codigo) + '">Eliminar</button></div>';
+  }
+
+  function seccion(titulo, lista) {
+    return '<div class="seccion"><b>' + titulo + '</b><span class="n">' + lista.length + '</span></div>' +
+      (lista.length ? lista.map(filaMuestra).join('') : '<div class="vacio">Sin muestras.</div>');
   }
 
   function aplicarFiltro() {
@@ -378,15 +393,22 @@
         '<select id="periodo" aria-label="Periodo">' + opt('HOY', 'Últimas 24 h', filtro.periodo) + opt('SEMANA', 'Últimos 7 días', filtro.periodo) + opt('TODO', 'Todo el historial', filtro.periodo) + '</select>' +
         '<select id="orden" aria-label="Orden">' + opt('RECIENTES', 'Recientes primero', filtro.orden) + opt('ANTIGUAS', 'Antiguas primero', filtro.orden) + '</select>' +
       '</div><div class="chips">' + chips + '</div>' +
-      (r.visibles.length ? r.visibles.map(filaMuestra).join('') : '<div class="vacio">No hay muestras con estos filtros.</div>');
+      (!r.visibles.length ? '<div class="vacio">No hay muestras con estos filtros.</div>' :
+        filtro.estado === 'TODOS'
+          ? seccion('Nuevas solicitudes (pendientes)', r.visibles.filter(function (m) { return m.estado === 'PENDIENTE'; })) +
+            seccion('Ya revisadas', r.visibles.filter(function (m) { return m.estado !== 'PENDIENTE'; }))
+          : r.visibles.map(filaMuestra).join(''));
     if (foco) { var b = $('buscar'); b.focus(); try { b.setSelectionRange(pos, pos); } catch (e) {} }
   }
 
   function dibujarRevision() {
     var cola = pendientes().sort(function (a, b) { return a.registradaEn - b.registradaEn; });
+    var hechas = muestras.filter(function (m) { return m.estado !== 'PENDIENTE'; }).sort(function (a, b) { return (b.revisadaEn || b.registradaEn) - (a.revisadaEn || a.registradaEn); });
     $('contenido').innerHTML = '<h2>Revisión de muestras</h2>' +
-      (cola.length ? '<p style="color:var(--suave);margin-top:-8px">Cola de muestras pendientes, de la más antigua a la más reciente. Toca una para validarla o corregirla.</p>' + cola.map(filaMuestra).join('')
-        : '<div class="vacio"><b>No hay muestras pendientes.</b><br>Cuando un operario suba una muestra, aparecerá aquí al instante.</div>');
+      '<p style="color:var(--suave);margin-top:-8px">Arriba, las nuevas solicitudes de los operarios (de la más antigua a la más reciente). Toca una para validarla o corregirla.</p>' +
+      '<div class="seccion"><b>Nuevas solicitudes</b><span class="n">' + cola.length + '</span></div>' +
+      (cola.length ? cola.map(filaMuestra).join('') : '<div class="vacio"><b>No hay muestras pendientes.</b><br>Cuando un operario suba una muestra, aparecerá aquí al instante.</div>') +
+      seccion('Ya revisadas', hechas);
   }
 
   function herramientasDemo() {
@@ -490,10 +512,10 @@
     }).catch(function () { toast('No se borró', 'No se pudieron borrar las muestras simuladas.', 'mal'); });
   }
 
-  function eliminarMuestra() {
-    var m = muestras.filter(function (x) { return x.id === detalleId; })[0]; if (!m || !db) return;
+  function eliminarMuestra(id) {
+    var m = muestras.filter(function (x) { return x.id === (id || detalleId); })[0]; if (!m || !db) return;
     if (!confirm('¿Eliminar la muestra ' + m.codigo + '? Esta acción no se puede deshacer.')) return;
-    coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.codigo, 'ok'); cerrarDetalle(); })
+    coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.codigo, 'ok'); if (detalleId === m.id) cerrarDetalle(); })
       .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
   }
   function borrarTodas() {
@@ -507,7 +529,7 @@
 
   // ── Eventos ───────────────────────────────────────────────────────────
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-vista],[data-abrir],[data-estado],[data-dictamen],[data-demo],[data-eliminar],[data-ir],#cerrar-detalle,#salir');
+    var t = e.target.closest('[data-vista],[data-abrir],[data-estado],[data-dictamen],[data-demo],[data-eliminar],[data-eliminar-id],[data-ir],#cerrar-detalle,#salir');
     if (!t) { if (e.target.id === 'fondo-detalle') cerrarDetalle(); return; }
     if (t.dataset.vista) { vista = t.dataset.vista; dibujar(); }
     else if (t.dataset.ir) { vista = t.dataset.ir; dibujar(); }
@@ -518,6 +540,7 @@
     else if (t.dataset.demo === 'borrar') borrarDemo();
     else if (t.dataset.demo === 'todas') borrarTodas();
     else if (t.dataset.eliminar) eliminarMuestra();
+    else if (t.dataset.eliminarId) eliminarMuestra(t.dataset.eliminarId);
     else if (t.id === 'cerrar-detalle') cerrarDetalle();
     else if (t.id === 'salir') { sessionStorage.removeItem('sup'); location.reload(); }
   });
