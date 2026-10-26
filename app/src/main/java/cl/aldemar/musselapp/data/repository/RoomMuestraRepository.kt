@@ -4,11 +4,15 @@ import cl.aldemar.musselapp.data.local.MusselDatabase
 import cl.aldemar.musselapp.data.local.aModelo
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
+import cl.aldemar.musselapp.data.nube.NubeSync
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Usuario
+import cl.aldemar.musselapp.data.local.DatosIniciales
 import cl.aldemar.musselapp.util.RutValidator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +26,8 @@ import kotlinx.coroutines.flow.stateIn
 class RoomMuestraRepository(
     private val db: MusselDatabase,
     alcance: CoroutineScope,
+    private val nube: NubeSync? = null,
+    private val alcanceNube: CoroutineScope = alcance,
     private val latenciaSincronizacionMs: Long = 1500,
 ) : MuestraRepository {
 
@@ -33,6 +39,22 @@ class RoomMuestraRepository(
         muestraDao.observarTodas()
             .map { filas -> filas.map { it.aModelo() } }
             .stateIn(alcance, SharingStarted.Eagerly, emptyList())
+
+    init {
+        // Dictámenes del supervisor llegados desde la nube: se guardan en Room y la UI se actualiza sola
+        nube?.escucharVeredictos { v ->
+            alcanceNube.launch {
+                try {
+                    val local = muestras.value.firstOrNull { it.id == v.muestraId } ?: return@launch
+                    if (local.estado != EstadoMuestra.PENDIENTE) return@launch
+                    muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
+                    muestraDao.marcarSincronizada(v.muestraId)
+                } catch (e: Exception) {
+                    android.util.Log.w("RoomMuestraRepo", "No se pudo aplicar el dictamen", e)
+                }
+            }
+        }
+    }
 
     override fun obtenerPorId(id: Long): Flow<Muestra?> =
         muestraDao.observarPorId(id).map { it?.aModelo() }
@@ -55,7 +77,7 @@ class RoomMuestraRepository(
             ?: error("No existe la línea ${muestra.linea} del tren ${muestra.tren} en ${muestra.centroId}")
         val operadorRut = buscarRut(muestra.operadorRut)
             ?: error("Operario no registrado: ${muestra.operadorRut}")
-        muestraDao.insertar(
+        val nuevoId = muestraDao.insertar(
             MuestraEntity(
                 lineaId = lineaId,
                 operadorRut = operadorRut,
@@ -69,11 +91,23 @@ class RoomMuestraRepository(
                 fotoRuta = muestra.fotoRuta,
             ),
         )
+        // Envío inmediato en segundo plano; si falla, queda pendiente para "Sincronizar"
+        if (nube != null) alcanceNube.launch { subirMuestra(nuevoId) }
+    }
+
+    private suspend fun subirMuestra(id: Long): Boolean {
+        val m = muestraDao.observarPorId(id).first()?.aModelo() ?: return false
+        val ok = nube?.subir(m) == true
+        if (ok) muestraDao.marcarSincronizada(id)
+        return ok
     }
 
     override suspend fun sincronizar(): Int {
-        delay(latenciaSincronizacionMs) // Simula el envío por el enlace satelital
-        return muestraDao.marcarSincronizadas()
+        if (nube == null) {
+            delay(latenciaSincronizacionMs) // Sin nube: simula el envío por el enlace satelital
+            return muestraDao.marcarSincronizadas()
+        }
+        return muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
     }
 
     /** Acepta un RUT con o sin formato y devuelve el RUT normalizado si el usuario existe. */

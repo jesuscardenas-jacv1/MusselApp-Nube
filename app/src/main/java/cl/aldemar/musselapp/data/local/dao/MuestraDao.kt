@@ -80,6 +80,12 @@ interface MuestraDao {
     @Query("UPDATE muestras SET sincronizada = 1 WHERE sincronizada = 0")
     suspend fun marcarSincronizadas(): Int
 
+    @Query("SELECT id FROM muestras WHERE sincronizada = 0 ORDER BY registrada_en")
+    suspend fun pendientesDeSincronizar(): List<Long>
+
+    @Query("UPDATE muestras SET sincronizada = 1 WHERE id = :id")
+    suspend fun marcarSincronizada(id: Long)
+
     @Query("SELECT COUNT(*) FROM muestras")
     suspend fun contar(): Int
 }

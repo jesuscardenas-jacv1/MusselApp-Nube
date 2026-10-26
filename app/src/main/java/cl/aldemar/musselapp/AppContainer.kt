@@ -2,6 +2,7 @@ package cl.aldemar.musselapp
 
 import android.content.Context
 import cl.aldemar.musselapp.data.local.MusselDatabase
+import cl.aldemar.musselapp.data.nube.NubeSync
 import cl.aldemar.musselapp.data.repository.AuthRepository
 import cl.aldemar.musselapp.data.repository.BloqueoLogin
 import cl.aldemar.musselapp.data.repository.PreferenciasIntentos
@@ -26,7 +27,7 @@ class AppContainer(context: Context) {
 
     val database: MusselDatabase by lazy { MusselDatabase.crear(context, alcanceApp) }
 
-    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp) }
+    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext)) }
 
     val authRepository: AuthRepository by lazy {
         RoomAuthRepository(database.usuarioDao(), bloqueo = BloqueoLogin(PreferenciasIntentos(appContext)))
