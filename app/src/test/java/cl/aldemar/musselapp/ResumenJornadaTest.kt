@@ -1,0 +1,73 @@
+package cl.aldemar.musselapp
+
+import cl.aldemar.musselapp.data.model.EstadoMuestra
+import cl.aldemar.musselapp.data.model.Muestra
+import cl.aldemar.musselapp.ui.principal.ResumenJornada
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class ResumenJornadaTest {
+
+    private fun muestra(linea: Int, talla: Int, conteo: Int, estado: EstadoMuestra, sincronizada: Boolean = true) =
+        Muestra(linea.toLong(), "dalcahue", linea, "A", 5, talla, conteo, "", estado, 0L, sincronizada)
+
+    @Test
+    fun calculaPromediosYConteos() {
+        val resumen = ResumenJornada.desde(
+            listOf(
+                muestra(1, 70, 400, EstadoMuestra.VALIDADO),
+                muestra(1, 74, 460, EstadoMuestra.CORREGIDO, sincronizada = false),
+                muestra(2, 66, 430, EstadoMuestra.PENDIENTE),
+            ),
+        )
+        assertEquals(3, resumen.totalMuestras)
+        assertEquals(70, resumen.tallaPromedioMm)
+        assertEquals(430, resumen.conteoPromedioIndM)
+        assertEquals(2, resumen.lineasMuestreadas)
+        assertEquals(1, resumen.validadas)
+        assertEquals(1, resumen.pendientes)
+        assertEquals(1, resumen.corregidas)
+        assertEquals(1, resumen.pendientesSincronizar)
+        assertEquals("Calibre 70-80", resumen.calibre)
+        assertEquals("Densidad óptima", resumen.densidad)
+    }
+
+    @Test
+    fun lineasMuestreadas_distingueElTren() {
+        val resumen = ResumenJornada.desde(
+            listOf(
+                muestra(4, 70, 400, EstadoMuestra.VALIDADO).copy(tren = "A"),
+                muestra(4, 70, 400, EstadoMuestra.VALIDADO).copy(tren = "B"),
+                muestra(4, 70, 400, EstadoMuestra.PENDIENTE).copy(tren = "B"),
+            ),
+        )
+        // L04 del tren A y L04 del tren B son dos líneas; repetir la del tren B no suma
+        assertEquals(2, resumen.lineasMuestreadas)
+        assertEquals(36, resumen.lineasTotales)
+        assertEquals(2f / 36f, resumen.avanceLineas, 0.0001f)
+    }
+
+    @Test
+    fun sinMuestras_noFalla() {
+        val resumen = ResumenJornada.desde(emptyList())
+        assertEquals(0, resumen.tallaPromedioMm)
+        assertEquals("Sin datos", resumen.calibre)
+        assertEquals(0f, resumen.avanceLineas)
+    }
+
+    @Test
+    fun colasDeRevisionYSincronizacion_incluyenDiasAnteriores() {
+        val hoy = listOf(muestra(1, 70, 400, EstadoMuestra.VALIDADO))
+        val anteriores = listOf(
+            muestra(2, 66, 430, EstadoMuestra.PENDIENTE, sincronizada = false),
+            muestra(3, 68, 410, EstadoMuestra.CORREGIDO),
+            muestra(4, 60, 300, EstadoMuestra.VALIDADO),
+        )
+        val resumen = ResumenJornada.desde(hoy, todas = hoy + anteriores)
+        assertEquals(1, resumen.totalMuestras)
+        assertEquals(0, resumen.pendientes)
+        // Corregido es un dictamen final: solo la pendiente espera revisión
+        assertEquals(1, resumen.pendientesRevision)
+        assertEquals(1, resumen.pendientesSincronizar)
+    }
+}

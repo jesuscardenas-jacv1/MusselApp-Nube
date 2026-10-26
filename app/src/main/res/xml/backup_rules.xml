@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Android 11 o anterior. Con allowBackup="false" no hay respaldo; estas exclusiones
+   son una segunda barrera por si alguien vuelve a activarlo.
+-->
+<full-backup-content>
+    <exclude domain="database" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

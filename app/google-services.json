@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "140215930381",
+    "project_id": "musselapp-demo",
+    "storage_bucket": "musselapp-demo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:140215930381:android:0bd64188140bb5f7c90f44",
+        "android_client_info": {
+          "package_name": "cl.aldemar.musselapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJvBihPhfbuy8X5cyMRCrSKN4X0P44FGg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
