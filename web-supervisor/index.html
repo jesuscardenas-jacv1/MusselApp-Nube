@@ -392,7 +392,7 @@
   function herramientasDemo() {
     return '<details class="demo"' + (demoAbierto ? ' open' : '') + '><summary>Herramientas de demostración</summary>' +
       '<p style="color:var(--suave);font-size:13px">Plan B para la presentación: simula una muestra de un operario si el teléfono no logra subirla. Las muestras de prueba se pueden borrar sin tocar las reales.</p>' +
-      '<div class="botones"><button class="btn sec" data-demo="crear">Simular muestra de operario</button><button class="btn sec" data-demo="borrar">Borrar muestras simuladas</button></div></details>';
+      '<div class="botones"><button class="btn sec" data-demo="crear">Simular muestra de operario</button><button class="btn sec" data-demo="borrar">Borrar muestras simuladas</button><button class="btn sec" data-demo="todas">Borrar TODAS las muestras</button></div></details>';
   }
 
   // ── Detalle y dictamen ────────────────────────────────────────────────
@@ -427,6 +427,7 @@
       html += '<div class="tarjeta"><b>Dictamen del supervisor</b><p style="margin:8px 0 0">' + etiqueta(m.estado) + ' por ' + esc(m.revisadaPor || 'Supervisor') + ' · ' + esc(fecha(m.revisadaEn)) + '</p>' +
         '<p style="margin:8px 0 0;color:var(--suave)">' + esc(m.comentario || 'Sin comentario.') + '</p></div>';
     }
+    html += '<div style="text-align:right"><button class="btn sec" data-eliminar="1">Eliminar esta muestra</button></div>';
     html += '</div></div>';
     $('fondo-detalle').innerHTML = html;
     if ($('comentario')) $('comentario').value = previoComentario;
@@ -489,9 +490,24 @@
     }).catch(function () { toast('No se borró', 'No se pudieron borrar las muestras simuladas.', 'mal'); });
   }
 
+  function eliminarMuestra() {
+    var m = muestras.filter(function (x) { return x.id === detalleId; })[0]; if (!m || !db) return;
+    if (!confirm('¿Eliminar la muestra ' + m.codigo + '? Esta acción no se puede deshacer.')) return;
+    coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.codigo, 'ok'); cerrarDetalle(); })
+      .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
+  }
+  function borrarTodas() {
+    if (!db) return;
+    if (!confirm('¿Eliminar TODAS las muestras de la nube? Esta acción no se puede deshacer.')) return;
+    coleccion.get().then(function (s) {
+      var b = db.batch(); s.forEach(function (d) { b.delete(d.ref); });
+      return b.commit().then(function () { toast('Listo', 'Se eliminaron ' + s.size + ' muestra(s).', 'ok'); });
+    }).catch(function () { toast('No se eliminó', 'No se pudieron borrar las muestras.', 'mal'); });
+  }
+
   // ── Eventos ───────────────────────────────────────────────────────────
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-vista],[data-abrir],[data-estado],[data-dictamen],[data-demo],[data-ir],#cerrar-detalle,#salir');
+    var t = e.target.closest('[data-vista],[data-abrir],[data-estado],[data-dictamen],[data-demo],[data-eliminar],[data-ir],#cerrar-detalle,#salir');
     if (!t) { if (e.target.id === 'fondo-detalle') cerrarDetalle(); return; }
     if (t.dataset.vista) { vista = t.dataset.vista; dibujar(); }
     else if (t.dataset.ir) { vista = t.dataset.ir; dibujar(); }
@@ -500,6 +516,8 @@
     else if (t.dataset.dictamen) { $('fondo-detalle').dataset.modo = t.dataset.dictamen === 'CORREGIDO' ? 'corregir' : ''; dictaminar(t.dataset.dictamen); }
     else if (t.dataset.demo === 'crear') crearDemo();
     else if (t.dataset.demo === 'borrar') borrarDemo();
+    else if (t.dataset.demo === 'todas') borrarTodas();
+    else if (t.dataset.eliminar) eliminarMuestra();
     else if (t.id === 'cerrar-detalle') cerrarDetalle();
     else if (t.id === 'salir') { sessionStorage.removeItem('sup'); location.reload(); }
   });

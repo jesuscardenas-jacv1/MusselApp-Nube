@@ -29,6 +29,7 @@ class RoomMuestraRepository(
     private val nube: NubeSync? = null,
     private val alcanceNube: CoroutineScope = alcance,
     private val latenciaSincronizacionMs: Long = 1500,
+    private val alRevisar: (Muestra, EstadoMuestra, String?) -> Unit = { _, _, _ -> },
 ) : MuestraRepository {
 
     private val muestraDao = db.muestraDao()
@@ -49,6 +50,7 @@ class RoomMuestraRepository(
                     if (local.estado != EstadoMuestra.PENDIENTE) return@launch
                     muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
                     muestraDao.marcarSincronizada(v.muestraId)
+                    alRevisar(local, v.estado, v.comentario)
                 } catch (e: Exception) {
                     android.util.Log.w("RoomMuestraRepo", "No se pudo aplicar el dictamen", e)
                 }

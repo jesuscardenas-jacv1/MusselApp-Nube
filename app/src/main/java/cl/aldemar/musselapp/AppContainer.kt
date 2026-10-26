@@ -3,6 +3,7 @@ package cl.aldemar.musselapp
 import android.content.Context
 import cl.aldemar.musselapp.data.local.MusselDatabase
 import cl.aldemar.musselapp.data.nube.Conectividad
+import cl.aldemar.musselapp.data.nube.Notificador
 import cl.aldemar.musselapp.data.nube.NubeSync
 import cl.aldemar.musselapp.data.repository.AuthRepository
 import cl.aldemar.musselapp.data.repository.BloqueoLogin
@@ -30,7 +31,10 @@ class AppContainer(context: Context) {
 
     val database: MusselDatabase by lazy { MusselDatabase.crear(context, alcanceApp) }
 
-    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext)) }
+    private val notificador by lazy { Notificador(appContext) }
+
+    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext),
+            alRevisar = notificador::avisarRevision) }
 
     val conectividad: Conectividad by lazy { Conectividad(appContext) }
 
