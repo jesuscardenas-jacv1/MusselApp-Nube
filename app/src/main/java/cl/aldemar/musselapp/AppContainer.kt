@@ -44,7 +44,7 @@ class AppContainer(context: Context) {
     val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext),
             alRevisar = { muestra, estado, comentario ->
                 notificador.avisarRevision(muestra, estado, comentario)
-                avisos.update { it + AvisoRevision(muestra.codigo, muestra.codigoLinea, estado, comentario) }
+                avisos.update { it + AvisoRevision(muestra.nombre, muestra.codigoLinea, estado, comentario) }
             }) }
 
     val conectividad: Conectividad by lazy { Conectividad(appContext) }

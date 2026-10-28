@@ -43,8 +43,8 @@ fun BannerRevision(
     }
     val titulo = when {
         unico == null -> "El supervisor revisó ${avisos.size} muestras"
-        unico.estado == EstadoMuestra.VALIDADO -> "Muestra ${unico.codigo} validada"
-        else -> "Muestra ${unico.codigo} necesita corrección"
+        unico.estado == EstadoMuestra.VALIDADO -> "${unico.nombre} validada"
+        else -> "${unico.nombre} necesita corrección"
     }
     val detalle = when {
         unico == null -> "Revisa el Historial para ver el dictamen de cada una."

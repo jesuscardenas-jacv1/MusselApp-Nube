@@ -35,7 +35,7 @@ class Notificador(context: Context) {
             ) return
             val titulo = if (estado == EstadoMuestra.VALIDADO) "Muestra validada" else "Muestra corregida"
             val detalle = buildString {
-                append("${muestra.codigo} · Línea ${muestra.codigoLinea}: el supervisor ya la revisó.")
+                append("${muestra.nombre} · Línea ${muestra.codigoLinea}: el supervisor ya la revisó.")
                 if (!comentario.isNullOrBlank()) append(" \"$comentario\"")
             }
             val abrir = PendingIntent.getActivity(

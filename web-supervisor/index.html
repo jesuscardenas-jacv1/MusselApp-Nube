@@ -219,11 +219,14 @@
   // ── Utilidades ────────────────────────────────────────────────────────
   function normalizarRut(r) { return String(r || '').toUpperCase().replace(/[^0-9K]/g, ''); }
   function num(v, def) { v = Number(v); return isFinite(v) ? v : def; }
+  /** Lo que ve el supervisor: "MST-017" se muestra como "Muestra 017", igual que en la app. */
+  function nombreMuestra(codigo) { return 'Muestra ' + String(codigo).replace(/^MST-/, ''); }
   function normalizar(id, d) {
     var estado = ETIQUETA[d.estado] ? d.estado : 'PENDIENTE';
     return {
       id: id,
       codigo: d.codigo || ('MST-' + String(id).slice(0, 4).toUpperCase()),
+      nombre: nombreMuestra(d.codigo || ('MST-' + String(id).slice(0, 4).toUpperCase())),
       centroId: d.centroId || '',
       tren: d.tren || '-',
       linea: num(d.linea, 0),
@@ -247,7 +250,7 @@
   function centro(m) { return CENTROS[m.centroId] || m.centroId || '—'; }
   function sinTildes(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
   function textoBuscable(m) {
-    return sinTildes([m.codigo, 'linea ' + m.linea, 'l' + String(m.linea).padStart(2, '0'), 'tren ' + m.tren, centro(m), m.operador, ETIQUETA[m.estado], m.observacion].join(' '));
+    return sinTildes([m.codigo, m.nombre, 'linea ' + m.linea, 'l' + String(m.linea).padStart(2, '0'), 'tren ' + m.tren, centro(m), m.operador, ETIQUETA[m.estado], m.observacion].join(' '));
   }
   function etiqueta(estado) { return '<span class="etiqueta ' + estado + '">' + esc(ETIQUETA[estado].toUpperCase()) + '</span>'; }
 
@@ -307,7 +310,7 @@
             if (m.estado === 'PENDIENTE') {
               idsNuevos[m.id] = true;
               pitido();
-              toast('Nueva muestra ' + m.codigo, m.operador + ' · ' + centro(m) + ' · Tren ' + m.tren + ' L' + String(m.linea).padStart(2, '0'), '', { texto: 'Ver muestra', fn: function () { abrirDetalle(m.id); } });
+              toast('Nueva ' + m.nombre.toLowerCase(), m.operador + ' · ' + centro(m) + ' · Tren ' + m.tren + ' L' + String(m.linea).padStart(2, '0'), '', { texto: 'Ver muestra', fn: function () { abrirDetalle(m.id); } });
             }
           }
         });
@@ -371,10 +374,10 @@
   function filaMuestra(m) {
     var marca = m.estado === 'VALIDADO' ? '<span class="marca ok" title="Validada">✓</span>' : m.estado === 'CORREGIDO' ? '<span class="marca corr" title="Corregida">✗</span>' : '';
     return '<div class="fila-wrap"><button class="fila ' + (m.estado === 'VALIDADO' ? 'validado' : '') + (idsNuevos[m.id] ? ' nueva' : '') + '" data-abrir="' + esc(m.id) + '">' + marca +
-      '<div class="info"><b>' + esc(m.codigo) + ' · Línea ' + String(m.linea).padStart(2, '0') + ' · Tren ' + esc(m.tren) + '</b>' +
+      '<div class="info"><b>' + esc(m.nombre) + ' · Línea ' + String(m.linea).padStart(2, '0') + ' · Tren ' + esc(m.tren) + '</b>' +
       '<span>' + esc(centro(m)) + ' · ' + esc(m.operador) + ' · ' + esc(fecha(m.registradaEn)) + '</span></div>' +
       '<div class="num">' + m.conteoIndM + ' ind/m<br>' + m.tallaMm + ' mm</div>' + etiqueta(m.estado) + '</button>' +
-      '<button class="btn-borrar" data-eliminar-id="' + esc(m.id) + '" title="Eliminar muestra" aria-label="Eliminar ' + esc(m.codigo) + '">' + ICONO_BASURA + '</button></div>';
+      '<button class="btn-borrar" data-eliminar-id="' + esc(m.id) + '" title="Eliminar muestra" aria-label="Eliminar ' + esc(m.nombre) + '">' + ICONO_BASURA + '</button></div>';
   }
 
   var ICONO_BASURA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
@@ -447,7 +450,7 @@
     var previoModo = $('fondo-detalle').dataset.modo || '';
     var dv = desvio(m);
     var html =
-      '<div class="detalle"><div class="detalle-cab"><h3>' + esc(m.codigo) + ' · Línea ' + String(m.linea).padStart(2, '0') + ' · Tren ' + esc(m.tren) + '</h3>' + etiqueta(m.estado) + '<button id="cerrar-detalle">Cerrar</button></div>' +
+      '<div class="detalle"><div class="detalle-cab"><h3>' + esc(m.nombre) + ' · Línea ' + String(m.linea).padStart(2, '0') + ' · Tren ' + esc(m.tren) + '</h3>' + etiqueta(m.estado) + '<button id="cerrar-detalle">Cerrar</button></div>' +
       '<div class="detalle-cuerpo">' +
       '<div class="foto">' + (m.foto ? '<img alt="Fotografía de la muestra" src="' + esc(m.foto) + '">' : 'Sin fotografía disponible') + '</div>' +
       '<div class="tres"><div class="tarjeta"><small>Densidad</small><b>' + m.conteoIndM + '</b> ind/m</div><div class="tarjeta"><small>Calibre prom.</small><b>' + m.tallaMm + '</b> mm</div><div class="tarjeta"><small>Rendimiento</small><b>' + rendimiento(m).toFixed(1) + '</b> kg/m</div></div>' +
@@ -491,7 +494,7 @@
       });
     }).then(function () {
       guardando = false;
-      toast(estado === 'VALIDADO' ? 'Muestra validada' : 'Muestra corregida', m.codigo + ' · el operario recibirá el dictamen en su teléfono.', 'ok');
+      toast(estado === 'VALIDADO' ? 'Muestra validada' : 'Muestra corregida', m.nombre + ' · el operario recibirá el dictamen en su teléfono.', 'ok');
       cerrarDetalle();
     }).catch(function (e) {
       guardando = false;
@@ -532,8 +535,8 @@
 
   function eliminarMuestra(id) {
     var m = muestras.filter(function (x) { return x.id === (id || detalleId); })[0]; if (!m || !db) return;
-    if (!confirm('¿Eliminar la muestra ' + m.codigo + '? Esta acción no se puede deshacer.')) return;
-    coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.codigo, 'ok'); if (detalleId === m.id) cerrarDetalle(); })
+    if (!confirm('¿Eliminar la ' + m.nombre.toLowerCase() + '? Esta acción no se puede deshacer.')) return;
+    coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.nombre, 'ok'); if (detalleId === m.id) cerrarDetalle(); })
       .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
   }
   function eliminarVarias(ids) {
