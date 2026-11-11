@@ -223,7 +223,7 @@
     var estado = ETIQUETA[d.estado] ? d.estado : 'PENDIENTE';
     return {
       id: id,
-      codigo: d.codigo || ('MST-' + String(id).slice(0, 4).toUpperCase()),
+      codigo: d.codigo ? String(d.codigo).replace(/^#?MST-/, 'Muestra ') : ('Muestra ' + String(id).slice(0, 4).toUpperCase()),
       centroId: d.centroId || '',
       tren: d.tren || '-',
       linea: num(d.linea, 0),
@@ -307,7 +307,7 @@
             if (m.estado === 'PENDIENTE') {
               idsNuevos[m.id] = true;
               pitido();
-              toast('Nueva muestra ' + m.codigo, m.operador + ' · ' + centro(m) + ' · Tren ' + m.tren + ' L' + String(m.linea).padStart(2, '0'), '', { texto: 'Ver muestra', fn: function () { abrirDetalle(m.id); } });
+              toast('Nueva ' + m.codigo.charAt(0).toLowerCase() + m.codigo.slice(1), m.operador + ' · ' + centro(m) + ' · Tren ' + m.tren + ' L' + String(m.linea).padStart(2, '0'), '', { texto: 'Ver muestra', fn: function () { abrirDetalle(m.id); } });
             }
           }
         });
@@ -517,7 +517,7 @@
     var ids = Object.keys(CENTROS), r = function (a, b) { return a + Math.floor(Math.random() * (b - a + 1)); };
     var n = muestras.length + 1;
     coleccion.add({
-      codigo: 'MST-' + String(100 + r(0, 899)), centroId: ids[r(0, 3)], tren: ['A', 'B', 'C'][r(0, 2)], linea: r(1, 12),
+      codigo: 'Muestra ' + String(100 + r(0, 899)), centroId: ids[r(0, 3)], tren: ['A', 'B', 'C'][r(0, 2)], linea: r(1, 12),
       profundidadM: [3, 5, 8][r(0, 2)], tallaMm: r(45, 75), conteoIndM: r(300, 520), observacion: 'Muestra simulada para la demostración.',
       estado: 'PENDIENTE', registradaEn: Date.now(), operador: NOMBRES[r(0, 2)], operadorRut: '111111111', fotoBase64: fotoDemo(n), demo: true
     }).catch(function () { toast('No se creó', 'No se pudo simular la muestra. Revisa la conexión.', 'mal'); });
@@ -532,7 +532,7 @@
 
   function eliminarMuestra(id) {
     var m = muestras.filter(function (x) { return x.id === (id || detalleId); })[0]; if (!m || !db) return;
-    if (!confirm('¿Eliminar la muestra ' + m.codigo + '? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Eliminar la ' + m.codigo + '? Esta acción no se puede deshacer.')) return;
     coleccion.doc(m.id).delete().then(function () { toast('Muestra eliminada', m.codigo, 'ok'); if (detalleId === m.id) cerrarDetalle(); })
       .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
   }

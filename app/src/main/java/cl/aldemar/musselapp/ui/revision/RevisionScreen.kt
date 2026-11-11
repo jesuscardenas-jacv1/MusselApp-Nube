@@ -435,7 +435,7 @@ fun RevisionScreen(
                                                 fontWeight = FontWeight.Bold,
                                             )
                                             Text(
-                                                "#${muestra.codigo}",
+                                                muestra.codigo,
                                                 style = MaterialTheme.typography.headlineSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface,
@@ -716,7 +716,7 @@ fun RevisionScreen(
             title = { Text("¿Registrar dictamen ${estadoDictamen.etiqueta}?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Muestra #${muestraDictamen.codigo} • ${muestraDictamen.codigoLinea} • Tren ${muestraDictamen.tren}")
+                    Text("${muestraDictamen.codigo} • ${muestraDictamen.codigoLinea} • Tren ${muestraDictamen.tren}")
                     uiState.comentarioTecnico.trim().takeIf { it.isNotEmpty() }?.let {
                         Text("Comentario: $it", style = MaterialTheme.typography.bodySmall, maxLines = 4)
                     }

@@ -18,7 +18,7 @@ Documento en `muestras/{id}` (id único por muestra, por ejemplo un UUID):
 
 | Campo | Tipo | Ejemplo |
 |---|---|---|
-| `codigo` | string | `"MST-017"` |
+| `codigo` | string | `"Muestra 017"` |
 | `centroId` | string | `"dalcahue"` (dalcahue, calbuco, quellon, melinka) |
 | `tren` | string | `"B"` |
 | `linea` | número | `8` |

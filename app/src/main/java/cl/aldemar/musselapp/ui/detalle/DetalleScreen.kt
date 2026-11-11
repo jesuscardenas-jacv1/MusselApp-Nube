@@ -379,7 +379,7 @@ private fun FranjaContextualDetalle(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Muestra #${muestra.codigo} • Tren ${muestra.tren} • ${muestra.codigoLinea}",
+                        "${muestra.codigo} • Tren ${muestra.tren} • ${muestra.codigoLinea}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimary,

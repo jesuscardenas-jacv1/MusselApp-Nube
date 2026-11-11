@@ -49,7 +49,7 @@ object FiltrosHistorial {
 
     fun aplicar(todas: List<Muestra>, criterios: CriteriosHistorial, ahora: Long = System.currentTimeMillis()): ResultadoHistorial {
         val desde = criterios.periodo.dias?.let { Fechas.diasAtras(it, ahora) }
-        // Se busca la frase completa: "línea 4" no debe coincidir con "MST-004"
+        // Se busca la frase completa: "línea 4" no debe coincidir con "Muestra 004"
         val frase = normalizar(criterios.busqueda).trim().replace(ESPACIOS, " ")
 
         // Centro, periodo y búsqueda definen el universo; los chips muestran cuántas hay de cada estado en él
@@ -77,7 +77,7 @@ object FiltrosHistorial {
     /** Texto donde se busca: código, línea (con y sin cero), tren, observación, operador, estado y fecha. */
     private fun textoBuscable(m: Muestra): String = normalizar(
         listOf(
-            m.codigo, "#${m.codigo}", m.codigoLinea,
+            m.codigo, m.codigoLinea,
             "linea ${m.linea}", "linea %02d".format(m.linea),
             "tren ${m.tren}", m.observacion, m.operador, m.estado.etiqueta,
             Fechas.relativa(m.registradaEn),

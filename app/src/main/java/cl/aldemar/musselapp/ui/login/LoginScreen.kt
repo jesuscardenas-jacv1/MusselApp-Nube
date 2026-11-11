@@ -565,7 +565,7 @@ private fun TarjetaModoOffline() {
             Text("Funciona sin señal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Text(
-                "Las muestras se guardan en este equipo aunque no haya señal en el pontón o bote, " +
+                "Las muestras se guardan en este equipo aunque no haya señal en el centro de cultivo, " +
                     "y se envían al tocar Sincronizar.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary,

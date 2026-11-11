@@ -26,8 +26,8 @@ data class Muestra(
 ) {
     val codigoLinea: String get() = "L%02d".format(linea)
 
-    /** Código de trazabilidad, por ejemplo "MST-010". */
-    val codigo: String get() = "MST-%03d".format(id)
+    /** Código de trazabilidad que ve el usuario, por ejemplo "Muestra 010". */
+    val codigo: String get() = "Muestra %03d".format(id)
 
     /** Rendimiento estimado en kg por metro. */
     val rendimientoKgM: Double get() = ((conteoIndM * tallaMm * 0.00028 * 10).toInt() / 10.0).coerceAtLeast(0.1)

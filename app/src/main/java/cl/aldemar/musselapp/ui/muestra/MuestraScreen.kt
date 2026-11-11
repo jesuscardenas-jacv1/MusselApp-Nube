@@ -112,7 +112,7 @@ fun MuestraScreen(
             if (codigoReconteo != null) {
                 AvisoFormulario(
                     icono = Icons.Filled.Refresh,
-                    texto = "Reconteo de la muestra #$codigoReconteo: se copió su ubicación. Revísala y continúa.",
+                    texto = "Reconteo de la $codigoReconteo: se copió su ubicación. Revísala y continúa.",
                     color = Paleta.Acento
                 )
             }
