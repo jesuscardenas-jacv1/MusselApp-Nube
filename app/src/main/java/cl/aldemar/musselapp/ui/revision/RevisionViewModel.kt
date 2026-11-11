@@ -21,12 +21,14 @@ class RevisionViewModel(
     private val _uiState = MutableStateFlow(RevisionUiState())
     val uiState: StateFlow<RevisionUiState> = _uiState.asStateFlow()
 
+    /** Centro con el que se inició sesión; null revisa todos los centros. */
+    private val centroId = MutableStateFlow<String?>(null)
+
+    // Debe ir después de centroId: Kotlin inicializa en orden de declaración y
+    // viewModelScope arranca de inmediato, así que antes combine recibía null y la app se cerraba
     init {
         observarMuestras()
     }
-
-    /** Centro con el que se inició sesión; null revisa todos los centros. */
-    private val centroId = MutableStateFlow<String?>(null)
 
     /** La cola muestra solo el centro de la sesión, igual que Principal e Historial. */
     fun mostrarCentro(id: String) {
@@ -148,7 +150,7 @@ class RevisionViewModel(
                         estadoElegido = null,
                         comentarioTecnico = "",
                         errorComentario = null,
-                        mensajeToast = "Dictamen registrado para muestra ${muestra.codigo}",
+                        mensajeToast = "Dictamen registrado para la ${muestra.codigo}",
                     )
                 }
                 onExito()
