@@ -15,7 +15,10 @@ import cl.aldemar.musselapp.data.local.entidad.RevisionEntity
 import cl.aldemar.musselapp.data.local.entidad.TrenEntity
 import cl.aldemar.musselapp.data.local.entidad.UsuarioEntity
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Base de datos local SQLite de MusselApp (Room). */
 @Database(
@@ -36,6 +39,20 @@ abstract class MusselDatabase : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
     abstract fun muestraDao(): MuestraDao
 
+    /** Carga de [DatosIniciales] en curso; solo existe la primera vez que se crea la base. */
+    @Volatile
+    private var sembrado: Job? = null
+
+    /**
+     * Abre la base (si aún no está abierta) y espera a que terminen de cargarse los datos
+     * iniciales. Sin esto, el primer login tras instalar podía consultar la tabla `usuarios`
+     * antes de que existiera el usuario y fallar con "RUT o PIN incorrectos".
+     */
+    suspend fun esperarDatosIniciales() {
+        withContext(Dispatchers.IO) { openHelper.writableDatabase }
+        sembrado?.join()
+    }
+
     companion object {
         const val NOMBRE = "musselapp.db"
 
@@ -48,7 +65,7 @@ abstract class MusselDatabase : RoomDatabase() {
             instancia = Room.databaseBuilder(context.applicationContext, MusselDatabase::class.java, NOMBRE)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
-                        alcance.launch { DatosIniciales.poblar(instancia) }
+                        instancia.sembrado = alcance.launch { DatosIniciales.poblar(instancia) }
                     }
                 })
                 // Migraciones conocidas: conservan las muestras guardadas

@@ -14,6 +14,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -94,6 +109,8 @@ fun RevisionRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(muestraIdInicial) { muestraIdInicial?.let(viewModel::enfocarMuestra) }
+    // La cola corresponde al centro de la sesión, como el resumen de la Principal
+    LaunchedEffect(centro.id) { viewModel.mostrarCentro(centro.id) }
 
     RevisionScreen(
         uiState = uiState,
@@ -107,7 +124,11 @@ fun RevisionRoute(
         onActualizarComentario = viewModel::actualizarComentario,
         onAgregarMotivo = viewModel::agregarMotivoRapido,
         onAlternarZoom = viewModel::alternarModalZoom,
-        onGuardar = { viewModel.guardarDictamen(supervisor = usuario) },
+        onValidar = viewModel::validarDictamen,
+        onGuardar = {
+            // Si se llegó desde el Detalle de una muestra, se vuelve a él para ver el estado nuevo
+            viewModel.guardarDictamen(supervisor = usuario) { if (muestraIdInicial != null) onVolver() }
+        },
         onLimpiarMensaje = viewModel::limpiarMensaje,
     )
 }
@@ -128,8 +149,12 @@ fun RevisionScreen(
     onGuardar: () -> Unit,
     onLimpiarMensaje: () -> Unit,
     onCerrarSesion: () -> Unit = {},
+    /** Revisa el dictamen antes de pedir confirmación; false si falta algo. */
+    onValidar: () -> Boolean = { true },
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    // El dictamen es final: se confirma antes de guardarlo
+    var confirmando by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(uiState.mensajeToast) {
         val mensaje = uiState.mensajeToast
@@ -183,17 +208,12 @@ fun RevisionScreen(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF4ADE80)),
-                            )
-                            Spacer(Modifier.width(4.dp))
+                            // Antes decía "ONLINE EN TERRENO" fijo, aunque no hubiera conexión
                             Text(
-                                text = "SUPERVISIÓN • ONLINE EN TERRENO",
+                                text = "SUPERVISIÓN • ${usuario.nombre.uppercase()}",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontSize = 9.sp,
+                                fontSize = 11.sp,
+                                maxLines = 1,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                             )
@@ -344,7 +364,8 @@ fun RevisionScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 16.dp)
+                                .selectableGroup(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             uiState.muestrasPendientes.forEach { m ->
@@ -358,7 +379,13 @@ fun RevisionScreen(
                                             color = if (seleccionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                                             shape = RoundedCornerShape(8.dp),
                                         )
-                                        .clickable { onSeleccionarMuestra(m.id) }
+                                        // TalkBack anuncia la muestra como opción seleccionada o no
+                                        .selectable(
+                                            selected = seleccionada,
+                                            role = Role.RadioButton,
+                                            onClick = { onSeleccionarMuestra(m.id) },
+                                        )
+                                        .heightIn(min = 48.dp)
                                         .padding(horizontal = 12.dp, vertical = 8.dp),
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -371,7 +398,7 @@ fun RevisionScreen(
                                         Text(
                                             "${m.codigoLinea} • Tren ${m.tren}",
                                             style = MaterialTheme.typography.labelSmall,
-                                            fontSize = 10.sp,
+                                            fontSize = 11.sp,
                                             color = if (seleccionada) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.secondary,
                                         )
                                     }
@@ -488,7 +515,18 @@ fun RevisionScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .aspectRatio(4f / 3f)
-                                        .clip(RoundedCornerShape(12.dp)),
+                                        .clip(RoundedCornerShape(12.dp))
+                                        // Toda la foto es el área táctil para ampliar
+                                        .then(
+                                            if (muestra.fotoRuta != null) {
+                                                Modifier.clickable(
+                                                    onClickLabel = "Ampliar la fotografía",
+                                                    role = Role.Button,
+                                                ) { onAlternarZoom(true) }
+                                            } else {
+                                                Modifier
+                                            },
+                                        ),
                                 ) {
                                     FotoMuestra(
                                         fotoRuta = muestra.fotoRuta,
@@ -502,13 +540,12 @@ fun RevisionScreen(
                                                 .padding(10.dp)
                                                 .clip(RoundedCornerShape(50))
                                                 .background(Color.White)
-                                                .clickable(onClickLabel = "Ampliar la fotografía") { onAlternarZoom(true) }
                                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = Color(0xFF0F172A), modifier = Modifier.size(16.dp))
                                                 Spacer(Modifier.width(2.dp))
-                                                Text("Zoom", color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                Text("Ampliar", color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -543,7 +580,8 @@ fun RevisionScreen(
                                             onClick = { onElegirEstado(EstadoMuestra.VALIDADO) },
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(56.dp),
+                                                .height(56.dp)
+                                                .semantics { selected = esValidado },
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = if (esValidado) EstadoValidadoTexto else EstadoValidadoFondo,
@@ -566,7 +604,8 @@ fun RevisionScreen(
                                             onClick = { onElegirEstado(EstadoMuestra.CORREGIDO) },
                                             modifier = Modifier
                                                 .weight(1f)
-                                                .height(56.dp),
+                                                .height(56.dp)
+                                                .semantics { selected = esCorregido },
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = if (esCorregido) coloresCorregido.texto else coloresCorregido.fondo,
@@ -581,6 +620,17 @@ fun RevisionScreen(
                                             Spacer(Modifier.width(6.dp))
                                             Text("CORREGIR", fontWeight = FontWeight.Bold)
                                         }
+                                    }
+
+                                    // El aviso aparece junto a los botones que faltan, no en el comentario
+                                    uiState.errorDictamen?.let { error ->
+                                        Text(
+                                            error,
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                                        )
                                     }
 
                                     // Chips de motivos rápidos
@@ -628,7 +678,7 @@ fun RevisionScreen(
 
                                     // Botón Guardar Dictamen
                                     Button(
-                                        onClick = onGuardar,
+                                        onClick = { if (onValidar()) confirmando = true },
                                         enabled = !uiState.guardando,
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -656,43 +706,60 @@ fun RevisionScreen(
         }
     }
 
-    // Modal Zoom
-    val muestraZoom = uiState.muestraActual
-    if (uiState.modalZoomAbierto && muestraZoom != null && muestraZoom.fotoRuta != null) {
-        Dialog(onDismissRequest = { onAlternarZoom(false) }) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp)),
-                color = Color.Black,
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("Inspección de Muestra", color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { onAlternarZoom(false) }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Cerrar", tint = Color.White)
-                        }
+    // Confirmación del dictamen: Validado y Corregido no se pueden cambiar después
+    val muestraDictamen = uiState.muestraActual
+    val estadoDictamen = uiState.estadoElegido
+    if (confirmando && muestraDictamen != null && estadoDictamen != null) {
+        AlertDialog(
+            onDismissRequest = { confirmando = false },
+            icon = { Icon(Icons.Filled.VerifiedUser, contentDescription = null) },
+            title = { Text("¿Registrar dictamen ${estadoDictamen.etiqueta}?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Muestra #${muestraDictamen.codigo} • ${muestraDictamen.codigoLinea} • Tren ${muestraDictamen.tren}")
+                    uiState.comentarioTecnico.trim().takeIf { it.isNotEmpty() }?.let {
+                        Text("Comentario: $it", style = MaterialTheme.typography.bodySmall, maxLines = 4)
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(8.dp))) {
-                        FotoMuestra(fotoRuta = muestraZoom.fotoRuta, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                    }
+                    Text(
+                        "El dictamen es final y no se podrá modificar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
-            }
-        }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    confirmando = false
+                    onGuardar()
+                }) { Text("Registrar", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmando = false }) { Text("Seguir revisando") }
+            },
+        )
+    }
+
+    // Foto ampliada a pantalla completa, con pellizco para acercar y giro
+    val muestraZoom = uiState.muestraActual
+    val rutaZoom = muestraZoom?.fotoRuta
+    if (uiState.modalZoomAbierto && muestraZoom != null && rutaZoom != null) {
+        VisorFoto(
+            ruta = rutaZoom,
+            onCerrar = { onAlternarZoom(false) },
+            titulo = "Inspección ${muestraZoom.codigo}",
+        )
     }
 }
 
 @Composable
 private fun MotivoChip(texto: String, onClick: () -> Unit) {
     Surface(
+        // Área táctil mínima de 48 dp aunque el chip se vea más bajo
         modifier = Modifier
+            .minimumInteractiveComponentSize()
             .clip(RoundedCornerShape(50))
-            .clickable(onClick = onClick),
+            .clickable(onClickLabel = "Agregar motivo al comentario", role = Role.Button, onClick = onClick),
         shape = RoundedCornerShape(50),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),

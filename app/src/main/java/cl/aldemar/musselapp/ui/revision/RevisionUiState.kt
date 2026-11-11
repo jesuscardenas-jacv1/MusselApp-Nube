@@ -11,6 +11,8 @@ data class RevisionUiState(
     val estadoElegido: EstadoMuestra? = null,
     val comentarioTecnico: String = "",
     val errorComentario: String? = null,
+    /** Falta elegir Validar o Corregir; se muestra junto a esos botones. */
+    val errorDictamen: String? = null,
     val mensajeToast: String? = null,
     val modalZoomAbierto: Boolean = false,
 ) {

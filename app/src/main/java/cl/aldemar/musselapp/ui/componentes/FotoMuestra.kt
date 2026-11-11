@@ -1,6 +1,5 @@
 package cl.aldemar.musselapp.ui.componentes
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +22,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cl.aldemar.musselapp.util.Fotos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -94,13 +94,6 @@ fun FotoMuestra(
     }
 }
 
-/** Lee la foto reducida a [ladoMaxPx] (la original de la cámara pesa varios MB). null si no se puede leer. */
-private fun decodificarFotoReducida(ruta: String, ladoMaxPx: Int = 1280): ImageBitmap? {
-    val limites = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(ruta, limites)
-    if (limites.outWidth <= 0 || limites.outHeight <= 0) return null
-    var muestreo = 1
-    while (maxOf(limites.outWidth, limites.outHeight) / (muestreo * 2) >= ladoMaxPx) muestreo *= 2
-    val opciones = BitmapFactory.Options().apply { inSampleSize = muestreo }
-    return BitmapFactory.decodeFile(ruta, opciones)?.asImageBitmap()
-}
+/** Lee la foto reducida y derecha (según EXIF); null si no se puede leer. */
+private fun decodificarFotoReducida(ruta: String): ImageBitmap? =
+    Fotos.decodificar(ruta, ladoMaxPx = 1280)?.asImageBitmap()

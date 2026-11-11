@@ -1,10 +1,17 @@
 package cl.aldemar.musselapp.ui.muestra
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
 import android.widget.Toast
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import cl.aldemar.musselapp.util.Fotos
+import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,7 +23,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,11 +71,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -85,8 +89,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
@@ -362,7 +364,7 @@ fun VistaPreviaScreen(
                     .height(56.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (listo) Paleta.Primario else Paleta.Campo)
-                    .clickable(enabled = listo) {
+                    .clickable(enabled = listo, role = Role.Button, onClickLabel = "Guardar muestra") {
                         cerrarTeclado()
                         confirmando = true
                     },
@@ -454,7 +456,7 @@ private fun BarraSuperior(onVolver: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clickable(onClick = onVolver),
+                .clickable(onClickLabel = "Volver", role = Role.Button, onClick = onVolver),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -489,20 +491,24 @@ private fun TarjetaFoto(
     onGaleria: () -> Unit,
     onEliminar: () -> Unit
 ) {
-    val bitmap = remember(rutaFoto) { rutaFoto?.let { cargarBitmap(it, 4) } }
+    // Se lee fuera del hilo principal: decodificar varios MB aquí trababa la apertura de la pantalla
+    val bitmapCargado by produceState<Bitmap?>(null, rutaFoto) {
+        value = rutaFoto?.let { withContext(Dispatchers.IO) { Fotos.decodificar(it, ladoMaxPx = 1024) } }
+    }
     val hora = remember(rutaFoto) {
         rutaFoto?.let {
             SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(File(it).lastModified()))
         }
     }
 
+    val bitmap = bitmapCargado
     Tarjeta(sinPadding = true) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(240.dp)
                 .background(Color.Black)
-                .clickable(enabled = bitmap != null, onClick = onAmpliar),
+                .clickable(enabled = bitmap != null, onClickLabel = "Ampliar la fotografía", onClick = onAmpliar),
             contentAlignment = Alignment.Center
         ) {
             if (bitmap != null) {
@@ -544,6 +550,8 @@ private fun TarjetaFoto(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
+            } else if (rutaFoto != null) {
+                CircularProgressIndicator(color = Color.White)
             } else {
                 Text("Sin fotografía", color = Color.White, fontSize = 14.sp)
             }
@@ -556,8 +564,8 @@ private fun TarjetaFoto(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             BotonAccion(
-                texto = if (bitmap != null) "Repetir" else "Tomar foto",
-                icono = if (bitmap != null) Icons.Filled.Refresh else Icons.Filled.PhotoCamera,
+                texto = if (rutaFoto != null) "Repetir" else "Tomar foto",
+                icono = if (rutaFoto != null) Icons.Filled.Refresh else Icons.Filled.PhotoCamera,
                 modifier = Modifier.weight(1f),
                 onClick = onRepetir
             )
@@ -598,7 +606,7 @@ private fun BotonAccion(
             .heightIn(min = 56.dp)
             .clip(RoundedCornerShape(10.dp))
             .border(1.5.dp, if (habilitado) color.copy(alpha = 0.7f) else Paleta.Borde, RoundedCornerShape(10.dp))
-            .clickable(enabled = habilitado, onClick = onClick)
+            .clickable(enabled = habilitado, role = Role.Button, onClick = onClick)
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -612,11 +620,11 @@ private fun BotonAccion(
 private fun BotonEditar(editando: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (editando) Paleta.Primario else Paleta.AcentoSuave)
             .border(1.5.dp, if (editando) Paleta.Primario else Paleta.Acento, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -633,112 +641,6 @@ private fun BotonEditar(editando: Boolean, onClick: () -> Unit) {
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
-    }
-}
-
-// Foto a pantalla completa: se acerca con dos dedos y se puede girar a vertical u horizontal
-@Composable
-internal fun VisorFoto(ruta: String, onCerrar: () -> Unit) {
-    val original = remember(ruta) { cargarBitmap(ruta, 2) }
-    var grados by remember { mutableStateOf(0) }
-    var escala by remember { mutableStateOf(1f) }
-    var desplazamiento by remember { mutableStateOf(Offset.Zero) }
-
-    // La foto se gira de verdad (no solo se estira), para que siempre se vea completa
-    val bitmap = remember(original, grados) {
-        if (original == null || grados == 0) {
-            original
-        } else {
-            val matriz = Matrix().apply { postRotate(grados.toFloat()) }
-            Bitmap.createBitmap(original, 0, 0, original.width, original.height, matriz, true)
-        }
-    }
-
-    fun girar(delta: Int) {
-        grados = (grados + delta + 360) % 360
-        escala = 1f
-        desplazamiento = Offset.Zero
-    }
-
-    Dialog(
-        onDismissRequest = onCerrar,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        ) {
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "Fotografía de la muestra",
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                escala = (escala * zoom).coerceIn(1f, 5f)
-                                desplazamiento = if (escala == 1f) Offset.Zero else desplazamiento + pan
-                            }
-                        }
-                        .graphicsLayer {
-                            scaleX = escala
-                            scaleY = escala
-                            translationX = desplazamiento.x
-                            translationY = desplazamiento.y
-                        }
-                )
-            } else {
-                Text(
-                    text = "No se pudo abrir la foto",
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-
-            BotonVisor(
-                icono = Icons.Filled.Close,
-                descripcion = "Cerrar",
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .statusBarsPadding()
-                    .padding(12.dp),
-                onClick = onCerrar
-            )
-
-            // Girar a la izquierda / derecha
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                BotonVisor(Icons.Filled.RotateLeft, "Girar a la izquierda") { girar(-90) }
-                BotonVisor(Icons.Filled.RotateRight, "Girar a la derecha") { girar(90) }
-            }
-        }
-    }
-}
-
-// Botón redondo para usar sobre la foto ampliada
-@Composable
-private fun BotonVisor(
-    icono: ImageVector,
-    descripcion: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(Navy.copy(alpha = 0.85f))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(imageVector = icono, contentDescription = descripcion, tint = Color.White)
     }
 }
 
@@ -776,7 +678,14 @@ private fun TarjetaMetrica(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                 textStyle = TextStyle(color = Paleta.Texto, fontSize = 28.sp, fontWeight = FontWeight.Bold),
                 cursorBrush = SolidColor(Paleta.Acento),
-                modifier = Modifier.weight(1f, fill = false).focusRequester(foco),
+                // Sin etiqueta visible pegada al campo: TalkBack anuncia qué medición es y su unidad
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .focusRequester(foco)
+                    .semantics {
+                        contentDescription = "$titulo en $unidad"
+                        if (error != null) error(error)
+                    },
                 decorationBox = { campo ->
                     Box {
                         if (valor == null) {
@@ -834,27 +743,6 @@ private fun Fila(etiqueta: String, valor: String) {
             modifier = Modifier.weight(0.6f)
         )
     }
-}
-
-// Lee la foto reducida y la gira según la orientación que guardó la cámara
-private fun cargarBitmap(ruta: String, reduccion: Int): Bitmap? {
-    val opciones = BitmapFactory.Options().apply { inSampleSize = reduccion }
-    val bitmap = BitmapFactory.decodeFile(ruta, opciones) ?: return null
-
-    val orientacion = ExifInterface(ruta).getAttributeInt(
-        ExifInterface.TAG_ORIENTATION,
-        ExifInterface.ORIENTATION_NORMAL
-    )
-    val grados = when (orientacion) {
-        ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-        ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-        ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-        else -> 0f
-    }
-    if (grados == 0f) return bitmap
-
-    val matriz = Matrix().apply { postRotate(grados) }
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matriz, true)
 }
 
 @Preview(showBackground = true)

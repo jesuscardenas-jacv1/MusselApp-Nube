@@ -38,14 +38,15 @@ class LoginViewModel(
         _uiState.update { it.copy(rut = limpio, rutError = null, mensajeError = null) }
     }
 
-    fun onPasswordChange(password: String) =
-        _uiState.update { it.copy(password = password, passwordError = null, mensajeError = null) }
+    /** El PIN es numérico: se descartan otros caracteres y se limita su largo. */
+    fun onPasswordChange(password: String) {
+        val pin = password.filter(Char::isDigit).take(LARGO_MAXIMO_PIN)
+        _uiState.update { it.copy(password = pin, passwordError = null, mensajeError = null) }
+    }
 
     fun onTogglePasswordVisible() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
 
     fun onCentroChange(centro: CentroCultivo) = _uiState.update { it.copy(centro = centro) }
-
-    fun onModoOfflineChange(activo: Boolean) = _uiState.update { it.copy(modoOffline = activo) }
 
     fun onMensajeMostrado() = _uiState.update { it.copy(mensajeError = null) }
 
@@ -57,11 +58,11 @@ class LoginViewModel(
         if (estado.cargando) return
 
         val rutError = when {
-            estado.rut.isBlank() -> "Ingrese su RUT o código de operario"
+            estado.rut.isBlank() -> "Ingrese su RUT"
             !RutValidator.esValido(estado.rut) -> "RUT inválido"
             else -> null
         }
-        val passwordError = if (estado.password.isBlank()) "Ingrese su contraseña" else null
+        val passwordError = if (estado.password.isBlank()) "Ingrese su PIN" else null
         if (rutError != null || passwordError != null) {
             _uiState.update { it.copy(rutError = rutError, passwordError = passwordError) }
             return
@@ -84,5 +85,8 @@ class LoginViewModel(
     private companion object {
         /** 8 dígitos más el verificador: "111111111". */
         const val LARGO_MAXIMO_RUT = 9
+
+        /** Largo máximo del PIN numérico. */
+        const val LARGO_MAXIMO_PIN = 8
     }
 }

@@ -1,6 +1,23 @@
 package cl.aldemar.musselapp.ui.screens
 
 import android.Manifest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import cl.aldemar.musselapp.util.Fotos
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.core.app.ActivityCompat
+import android.provider.Settings
+import android.content.Intent
 import android.content.ContentValues
 import android.app.Activity
 import android.content.Context
@@ -8,9 +25,6 @@ import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -109,7 +123,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import cl.aldemar.musselapp.ui.muestra.Paleta
-import cl.aldemar.musselapp.ui.muestra.VisorFoto
+import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
 import cl.aldemar.musselapp.util.AlmacenFotos
 import java.io.File
@@ -119,11 +133,20 @@ private val Navy = Color(0xFF0F172A)
 private val Fondo = Color(0xFFF1F5F9)
 private val GrisTexto = Color(0xFF94A3B8)
 
+/**
+ * Paso 2 del registro: fotografía de la muestra.
+ *
+ * @param fotoExistente foto ya confirmada del borrador (al volver desde la Vista previa):
+ * se muestra de inmediato con la opción de continuar, en vez de obligar a sacar otra.
+ */
 @Composable
 fun CaptureScreen(
+    fotoExistente: String? = null,
+    onVolver: () -> Unit = {},
     onFotoLista: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val alcance = rememberCoroutineScope()
 
     var tienePermiso by remember {
         mutableStateOf(
@@ -131,15 +154,30 @@ fun CaptureScreen(
                     PackageManager.PERMISSION_GRANTED
         )
     }
+    // El sistema ya no muestra el diálogo: solo se puede conceder desde los Ajustes
+    var permisoBloqueado by remember { mutableStateOf(false) }
 
     val pedirPermiso = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { concedido ->
         tienePermiso = concedido
+        val actividad = context.buscarActividad()
+        permisoBloqueado = !concedido && actividad != null &&
+            !ActivityCompat.shouldShowRequestPermissionRationale(actividad, Manifest.permission.CAMERA)
+    }
+
+    // Al volver de los Ajustes del sistema se revisa de nuevo el permiso
+    LifecycleResumeEffect(Unit) {
+        val concedido = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+            PackageManager.PERMISSION_GRANTED
+        tienePermiso = concedido
+        if (concedido) permisoBloqueado = false
+        onPauseOrDispose { }
     }
 
     LaunchedEffect(Unit) {
-        if (!tienePermiso) pedirPermiso.launch(Manifest.permission.CAMERA)
+        // Si ya hay una foto confirmada no se interrumpe con el diálogo de permiso
+        if (!tienePermiso && fotoExistente == null) pedirPermiso.launch(Manifest.permission.CAMERA)
     }
 
     val imageCapture = remember {
@@ -148,11 +186,19 @@ fun CaptureScreen(
             .build()
     }
 
-    var fotoArchivo by remember { mutableStateOf<File?>(null) }
-    var fotoBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var fotoArchivo by remember { mutableStateOf(fotoExistente?.let(::File)) }
     var capturando by remember { mutableStateOf(false) }
-    val foto = fotoBitmap
-    var estadoFoto by remember { mutableStateOf(EstadoFoto.SIN_FOTO) }
+    // Copiar, decodificar y guardar fotos de varios MB se hace fuera del hilo principal
+    var procesando by remember { mutableStateOf(false) }
+    val fotoCargada by produceState<Bitmap?>(null, fotoArchivo) {
+        value = fotoArchivo?.let { withContext(Dispatchers.IO) { Fotos.decodificar(it.absolutePath, ladoMaxPx = 1280) } }
+    }
+    val foto = fotoCargada
+    var estadoFoto by remember {
+        mutableStateOf(if (fotoExistente != null) EstadoFoto.GUARDADA else EstadoFoto.SIN_FOTO)
+    }
+    // Volver desde la Vista previa: la foto ya confirmada se puede reutilizar tal cual
+    val reutilizando = fotoExistente != null && fotoArchivo?.absolutePath == fotoExistente
     var origenCamara by remember { mutableStateOf(false) }
     var camaraAbierta by remember { mutableStateOf(false) }
     var verFoto by remember { mutableStateOf(false) }
@@ -164,7 +210,6 @@ fun CaptureScreen(
     fun alRecibirFoto(archivo: File, desdeCamara: Boolean) {
         if (estadoFoto == EstadoFoto.REVISAR) fotoArchivo?.delete()
         fotoArchivo = archivo
-        fotoBitmap = cargarBitmap(archivo.absolutePath)
         origenCamara = desdeCamara
         capturando = false
         camaraAbierta = false
@@ -175,37 +220,51 @@ fun CaptureScreen(
     fun volverACamara() {
         if (estadoFoto == EstadoFoto.REVISAR) fotoArchivo?.delete()
         fotoArchivo = null
-        fotoBitmap = null
         estadoFoto = EstadoFoto.SIN_FOTO
+    }
+
+    // Una foto tomada pero no confirmada no queda olvidada en la carpeta temporal al salir
+    DisposableEffect(Unit) {
+        onDispose { if (estadoFoto == EstadoFoto.REVISAR) fotoArchivo?.delete() }
     }
 
     // El operario confirma que la foto salió bien: recién ahí se guarda
     fun confirmarFoto() {
         val temporal = fotoArchivo ?: return
-        // La foto confirmada pasa a la carpeta privada de la app (filesDir/fotos)
-        val destino = try {
-            AlmacenFotos.guardar(context, temporal)
-        } catch (e: Exception) {
-            Toast.makeText(context, "No se pudo guardar la foto", Toast.LENGTH_SHORT).show()
-            return
-        }
-        fotoArchivo = destino
+        if (procesando) return
+        procesando = true
+        alcance.launch {
+            // La foto confirmada pasa a la carpeta privada de la app (filesDir/fotos)
+            val destino = try {
+                withContext(Dispatchers.IO) { AlmacenFotos.guardar(context, temporal) }
+            } catch (e: Exception) {
+                procesando = false
+                Toast.makeText(context, "No se pudo guardar la foto", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            fotoArchivo = destino
 
-        // Las fotos de la cámara también van a la galería del teléfono
-        estadoFoto = if (!origenCamara || guardarEnGaleria(context, destino)) {
-            EstadoFoto.GUARDADA
-        } else {
-            EstadoFoto.SOLO_APP
-        }
-        val mensaje = if (estadoFoto == EstadoFoto.GUARDADA) {
-            "Foto guardada en la galería y en la app"
-        } else {
-            "Foto guardada solo en la app"
-        }
-        Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+            // Las fotos de la cámara también van a la galería del teléfono
+            val enGaleria = origenCamara && withContext(Dispatchers.IO) { guardarEnGaleria(context, destino) }
+            estadoFoto = if (!origenCamara || enGaleria) EstadoFoto.GUARDADA else EstadoFoto.SOLO_APP
+            val mensaje = when {
+                !origenCamara -> "Foto guardada en la app"
+                enGaleria -> "Foto guardada en la galería y en la app"
+                else -> "Foto guardada solo en la app"
+            }
+            Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+            procesando = false
 
-        // Con la foto confirmada, el botón se expande suavemente y pasa a la Vista previa
-        rutaSiguiente = destino.absolutePath
+            // Con la foto confirmada, el botón se expande suavemente y pasa a la Vista previa
+            rutaSiguiente = destino.absolutePath
+            animando = true
+        }
+    }
+
+    // Sigue con la foto que ya estaba confirmada, sin copiarla de nuevo
+    fun continuarConFoto() {
+        val ruta = fotoArchivo?.absolutePath ?: return
+        rutaSiguiente = ruta
         animando = true
     }
 
@@ -218,18 +277,26 @@ fun CaptureScreen(
 
     // Abre la cámara a pantalla completa (pide el permiso si aún no lo tiene)
     fun abrirCamara() {
-        if (tienePermiso) camaraAbierta = true else pedirPermiso.launch(Manifest.permission.CAMERA)
+        when {
+            tienePermiso -> camaraAbierta = true
+            permisoBloqueado -> abrirAjustesApp(context)
+            else -> pedirPermiso.launch(Manifest.permission.CAMERA)
+        }
     }
 
     val selectorGaleria = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            val archivo = copiarDesdeGaleria(context, uri)
-            if (archivo != null) {
-                alRecibirFoto(archivo, desdeCamara = false)
-            } else {
-                Toast.makeText(context, "No se pudo abrir la imagen", Toast.LENGTH_SHORT).show()
+            procesando = true
+            alcance.launch {
+                val archivo = withContext(Dispatchers.IO) { copiarDesdeGaleria(context, uri) }
+                procesando = false
+                if (archivo != null) {
+                    alRecibirFoto(archivo, desdeCamara = false)
+                } else {
+                    Toast.makeText(context, "No se pudo abrir la imagen", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -251,7 +318,7 @@ fun CaptureScreen(
             .fillMaxSize()
             .background(Paleta.Fondo)
     ) {
-        BarraSuperior()
+        BarraSuperior(onVolver = onVolver)
 
         // Zona de cámara
         Box(
@@ -290,7 +357,15 @@ fun CaptureScreen(
                         Text("Toca para ampliar", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                else -> ZonaSinFoto(tienePermiso = tienePermiso)
+                fotoArchivo != null || procesando -> CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                else -> ZonaSinFoto(
+                    tienePermiso = tienePermiso,
+                    permisoBloqueado = permisoBloqueado,
+                    onAbrirAjustes = { abrirAjustesApp(context) }
+                )
             }
         }
 
@@ -308,9 +383,9 @@ fun CaptureScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (estadoFoto == EstadoFoto.REVISAR || animando) {
+                if (estadoFoto == EstadoFoto.REVISAR || animando || reutilizando) {
                     BotonLateral(Icons.Filled.Refresh, "Repetir", false) {
-                        if (animando) return@BotonLateral
+                        if (animando || procesando) return@BotonLateral
                         volverACamara()
                         abrirCamara()
                     }
@@ -322,20 +397,26 @@ fun CaptureScreen(
                     }
                 }
                 Obturador(
-                    icono = if (estadoFoto == EstadoFoto.REVISAR || animando) Icons.Filled.Check else Icons.Filled.PhotoCamera,
-                    descripcion = when (estadoFoto) {
-                        EstadoFoto.REVISAR -> "Foto buena, guardar y continuar"
-                        EstadoFoto.SIN_FOTO -> "Tomar foto"
+                    icono = when {
+                        reutilizando -> Icons.AutoMirrored.Filled.ArrowForward
+                        estadoFoto == EstadoFoto.REVISAR || animando -> Icons.Filled.Check
+                        else -> Icons.Filled.PhotoCamera
+                    },
+                    descripcion = when {
+                        reutilizando -> "Continuar con esta foto"
+                        estadoFoto == EstadoFoto.REVISAR -> "Foto buena, guardar y continuar"
+                        estadoFoto == EstadoFoto.SIN_FOTO -> "Tomar foto"
                         else -> "Tomar otra foto"
                     },
-                    habilitado = true,
+                    habilitado = !procesando,
                     respirar = estadoFoto == EstadoFoto.SIN_FOTO,
                     navegar = progresoBote.value,
                     onClick = {
-                        if (animando) return@Obturador
-                        when (estadoFoto) {
-                            EstadoFoto.SIN_FOTO -> abrirCamara()
-                            EstadoFoto.REVISAR -> confirmarFoto()
+                        if (animando || procesando) return@Obturador
+                        when {
+                            reutilizando -> continuarConFoto()
+                            estadoFoto == EstadoFoto.SIN_FOTO -> abrirCamara()
+                            estadoFoto == EstadoFoto.REVISAR -> confirmarFoto()
                             else -> {
                                 volverACamara()
                                 abrirCamara()
@@ -373,7 +454,11 @@ fun CaptureScreen(
 
 // Zona que se ve antes de tomar la foto: la cámara se abre a pantalla completa con el obturador
 @Composable
-private fun ZonaSinFoto(tienePermiso: Boolean) {
+private fun ZonaSinFoto(
+    tienePermiso: Boolean,
+    permisoBloqueado: Boolean = false,
+    onAbrirAjustes: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -397,15 +482,28 @@ private fun ZonaSinFoto(tienePermiso: Boolean) {
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = if (tienePermiso) {
-                "Toca el botón de la cámara para abrirla a pantalla completa. Puedes tomar la foto en vertical u horizontal."
-            } else {
-                "Se necesita permiso de cámara. Toca el botón para concederlo."
+            text = when {
+                tienePermiso ->
+                    "Toca el botón de la cámara para abrirla a pantalla completa. Puedes tomar la foto en vertical u horizontal."
+                permisoBloqueado ->
+                    "El permiso de cámara está desactivado. Actívalo en los Ajustes o elige una foto desde la Galería."
+                else -> "Se necesita permiso de cámara. Toca el botón para concederlo o usa la Galería."
             },
             color = GrisTexto,
             fontSize = 13.sp,
             textAlign = TextAlign.Center
         )
+        if (permisoBloqueado) {
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedButton(
+                onClick = onAbrirAjustes,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+            ) {
+                Icon(Icons.Filled.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Abrir ajustes", fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }
 
@@ -560,15 +658,19 @@ private tailrec fun Context.buscarActividad(): Activity? = when (this) {
 }
 
 @Composable
-private fun BarraSuperior() {
+private fun BarraSuperior(onVolver: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Navy)
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Igual que en Muestra y Vista previa: se puede volver al paso anterior
+        IconButton(onClick = onVolver) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "MusselApp • Nueva muestra",
@@ -579,7 +681,7 @@ private fun BarraSuperior() {
             Text(
                 text = "Paso 2 · Fotografía de la muestra",
                 color = GrisTexto,
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -895,25 +997,17 @@ private fun copiarDesdeGaleria(context: Context, uri: Uri): File? {
     }
 }
 
-// Lee la foto reducida y la gira según la orientación que guardó la cámara
-private fun cargarBitmap(ruta: String): Bitmap? {
-    val opciones = BitmapFactory.Options().apply { inSampleSize = 4 }
-    val bitmap = BitmapFactory.decodeFile(ruta, opciones) ?: return null
-
-    val orientacion = ExifInterface(ruta).getAttributeInt(
-        ExifInterface.TAG_ORIENTATION,
-        ExifInterface.ORIENTATION_NORMAL
-    )
-    val grados = when (orientacion) {
-        ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-        ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-        ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-        else -> 0f
+// Abre la ficha de la app en los Ajustes del sistema para conceder el permiso de cámara
+private fun abrirAjustesApp(context: Context) {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", context.packageName, null)
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "No se pudieron abrir los Ajustes", Toast.LENGTH_SHORT).show()
     }
-    if (grados == 0f) return bitmap
-
-    val matriz = Matrix().apply { postRotate(grados) }
-    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matriz, true)
 }
 
 @Preview(showBackground = true)

@@ -1,7 +1,15 @@
 package cl.aldemar.musselapp.ui.muestra
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +66,9 @@ fun MuestraScreen(
     centroInicial: CentroCultivo? = null,
     onVolver: () -> Unit = {},
     onContinuar: (ParametrosMuestra) -> Unit = {},
+    // Reconteo: ubicación de la muestra original y su código para el rótulo
+    reconteo: ParametrosMuestra? = null,
+    codigoReconteo: String? = null,
     vm: MuestraViewModel = viewModel()
 ) {
     // Observamos el estado del ViewModel
@@ -68,11 +79,16 @@ fun MuestraScreen(
     LaunchedEffect(centroInicial) {
         vm.iniciar(centroInicial)
     }
+    LaunchedEffect(reconteo) {
+        val r = reconteo ?: return@LaunchedEffect
+        val centro = CentroCultivo.disponibles.find { it.id == r.centroId } ?: return@LaunchedEffect
+        vm.prefijar(centro, r.tren, r.linea, r.profundidadM)
+    }
 
     // Cuando el ViewModel confirma que todo es válido, se muestra el mensaje y se avanza
     LaunchedEffect(state.parametrosValidos) {
         val parametros = state.parametrosValidos ?: return@LaunchedEffect
-        state.mensaje?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        // Sin Toast: avanzar a la Captura ya confirma que los parámetros son válidos
         vm.navegacionRealizada()
         onContinuar(parametros)
     }
@@ -93,6 +109,14 @@ fun MuestraScreen(
         ) {
             EncabezadoPasos()
 
+            if (codigoReconteo != null) {
+                AvisoFormulario(
+                    icono = Icons.Filled.Refresh,
+                    texto = "Reconteo de la muestra #$codigoReconteo: se copió su ubicación. Revísala y continúa.",
+                    color = Paleta.Acento
+                )
+            }
+
             Tarjeta {
                 TituloTarjeta("Ubicación de Muestreo", Icons.Filled.LocationOn)
 
@@ -105,6 +129,16 @@ fun MuestraScreen(
                     error = state.errorCentro,
                     onElegir = { i -> vm.cambiarCentro(CentroCultivo.disponibles[i]) }
                 )
+                // Principal e Historial muestran el centro de la sesión: se avisa antes de guardar en otro
+                val centroElegido = state.centro
+                if (centroInicial != null && centroElegido != null && centroElegido.id != centroInicial.id) {
+                    AvisoFormulario(
+                        icono = Icons.Filled.Info,
+                        texto = "Se guardará en ${centroElegido.nombre}. No aparecerá en el resumen ni en el " +
+                            "historial de ${centroInicial.nombre}, el centro de tu sesión.",
+                        color = Paleta.Error
+                    )
+                }
                 Selector(
                     etiqueta = "Tren de Cultivo (Longline)",
                     valor = state.tren?.let { nombreTren(it) },
@@ -141,7 +175,10 @@ fun MuestraScreen(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Estrato.entries.forEach { e ->
                         OpcionEstrato(
                             estrato = e,
@@ -165,6 +202,8 @@ fun MuestraScreen(
         ) {
             // El botón siempre se puede presionar: el ViewModel decide si hay errores
             BotonContinuar(onClick = vm::guardar)
+            // Separación para que los dos botones no se lean como uno solo ni se toquen por error
+            Spacer(modifier = Modifier.height(12.dp))
             BotonLimpiar(onClick = vm::limpiar)
         }
     }
@@ -183,7 +222,7 @@ private fun BarraSuperior(onVolver: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clickable(onClick = onVolver),
+                .clickable(onClickLabel = "Volver", role = Role.Button, onClick = onVolver),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -200,12 +239,30 @@ private fun BarraSuperior(onVolver: () -> Unit) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "ONLINE / SINCRONIZADO",
+                // Antes decía "ONLINE / SINCRONIZADO" fijo, aunque no hubiera conexión
+                text = "Paso 1 · Parámetros de la muestra",
                 color = Paleta.TextoBarra,
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             )
         }
+    }
+}
+
+/** Aviso breve dentro del formulario (reconteo, centro distinto al de la sesión). */
+@Composable
+private fun AvisoFormulario(icono: ImageVector, texto: String, color: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(color.copy(alpha = 0.10f))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(imageVector = icono, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+        Text(text = texto, color = Paleta.Texto, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -294,7 +351,7 @@ private fun BotonContinuar(onClick: () -> Unit) {
             .height(56.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Paleta.Primario)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -311,17 +368,29 @@ private fun BotonLimpiar(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+            // Botón secundario con contorno: se distingue como acción, sin competir con "Continuar"
+            .background(Paleta.Superficie)
+            .border(1.5.dp, Paleta.BordeFuerte, RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.CleaningServices,
+                contentDescription = null,
+                tint = Paleta.Etiqueta,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
             text = "Limpiar formulario",
-            color = Paleta.TextoSuave,
+            color = Paleta.Etiqueta,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold
-        )
+            )
+        }
     }
 }
 

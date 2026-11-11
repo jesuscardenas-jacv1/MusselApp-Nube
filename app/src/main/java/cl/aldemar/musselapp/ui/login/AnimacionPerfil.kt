@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Sailing
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -189,7 +189,7 @@ private fun EscenaSupervisor(onTerminada: () -> Unit) {
             }
         }
         Icon(
-            Icons.Filled.FactCheck,
+            Icons.AutoMirrored.Filled.FactCheck,
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier

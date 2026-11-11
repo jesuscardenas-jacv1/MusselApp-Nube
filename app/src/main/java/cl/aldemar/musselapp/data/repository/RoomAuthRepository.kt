@@ -18,6 +18,8 @@ class RoomAuthRepository(
     private val usuarioDao: UsuarioDao,
     private val latenciaMs: Long = 800,
     private val bloqueo: BloqueoLogin = BloqueoLogin(IntentosEnMemoria()),
+    /** Espera a que la base tenga sus datos iniciales antes de consultar usuarios. */
+    private val esperarDatos: suspend () -> Unit = {},
 ) : AuthRepository {
 
     override suspend fun login(rut: String, password: String, rol: Rol): Result<Usuario> {
@@ -26,6 +28,7 @@ class RoomAuthRepository(
             return Result.failure(AuthException(mensajeBloqueo(espera)))
         }
         delay(latenciaMs) // Simula la verificación de la credencial
+        esperarDatos()
         val usuario = usuarioDao.buscarPorRut(rutNormalizado)
         // La base guarda el hash del PIN; el cálculo es costoso a propósito y va fuera del hilo principal
         val pinCorrecto = usuario != null &&

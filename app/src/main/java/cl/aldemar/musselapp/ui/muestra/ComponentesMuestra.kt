@@ -1,5 +1,11 @@
 package cl.aldemar.musselapp.ui.muestra
 
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -149,7 +155,13 @@ internal fun Selector(
                         },
                         RoundedCornerShape(8.dp)
                     )
-                    .clickable { abierto = true }
+                    // TalkBack lee "Centro de Cultivo, lista desplegable, <valor>" en un solo elemento
+                    .clickable(onClickLabel = "Abrir lista de opciones") { abierto = true }
+                    .semantics(mergeDescendants = true) {
+                        role = Role.DropdownList
+                        stateDescription = valor ?: vacio
+                        if (error != null) this.error(error)
+                    }
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -179,7 +191,7 @@ internal fun Selector(
                 )
                 Icon(
                     imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = "Abrir lista",
+                    contentDescription = null,
                     tint = Paleta.Etiqueta
                 )
             }
@@ -234,7 +246,8 @@ internal fun OpcionEstrato(
                 color = if (seleccionado) Paleta.Primario else Paleta.BordeCampo,
                 shape = RoundedCornerShape(8.dp)
             )
-            .clickable(onClick = onClick)
+            // Se anuncia como opción de un grupo y si está seleccionada
+            .selectable(selected = seleccionado, role = Role.RadioButton, onClick = onClick)
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
