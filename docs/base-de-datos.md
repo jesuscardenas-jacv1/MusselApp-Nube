@@ -18,6 +18,9 @@ erDiagram
     CENTROS {
         TEXT id PK
         TEXT nombre
+        REAL lat "punto de referencia (v5)"
+        REAL lon
+        INTEGER radio_m "radio del área de cultivo"
     }
     TRENES {
         INTEGER id PK
@@ -47,6 +50,18 @@ erDiagram
         INTEGER registrada_en "epoch ms"
         INTEGER sincronizada "0 / 1"
         TEXT foto_ruta "ruta del archivo, no la imagen"
+        REAL lat "posición del teléfono (v5), null si no hubo GPS"
+        REAL lon
+        REAL precision_m
+        REAL clima_temp_aire_c "clima al muestrear (v5), null sin internet"
+        REAL clima_viento_kn
+        REAL clima_racha_kn
+        INTEGER clima_viento_dir "grados"
+        INTEGER clima_codigo "código WMO"
+        REAL clima_ola_m
+        REAL clima_temp_agua_c
+        REAL clima_marea_m
+        INTEGER clima_obtenido_en "epoch ms"
     }
     REVISIONES {
         INTEGER id PK
@@ -75,11 +90,13 @@ erDiagram
   - Las fotos de la cámara además se copian a la galería del teléfono (`Pictures/MusselApp`), como antes.
   - Al repetir o eliminar una foto, o al cerrar sesión con una muestra a medio registrar, el archivo anterior se borra (`BorradorMuestraViewModel`), así no quedan fotos sin muestra.
 - **Historial de revisiones:** cada dictamen es una fila nueva en `revisiones`, para mantener la trazabilidad. El estado vigente queda también en `muestras.estado`, y ambos se actualizan en una sola transacción (`MuestraDao.registrarRevision`).
+- **Posición y clima (v5):** todas las columnas aceptan null. La posición se lee al confirmar la muestra; el clima se pide a Open-Meteo después de insertarla (`MuestraDao.guardarClima`), para que guardar nunca espere a la red. Si no hay internet, se reintenta al sincronizar mientras la muestra tenga menos de 2 horas. La distancia al centro y las alertas **no** se guardan: se calculan (`util/Distancia.kt`, `util/AlertasMuestra.kt`).
+- **Área del centro:** `centros` guarda un punto de referencia y un radio (1.500 m). Una muestra tomada más lejos genera la alerta "Fuera del área" para el supervisor. Las coordenadas son ficticias y coinciden con las del mapa del portal.
 - **Integridad:** claves foráneas entre todas las tablas. No se puede registrar una muestra en una línea o con un operario que no existe.
 - **Datos iniciales:** al crear la base por primera vez se cargan centros, trenes A–C, líneas 1–12, los 2 usuarios de prueba y 14 muestras ficticias (`DatosIniciales.kt`).
 - **PIN como hash:** la columna `pin` guarda `pbkdf2$iteraciones$sal$hash` (PBKDF2 con HmacSHA1, disponible desde minSdk 24), calculado en `util/HashPin.kt`. El login compara contra el hash, nunca contra el PIN.
 - **Sin respaldo en la nube:** `allowBackup="false"` y las reglas de `res/xml/` excluyen la base, las fotos y las preferencias del respaldo y de la transferencia entre teléfonos.
-- **Migraciones:** `data/local/Migraciones.kt`. La v2 convierte el estado Observado (eliminado) en Corregido sin perder muestras; la v3 reemplaza cada PIN en texto plano por su hash (ambas en `MigracionesTest`). Si faltara una migración, `fallbackToDestructiveMigration` recrea la base.
+- **Migraciones:** `data/local/Migraciones.kt`. La v2 convierte el estado Observado (eliminado) en Corregido sin perder muestras; la v3 reemplaza cada PIN en texto plano por su hash; la v4 agrega el conteo de cholgas y la v5 la posición, el clima y las coordenadas de los centros (todas en `MigracionesTest`). Si faltara una migración, `fallbackToDestructiveMigration` recrea la base.
 - **Un solo dispositivo:** Room es local; operario y supervisor deben usar el mismo teléfono en la demo. La columna `sincronizada` y la interfaz `MuestraRepository` dejan listo el camino para sincronizar con un servidor en una etapa futura.
 
 ## Estructura del código
