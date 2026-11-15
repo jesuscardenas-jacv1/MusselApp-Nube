@@ -17,6 +17,7 @@ class BorradorMuestraTest {
         fotoRuta = "/fotos/muestra.jpg",
         conteoIndM = 420,
         tallaMm = 65,
+        cholgasIndM = 10,
     )
 
     @Test
@@ -42,5 +43,13 @@ class BorradorMuestraTest {
         assertNotNull(validarBorrador(completo.copy(conteoIndM = CONTEO_MAXIMO_IND_M + 1)))
         assertNotNull(validarBorrador(completo.copy(tallaMm = 0)))
         assertNotNull(validarBorrador(completo.copy(tallaMm = TALLA_MAXIMA_MM + 1)))
+        assertNotNull(validarBorrador(completo.copy(cholgasIndM = -1)))
+        assertNotNull(validarBorrador(completo.copy(cholgasIndM = CONTEO_MAXIMO_IND_M + 1)))
+    }
+
+    @Test
+    fun cholgas_sonObligatoriasPeroPuedenSerCero() {
+        assertNotNull(validarBorrador(completo.copy(cholgasIndM = null)))
+        assertNull(validarBorrador(completo.copy(cholgasIndM = 0)))
     }
 }

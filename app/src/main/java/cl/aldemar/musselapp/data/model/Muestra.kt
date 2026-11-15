@@ -23,6 +23,11 @@ data class Muestra(
     /** Comentario técnico del supervisor al validar o corregir la muestra. */
     val comentarioSupervisor: String? = null,
     val fotoRuta: String? = null,
+    /**
+     * Cholgas contadas en el mismo tramo de cuerda, en individuos por metro. Son otra especie
+     * de la misma familia que el chorito y se anotan aparte. null en las muestras anteriores a v4.
+     */
+    val cholgasIndM: Int? = null,
 ) {
     val codigoLinea: String get() = "L%02d".format(linea)
 

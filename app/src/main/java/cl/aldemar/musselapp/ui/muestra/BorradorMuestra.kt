@@ -23,6 +23,8 @@ data class BorradorMuestra(
     // Conteo y talla los ingresa el operario en Vista previa
     val conteoIndM: Int? = null,
     val tallaMm: Int? = null,
+    // Cholgas: otra especie de la misma familia; se anotan aparte (0 si no hay)
+    val cholgasIndM: Int? = null,
     val observacion: String = "",
 )
 
@@ -41,6 +43,8 @@ fun validarBorrador(borrador: BorradorMuestra): String? = when {
     borrador.conteoIndM !in 1..CONTEO_MAXIMO_IND_M -> "El conteo debe estar entre 1 y $CONTEO_MAXIMO_IND_M ind/m"
     borrador.tallaMm == null -> "Ingresa la talla media en mm"
     borrador.tallaMm !in 1..TALLA_MAXIMA_MM -> "La talla debe estar entre 1 y $TALLA_MAXIMA_MM mm"
+    borrador.cholgasIndM == null -> "Ingresa el conteo de cholgas (0 si no hay)"
+    borrador.cholgasIndM !in 0..CONTEO_MAXIMO_IND_M -> "Las cholgas deben estar entre 0 y $CONTEO_MAXIMO_IND_M ind/m"
     else -> null
 }
 
@@ -90,6 +94,11 @@ class BorradorMuestraViewModel(
         _borrador.update { it.copy(tallaMm = tallaMm) }
     }
 
+    /** null significa que el operario borró el valor; 0 es que contó y no había cholgas. */
+    fun actualizarCholgas(cholgasIndM: Int?) {
+        _borrador.update { it.copy(cholgasIndM = cholgasIndM) }
+    }
+
     /**
      * Guarda la muestra en la base local a nombre de [operador].
      * Si se guarda, limpia el borrador y llama a [alGuardar];
@@ -116,6 +125,7 @@ class BorradorMuestraViewModel(
             profundidadM = parametros.profundidadM,
             tallaMm = actual.tallaMm!!,
             conteoIndM = actual.conteoIndM!!,
+            cholgasIndM = actual.cholgasIndM!!,
             observacion = actual.observacion.trim(),
             estado = EstadoMuestra.PENDIENTE,
             registradaEn = System.currentTimeMillis(),

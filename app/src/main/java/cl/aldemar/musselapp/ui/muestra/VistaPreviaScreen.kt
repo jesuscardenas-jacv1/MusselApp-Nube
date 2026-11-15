@@ -123,6 +123,7 @@ fun VistaPreviaScreen(
     onObservacionCambiada: (String) -> Unit = {},
     onConteoCambiado: (Int?) -> Unit = {},
     onTallaCambiada: (Int?) -> Unit = {},
+    onCholgasCambiadas: (Int?) -> Unit = {},
     guardando: Boolean = false,
     onConfirmar: () -> Unit = {},
 ) {
@@ -213,10 +214,11 @@ fun VistaPreviaScreen(
                 onEliminar = { eliminando = true }
             )
 
-            // Métricas medidas por el operario: obligatorias para guardar la muestra
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Métricas medidas por el operario: obligatorias para guardar la muestra.
+            // Las tres en una línea y del mismo ancho (conteo de choritos, talla y cholgas)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TarjetaMetrica(
-                    titulo = "CONTEO BIOMASA",
+                    titulo = "CONTEO",
                     valor = borrador.conteoIndM,
                     unidad = "uds / m",
                     error = errorMedicion(borrador.conteoIndM, CONTEO_MAXIMO_IND_M),
@@ -231,7 +233,21 @@ fun VistaPreviaScreen(
                     onCambiar = onTallaCambiada,
                     modifier = Modifier.weight(1f)
                 )
+                // Cholgas: otra especie de la misma familia; se cuentan en el mismo tramo y se anotan aparte
+                TarjetaMetrica(
+                    titulo = "CHOLGAS",
+                    valor = borrador.cholgasIndM,
+                    unidad = "uds / m",
+                    error = errorMedicion(borrador.cholgasIndM, CONTEO_MAXIMO_IND_M, minimo = 0),
+                    onCambiar = onCholgasCambiadas,
+                    modifier = Modifier.weight(1f)
+                )
             }
+            Text(
+                text = "Cholgas: se anotan aparte de los choritos · 0 si no hay",
+                color = Paleta.TextoSuave,
+                fontSize = 11.sp
+            )
 
             // Ubicación: lectura o edición en la misma pantalla
             Tarjeta(espacio = 12.dp) {
@@ -666,21 +682,21 @@ private fun TarjetaMetrica(
                 foco.requestFocus()
                 teclado?.show()
             }
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text(text = titulo, color = Paleta.TextoSuave, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(text = titulo, color = Paleta.TextoSuave, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Column {
             BasicTextField(
                 value = valor?.toString() ?: "",
                 onValueChange = { texto -> onCambiar(texto.filter(Char::isDigit).take(4).toIntOrNull()) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                textStyle = TextStyle(color = Paleta.Texto, fontSize = 28.sp, fontWeight = FontWeight.Bold),
+                textStyle = TextStyle(color = Paleta.Texto, fontSize = 22.sp, fontWeight = FontWeight.Bold),
                 cursorBrush = SolidColor(Paleta.Acento),
                 // Sin etiqueta visible pegada al campo: TalkBack anuncia qué medición es y su unidad
                 modifier = Modifier
-                    .weight(1f, fill = false)
+                    .fillMaxWidth()
                     .focusRequester(foco)
                     .semantics {
                         contentDescription = "$titulo en $unidad"
@@ -689,7 +705,7 @@ private fun TarjetaMetrica(
                 decorationBox = { campo ->
                     Box {
                         if (valor == null) {
-                            Text(text = "—", color = Paleta.TextoSuave, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                            Text(text = "—", color = Paleta.TextoSuave, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                         }
                         campo()
                     }
@@ -698,9 +714,9 @@ private fun TarjetaMetrica(
             Text(
                 text = unidad,
                 color = Paleta.TextoSuave,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 4.dp)
+                maxLines = 1
             )
         }
         if (error != null) {
@@ -713,8 +729,8 @@ private fun TarjetaMetrica(
 }
 
 /** Mensaje de error de una medición ya escrita (null si está vacía o dentro del rango). */
-private fun errorMedicion(valor: Int?, maximo: Int): String? =
-    if (valor != null && valor !in 1..maximo) "Debe estar entre 1 y $maximo" else null
+private fun errorMedicion(valor: Int?, maximo: Int, minimo: Int = 1): String? =
+    if (valor != null && valor !in minimo..maximo) "Debe estar entre $minimo y $maximo" else null
 
 @Composable
 private fun Fila(etiqueta: String, valor: String) {

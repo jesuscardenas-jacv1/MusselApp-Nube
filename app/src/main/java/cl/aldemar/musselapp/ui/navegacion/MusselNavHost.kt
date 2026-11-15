@@ -220,6 +220,7 @@ fun MusselNavHost(
                 onObservacionCambiada = borradorViewModel::actualizarObservacion,
                 onConteoCambiado = borradorViewModel::actualizarConteo,
                 onTallaCambiada = borradorViewModel::actualizarTalla,
+                onCholgasCambiadas = borradorViewModel::actualizarCholgas,
                 onConfirmar = {
                     // El guardado vive en el ViewModel; aquí solo se navega con el resultado
                     val operador = usuario ?: return@VistaPreviaScreen

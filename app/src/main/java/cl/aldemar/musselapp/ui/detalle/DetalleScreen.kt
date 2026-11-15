@@ -721,6 +721,14 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                             fontWeight = FontWeight.Medium,
                         )
                     }
+                    // Cholgas: otra especie de la misma familia, contada aparte en el mismo tramo
+                    Text(
+                        "Cholgas: " + (muestra.cholgasIndM?.let { "$it ind / m" } ?: "no registradas"),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
                 }
             }
 

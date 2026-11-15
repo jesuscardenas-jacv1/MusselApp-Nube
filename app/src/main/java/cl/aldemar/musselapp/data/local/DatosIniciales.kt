@@ -53,6 +53,7 @@ object DatosIniciales {
                     profundidadM = m.profundidadM,
                     tallaMm = m.tallaMm,
                     conteoIndM = m.conteoIndM,
+                    cholgasIndM = m.cholgasIndM,
                     observacion = m.observacion,
                     estado = m.estado,
                     registradaEn = m.registradaEn,

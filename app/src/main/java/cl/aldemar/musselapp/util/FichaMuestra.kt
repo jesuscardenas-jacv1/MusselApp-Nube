@@ -27,6 +27,7 @@ object FichaMuestra {
         "Tren / Línea" to "Tren ${muestra.tren} · ${muestra.codigoLinea}",
         "Profundidad" to "${muestra.profundidadM} m",
         "Conteo" to "${muestra.conteoIndM} ind/m",
+        "Cholgas" to (muestra.cholgasIndM?.let { "$it ind/m" } ?: "No registrado"),
         "Talla media" to "${muestra.tallaMm} mm",
         "Rendimiento estimado" to "${muestra.rendimientoKgM} kg/m",
         "Estado" to muestra.estado.etiqueta,
