@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.util.HashPin
 
 /** Cambios de la base entre versiones, sin perder las muestras guardadas en el teléfono. */
@@ -53,5 +54,30 @@ object Migraciones {
         }
     }
 
-    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4)
+    /**
+     * v4 → v5: cada muestra guarda la posición del teléfono y el clima del momento, y cada centro
+     * su punto de referencia y el radio de su área. Las muestras anteriores quedan con null
+     * (no se registró); los cuatro centros del caso reciben sus coordenadas.
+     */
+    val DE_4_A_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            listOf(
+                "lat REAL", "lon REAL", "precision_m REAL",
+                "clima_temp_aire_c REAL", "clima_viento_kn REAL", "clima_racha_kn REAL",
+                "clima_viento_dir INTEGER", "clima_codigo INTEGER", "clima_ola_m REAL",
+                "clima_temp_agua_c REAL", "clima_marea_m REAL", "clima_obtenido_en INTEGER",
+            ).forEach { db.execSQL("ALTER TABLE muestras ADD COLUMN $it") }
+
+            listOf("lat REAL", "lon REAL", "radio_m INTEGER")
+                .forEach { db.execSQL("ALTER TABLE centros ADD COLUMN $it") }
+            CentroCultivo.disponibles.forEach { c ->
+                db.execSQL(
+                    "UPDATE centros SET lat = ?, lon = ?, radio_m = ? WHERE id = ?",
+                    arrayOf<Any>(c.lat, c.lon, c.radioM, c.id),
+                )
+            }
+        }
+    }
+
+    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5)
 }
