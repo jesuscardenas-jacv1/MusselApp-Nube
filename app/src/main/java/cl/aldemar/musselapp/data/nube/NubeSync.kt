@@ -9,6 +9,9 @@ import android.util.Base64
 import android.util.Log
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
+import cl.aldemar.musselapp.util.AlertasMuestra
+import cl.aldemar.musselapp.util.CodigoTiempo
+import cl.aldemar.musselapp.util.Distancia
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -76,6 +79,19 @@ class NubeSync(context: Context) {
                 "registradaEn" to m.registradaEn,
                 "operador" to m.operador,
                 "operadorRut" to m.operadorRut,
+                // Posición, clima y alertas: la app es la única que las calcula; el portal solo las muestra
+                "lat" to m.posicion?.lat,
+                "lon" to m.posicion?.lon,
+                "precisionM" to m.posicion?.precisionM,
+                "distanciaCentroM" to Distancia.alCentro(m),
+                "clima" to m.clima?.let { c ->
+                    mapOf(
+                        "tempAireC" to c.tempAireC, "vientoKn" to c.vientoKn, "rachaKn" to c.rachaKn,
+                        "vientoDir" to c.vientoDir, "codigo" to c.codigo, "descripcion" to CodigoTiempo.descripcion(c.codigo),
+                        "olaM" to c.olaM, "tempAguaC" to c.tempAguaC, "mareaM" to c.mareaM, "obtenidoEn" to c.obtenidoEn,
+                    )
+                },
+                "alertas" to AlertasMuestra.evaluar(m).map { it.name },
             )
             // La foto va en su propio documento (fotos/{id}): así quien escucha la colección de muestras
             // (el portal y los teléfonos) no descarga todas las fotos; el portal la pide al abrir la muestra
