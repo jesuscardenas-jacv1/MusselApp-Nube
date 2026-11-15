@@ -5,13 +5,17 @@ import androidx.lifecycle.viewModelScope
 import cl.aldemar.musselapp.MusselApplication
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
+import cl.aldemar.musselapp.data.model.Posicion
 import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.data.repository.MuestraRepository
+import cl.aldemar.musselapp.data.ubicacion.Ubicador
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Datos de la muestra que se está registrando, compartidos entre
@@ -26,6 +30,12 @@ data class BorradorMuestra(
     // Cholgas: otra especie de la misma familia; se anotan aparte (0 si no hay)
     val cholgasIndM: Int? = null,
     val observacion: String = "",
+)
+
+/** Posición del teléfono para la muestra en curso: se busca al llegar a la Vista previa. */
+data class EstadoUbicacion(
+    val buscando: Boolean = false,
+    val posicion: Posicion? = null,
 )
 
 /** Rangos aceptados al ingresar las mediciones (evitan errores de tipeo, no son límites biológicos). */
@@ -52,7 +62,28 @@ class BorradorMuestraViewModel(
     private val repository: MuestraRepository = MusselApplication.contenedor.muestraRepository,
     /** Borra el archivo de una foto que ya no se usa (inyectable para las pruebas). */
     private val borrarFoto: (String) -> Unit = { MusselApplication.contenedor.borrarFoto(it) },
+    /** Posición del teléfono (inyectable para las pruebas). */
+    private val ubicador: Ubicador = Ubicador { MusselApplication.contenedor.ubicador.posicionActual() },
 ) : ViewModel() {
+
+    private val _ubicacion = MutableStateFlow(EstadoUbicacion())
+    val ubicacion: StateFlow<EstadoUbicacion> = _ubicacion.asStateFlow()
+
+    private var busquedaUbicacion: Job? = null
+
+    /**
+     * Empieza a leer la posición para que esté lista al confirmar. Se llama al llegar a la
+     * Vista previa; si ya hay una búsqueda en curso no se repite.
+     */
+    fun buscarUbicacion() {
+        if (busquedaUbicacion?.isActive == true) return
+        _ubicacion.update { it.copy(buscando = true) }
+        busquedaUbicacion = viewModelScope.launch {
+            val posicion = ubicador.posicionActual()
+            // Si esta lectura falla se conserva la anterior de la misma muestra
+            _ubicacion.update { EstadoUbicacion(buscando = false, posicion = posicion ?: it.posicion) }
+        }
+    }
 
     private val _borrador = MutableStateFlow(BorradorMuestra())
     val borrador: StateFlow<BorradorMuestra> = _borrador.asStateFlow()
@@ -138,7 +169,9 @@ class BorradorMuestraViewModel(
         _guardando.value = true
         viewModelScope.launch {
             try {
-                repository.agregarMuestra(nueva)
+                // La muestra se guarda con o sin posición: se espera un poco a la lectura en curso, no más
+                withTimeoutOrNull(ESPERA_UBICACION_MS) { busquedaUbicacion?.join() }
+                repository.agregarMuestra(nueva.copy(posicion = _ubicacion.value.posicion))
                 limpiar()
                 alGuardar()
             } catch (e: Exception) {
@@ -162,5 +195,11 @@ class BorradorMuestraViewModel(
     /** Se llama al terminar el muestreo, para empezar el siguiente desde cero. La foto se conserva. */
     fun limpiar() {
         _borrador.value = BorradorMuestra()
+        busquedaUbicacion?.cancel()
+        _ubicacion.value = EstadoUbicacion()
+    }
+
+    private companion object {
+        const val ESPERA_UBICACION_MS = 4_000L
     }
 }
