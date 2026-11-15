@@ -86,15 +86,15 @@ fun MusselNavHost(
         }
     }
 
-    // Íconos de la barra de estado: oscuros sobre el fondo claro del Login,
-    // claros sobre las barras superiores oscuras del resto de las pantallas
+    // Íconos de la barra de estado siempre oscuros: todas las barras superiores son claras.
+    // Se vuelve a fijar al cambiar de pantalla porque la cámara a pantalla completa oculta las barras.
     val rutaVisible = navController.currentBackStackEntryAsState().value?.destination?.route
     val view = LocalView.current
     if (!LocalInspectionMode.current) {
         SideEffect {
+            rutaVisible // se relee en cada cambio de pantalla
             val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
-                rutaVisible == null || rutaVisible == Rutas.LOGIN
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = true
         }
     }
 

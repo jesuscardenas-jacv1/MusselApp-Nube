@@ -64,12 +64,20 @@ import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Rol
 import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.ui.principal.Destino
-import cl.aldemar.musselapp.ui.theme.EstadoValidadoFondo
+import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.AcentoPendiente
+import cl.aldemar.musselapp.ui.theme.AcentoSuave
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
+import cl.aldemar.musselapp.ui.theme.FormaBoton
+import cl.aldemar.musselapp.ui.theme.FormaTarjetaChica
+import cl.aldemar.musselapp.ui.theme.Linea
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.tarjetaMussel
 import cl.aldemar.musselapp.ui.theme.colores
 
 // Componentes compartidos por las pantallas con sesión iniciada (Principal, Historial, ...)
 
-/** Barra superior oscura común a las pantallas con sesión iniciada. */
+/** Barra superior clara común a las pantallas con sesión iniciada: se funde con el fondo. */
 @Composable
 fun BarraSuperiorMussel(
     seccion: String,
@@ -82,53 +90,45 @@ fun BarraSuperiorMussel(
     /** Al tocar el logo de la app se vuelve a la Pantalla Principal. */
     onIrAInicio: () -> Unit,
 ) {
-    Surface(color = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
+    Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White)
+                    .size(44.dp)
+                    .tarjetaMussel(FormaBoton)
                     .clickable(onClickLabel = "Ir a la pantalla principal", role = Role.Button, onClick = onIrAInicio),
                 contentAlignment = Alignment.Center,
             ) {
-                Image(painterResource(R.drawable.logo_musselapp), contentDescription = "Logo MusselApp", modifier = Modifier.size(32.dp))
+                Image(painterResource(R.drawable.logo_musselapp), contentDescription = "Logo MusselApp", modifier = Modifier.size(34.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("MusselApp", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(
-                        " • $seccion",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f),
-                    )
-                }
+                // La sección es lo primero que se lee; la marca ya la da el logo
+                Text(seccion, style = MaterialTheme.typography.titleLarge)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier
                             .size(7.dp)
                             .clip(CircleShape)
-                            .background(if (pendientesSincronizar == 0) Color(0xFF4ADE80) else Color(0xFFFBBF24)),
+                            .background(if (pendientesSincronizar == 0) Acento else AcentoPendiente),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
                         // Estado real de la cola: antes decía "ONLINE" siempre, aunque no hubiera conexión
                         if (pendientesSincronizar == 0) "TODO SINCRONIZADO" else "$pendientesSincronizar EN COLA DE ENVÍO",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
+                        style = Rotulo,
+                        color = MaterialTheme.colorScheme.secondary,
                     )
                 }
             }
             IconButton(onClick = onSincronizar, enabled = !sincronizando) {
-                IconoGiratorio(Icons.Filled.Sync, girando = sincronizando, descripcion = "Sincronizar", tinte = MaterialTheme.colorScheme.onPrimary)
+                IconoGiratorio(Icons.Filled.Sync, girando = sincronizando, descripcion = "Sincronizar", tinte = MaterialTheme.colorScheme.onBackground)
             }
             MenuPerfil(usuario = usuario, centro = centro, onCerrarSesion = onCerrarSesion, tamano = 36)
         }
@@ -149,16 +149,16 @@ fun MenuPerfil(
     var menuAbierto by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { menuAbierto = true }) {
-            Avatar(nombre = usuario.nombre, tamano = tamano, claro = true)
+            Avatar(nombre = usuario.nombre, tamano = tamano, claro = false)
         }
         DropdownMenu(
             expanded = menuAbierto,
             onDismissRequest = { menuAbierto = false },
-            shape = RoundedCornerShape(16.dp),
+            shape = FormaTarjetaChica,
             containerColor = MaterialTheme.colorScheme.surface,
         ) {
             PerfilUsuario(usuario = usuario, centro = centro)
-            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainer)
+            HorizontalDivider(color = Linea)
             DropdownMenuItem(
                 text = { Text("Cerrar sesión") },
                 leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
@@ -185,7 +185,7 @@ private fun PerfilUsuario(usuario: Usuario, centro: CentroCultivo) {
             Avatar(nombre = usuario.nombre, tamano = 48, claro = false)
             Spacer(Modifier.width(12.dp))
             Column {
-                Text(usuario.nombre, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(usuario.nombre, style = MaterialTheme.typography.titleMedium)
                 Text(
                     if (operario) "Operario de Terreno" else "Supervisor de Calidad",
                     style = MaterialTheme.typography.bodySmall,
@@ -210,8 +210,8 @@ private fun DatoPerfil(icono: ImageVector, etiqueta: String, valor: String) {
         Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp).padding(top = 2.dp))
         Spacer(Modifier.width(10.dp))
         Column {
-            Text(etiqueta, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-            Text(valor, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(etiqueta.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary)
+            Text(valor, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -241,13 +241,13 @@ fun Avatar(nombre: String, tamano: Int, claro: Boolean) {
         modifier = Modifier
             .size(tamano.dp)
             .clip(CircleShape)
-            .background(if (claro) Color.White else MaterialTheme.colorScheme.secondary),
+            .background(if (claro) Color.White else MaterialTheme.colorScheme.primary),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             iniciales,
             color = if (claro) MaterialTheme.colorScheme.primary else Color.White,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             fontSize = (tamano * 0.38f).sp,
         )
     }
@@ -256,7 +256,7 @@ fun Avatar(nombre: String, tamano: Int, claro: Boolean) {
 /** Barra inferior con el menú de opciones según el rol. */
 @Composable
 fun NavegacionInferior(rol: Rol, seleccionado: Destino, onNavegar: (Destino) -> Unit) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
         Destino.disponiblesPara(rol).forEach { destino ->
             NavigationBarItem(
                 selected = destino == seleccionado,
@@ -264,9 +264,11 @@ fun NavegacionInferior(rol: Rol, seleccionado: Destino, onNavegar: (Destino) -> 
                 icon = { Icon(destino.icono, contentDescription = null) },
                 label = { Text(destino.etiqueta) },
                 colors = NavigationBarItemDefaults.colors(
-                    indicatorColor = EstadoValidadoFondo,
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = AcentoSuave,
+                    selectedIconColor = AcentoTexto,
+                    selectedTextColor = AcentoTexto,
+                    unselectedIconColor = MaterialTheme.colorScheme.secondary,
+                    unselectedTextColor = MaterialTheme.colorScheme.secondary,
                 ),
             )
         }
@@ -286,11 +288,11 @@ fun ChipEstado(estado: EstadoMuestra) {
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(fondo)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .padding(horizontal = 9.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icono, contentDescription = null, tint = texto, modifier = Modifier.size(12.dp))
         Spacer(Modifier.width(4.dp))
-        Text(estado.etiqueta.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = texto)
+        Text(estado.etiqueta, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = texto)
     }
 }

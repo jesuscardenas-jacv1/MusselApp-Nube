@@ -54,16 +54,16 @@ fun BannerRevision(
     Box(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp)) {
         Surface(
             color = fondo,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             shadowElevation = 8.dp,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(Modifier.padding(start = 16.dp, top = 12.dp, end = 8.dp, bottom = 4.dp)) {
-                Text(titulo, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                Text(titulo, color = Color.White, style = MaterialTheme.typography.titleMedium)
                 Text(detalle, color = Color.White, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = alCerrar) { Text("Cerrar", color = Color.White) }
-                    TextButton(onClick = alVerHistorial) { Text("Ver historial", color = Color.White, fontWeight = FontWeight.Bold) }
+                    TextButton(onClick = alVerHistorial) { Text("Ver historial", color = Color.White, fontWeight = FontWeight.SemiBold) }
                 }
             }
         }

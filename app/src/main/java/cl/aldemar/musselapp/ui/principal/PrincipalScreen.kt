@@ -66,7 +66,19 @@ import cl.aldemar.musselapp.data.repository.FakeMuestraRepository
 import cl.aldemar.musselapp.ui.componentes.BarraSuperiorMussel
 import cl.aldemar.musselapp.ui.componentes.ChipEstado
 import cl.aldemar.musselapp.ui.componentes.NavegacionInferior
-import cl.aldemar.musselapp.ui.theme.EstadoValidadoFondo
+import androidx.compose.foundation.border
+import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.AcentoSuave
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
+import cl.aldemar.musselapp.ui.theme.BordeDeTarjeta
+import cl.aldemar.musselapp.ui.theme.DatoMedido
+import cl.aldemar.musselapp.ui.theme.ElevacionTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaCampo
+import cl.aldemar.musselapp.ui.theme.FormaTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaTarjetaChica
+import cl.aldemar.musselapp.ui.theme.Linea
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.TextoSobreOscuro
 import cl.aldemar.musselapp.ui.theme.SuperficieCampo
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
 import cl.aldemar.musselapp.util.Fechas
@@ -185,24 +197,24 @@ private fun AccionPrincipal(rol: Rol, pendientesRevision: Int, onClick: () -> Un
     val operario = rol == Rol.OPERARIO
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = FormaTarjeta,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
-        shadowElevation = 4.dp,
+        shadowElevation = ElevacionTarjeta,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(EstadoValidadoFondo),
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     if (operario) Icons.Filled.AddCircle else Icons.AutoMirrored.Filled.FactCheck,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = Color.White,
                     modifier = Modifier.size(36.dp),
                 )
             }
@@ -210,27 +222,24 @@ private fun AccionPrincipal(rol: Rol, pendientesRevision: Int, onClick: () -> Un
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     if (operario) "LÍNEA ACTIVA" else "$pendientesRevision PENDIENTES",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = Rotulo,
+                    color = Color.White,
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
-                        .background(EstadoValidadoFondo)
+                        .background(Color.White.copy(alpha = 0.16f))
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    if (operario) "NUEVA MUESTRA" else "REVISAR MUESTRAS",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    lineHeight = 26.sp,
+                    if (operario) "Nueva muestra" else "Revisar muestras",
+                    style = MaterialTheme.typography.headlineSmall,
                     maxLines = 2,
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     if (operario) "Registro de muestra en cuerda y tren activo" else "Validar o corregir las muestras en cola",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                    color = TextoSobreOscuro,
                 )
             }
             Spacer(Modifier.width(8.dp))
@@ -255,9 +264,9 @@ private fun EncabezadoSeccion(titulo: String, detalle: String?) {
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Text(titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         if (detalle != null) {
-            Text(detalle, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+            Text(detalle.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary)
         }
     }
 }
@@ -265,7 +274,7 @@ private fun EncabezadoSeccion(titulo: String, detalle: String?) {
 @Composable
 private fun MetricasJornada(resumen: ResumenJornada) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        EncabezadoSeccion("Métricas de la Jornada", "HOY")
+        EncabezadoSeccion("Métricas de la jornada", "HOY")
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -285,8 +294,8 @@ private fun MetricasJornada(resumen: ResumenJornada) {
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(50)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainer,
+                    color = Acento,
+                    trackColor = Linea,
                     drawStopIndicator = {},
                 )
             }
@@ -296,7 +305,7 @@ private fun MetricasJornada(resumen: ResumenJornada) {
 
 @Composable
 private fun TextoMetrica(texto: String) {
-    Text(texto, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.secondary)
+    Text(texto, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
 }
 
 @Composable
@@ -309,25 +318,26 @@ private fun TarjetaMetrica(
     pie: @Composable () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjetaChica,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
         modifier = modifier.fillMaxHeight(),
     ) {
-        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    titulo,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    titulo.uppercase(),
+                    style = Rotulo,
+                    color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                Icon(icono, contentDescription = null, tint = Acento, modifier = Modifier.size(16.dp))
             }
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(valor, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                Text(valor, style = DatoMedido.copy(fontSize = 24.sp, lineHeight = 28.sp))
                 Spacer(Modifier.width(3.dp))
                 Text(unidad, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 3.dp))
             }
@@ -340,17 +350,18 @@ private fun TarjetaMetrica(
 @Composable
 private fun TarjetaHistorial(resumen: ResumenJornada, onVerTodo: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconoCuadrado(Icons.Filled.HistoryEdu, fondo = MaterialTheme.colorScheme.surfaceContainer)
+                IconoCuadrado(Icons.Filled.HistoryEdu, fondo = AcentoSuave)
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Historial de Muestras", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text("Historial de muestras", style = MaterialTheme.typography.titleMedium)
                     Text(
                         "${resumen.totalMuestras} registros capturados hoy",
                         style = MaterialTheme.typography.bodySmall,
@@ -358,7 +369,7 @@ private fun TarjetaHistorial(resumen: ResumenJornada, onVerTodo: () -> Unit) {
                     )
                 }
                 TextButton(onClick = onVerTodo) {
-                    Text("Ver todo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Ver todo", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = AcentoTexto)
                 }
             }
             // Contadores en gris neutro para no saturar el resumen
@@ -375,14 +386,15 @@ private fun TarjetaHistorial(resumen: ResumenJornada, onVerTodo: () -> Unit) {
 private fun ContadorEstado(cantidad: Int, etiqueta: String, fondo: Color, texto: Color, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(FormaCampo)
             .background(fondo)
+            .border(1.dp, Linea, FormaCampo)
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("$cantidad", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = texto)
+        Text("$cantidad", style = DatoMedido.copy(fontSize = 22.sp, lineHeight = 26.sp), color = texto)
         // Color completo para mantener el contraste mínimo (4,5:1)
-        Text(etiqueta, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = texto)
+        Text(etiqueta, style = Rotulo, color = MaterialTheme.colorScheme.secondary)
     }
 }
 
@@ -391,18 +403,18 @@ private fun IconoCuadrado(icono: ImageVector, fondo: Color) {
     Box(
         modifier = Modifier
             .size(40.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(fondo),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Icon(icono, contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(22.dp))
     }
 }
 
 @Composable
 private fun MuestrasRecientes(muestras: List<Muestra>, ultimaRegistradaEn: Long?, onMuestraClick: (Muestra) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        EncabezadoSeccion("Muestras Recientes", ultimaRegistradaEn?.let { "Última ${haceCuanto(it)}" })
+        EncabezadoSeccion("Muestras recientes", ultimaRegistradaEn?.let { "Última ${haceCuanto(it)}" })
         if (muestras.isEmpty()) {
             Text(
                 "Aún no hay muestras registradas",
@@ -418,12 +430,13 @@ private fun MuestrasRecientes(muestras: List<Muestra>, ultimaRegistradaEn: Long?
 @Composable
 private fun FilaMuestra(muestra: Muestra, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjetaChica,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(FormaTarjetaChica)
             .clickable(onClick = onClick),
     ) {
         Row(
@@ -435,18 +448,17 @@ private fun FilaMuestra(muestra: Muestra, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(muestra.codigoLinea, fontWeight = FontWeight.ExtraBold, style = MaterialTheme.typography.titleSmall)
+                Text(muestra.codigoLinea, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Línea %02d • Tren %s".format(muestra.linea, muestra.tren),
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -469,8 +481,7 @@ private fun FilaMuestra(muestra: Muestra, onClick: () -> Unit) {
                 ChipEstado(muestra.estado)
                 Text(
                     Fechas.relativa(muestra.registradaEn),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.secondary,
                 )
             }

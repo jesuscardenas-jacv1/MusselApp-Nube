@@ -28,6 +28,21 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.BorderStroke
+import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.AcentoSobreOscuro
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
+import cl.aldemar.musselapp.ui.theme.BordeDeTarjeta
+import cl.aldemar.musselapp.ui.theme.ElevacionTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaBoton
+import cl.aldemar.musselapp.ui.theme.FormaCampo
+import cl.aldemar.musselapp.ui.theme.FormaTarjeta
+import cl.aldemar.musselapp.ui.theme.Linea
+import cl.aldemar.musselapp.ui.theme.Principal
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.SuperficieCampo
+import cl.aldemar.musselapp.ui.theme.TextoSobreOscuro
+import cl.aldemar.musselapp.ui.theme.tarjetaMussel
 import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -169,55 +184,39 @@ fun RevisionScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onVolver) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .tarjetaMussel(FormaBoton)
+                            .clickable(onClickLabel = "Volver", role = Role.Button, onClick = onVolver),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = MaterialTheme.colorScheme.onBackground,
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.logo_musselapp),
-                            contentDescription = "Logo MusselApp",
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "Supervisión", style = MaterialTheme.typography.titleLarge)
+                        // Antes decía "ONLINE EN TERRENO" fijo, aunque no hubiera conexión
                         Text(
-                            text = "MusselApp",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            text = usuario.nombre.uppercase(),
+                            style = Rotulo,
+                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.secondary,
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Antes decía "ONLINE EN TERRENO" fijo, aunque no hubiera conexión
-                            Text(
-                                text = "SUPERVISIÓN • ${usuario.nombre.uppercase()}",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                            )
-                        }
                     }
                     // Al tocar el avatar se ve el perfil y se puede cerrar sesión, como en las demás pantallas
                     MenuPerfil(usuario = usuario, centro = centro, onCerrarSesion = onCerrarSesion)
@@ -255,12 +254,14 @@ fun RevisionScreen(
                 Surface(
                     color = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shadowElevation = 3.dp,
+                    shape = FormaTarjeta,
+                    shadowElevation = ElevacionTarjeta,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(16.dp),
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -271,14 +272,13 @@ fun RevisionScreen(
                                 Icon(
                                     Icons.Filled.VerifiedUser,
                                     contentDescription = null,
-                                    tint = Color(0xFF60A5FA),
+                                    tint = AcentoSobreOscuro,
                                     modifier = Modifier.size(20.dp),
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    "Supervisión de Calidad",
+                                    "Supervisión de calidad",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
                                 )
                             }
 
@@ -291,8 +291,8 @@ fun RevisionScreen(
                             ) {
                                 Text(
                                     "${uiState.muestrasPendientes.size} PENDIENTES",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
+                                    style = Rotulo,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = Color.White,
                                 )
                             }
@@ -303,14 +303,14 @@ fun RevisionScreen(
                             Icon(
                                 Icons.Filled.LocationOn,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                                tint = TextoSobreOscuro,
                                 modifier = Modifier.size(14.dp),
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 centro.nombre,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),
+                                color = TextoSobreOscuro,
                             )
                         }
                     }
@@ -332,12 +332,11 @@ fun RevisionScreen(
                                 Icons.Filled.AssignmentTurnedIn,
                                 contentDescription = null,
                                 modifier = Modifier.size(56.dp),
-                                tint = EstadoValidadoTexto,
+                                tint = Acento,
                             )
                             Text(
                                 "¡Todas las muestras han sido revisadas!",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                             )
                             Text(
@@ -354,9 +353,8 @@ fun RevisionScreen(
                     // ── Selector de muestras pendientes (Chips Horizontales) ──
                     Column(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
                         Text(
-                            "SELECCIONAR MUESTRA EN COLA:",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
+                            "SELECCIONAR MUESTRA EN COLA",
+                            style = Rotulo,
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                         )
@@ -372,12 +370,12 @@ fun RevisionScreen(
                                 val seleccionada = m.id == muestra?.id
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(FormaCampo)
                                         .background(if (seleccionada) MaterialTheme.colorScheme.primary else Color.White)
                                         .border(
-                                            width = if (seleccionada) 2.dp else 1.dp,
-                                            color = if (seleccionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                                            shape = RoundedCornerShape(8.dp),
+                                            width = 1.dp,
+                                            color = if (seleccionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                            shape = FormaCampo,
                                         )
                                         // TalkBack anuncia la muestra como opción seleccionada o no
                                         .selectable(
@@ -391,15 +389,13 @@ fun RevisionScreen(
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
                                             m.codigo,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleSmall,
                                             color = if (seleccionada) Color.White else MaterialTheme.colorScheme.onSurface,
                                         )
                                         Text(
                                             "${m.codigoLinea} • Tren ${m.tren}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontSize = 11.sp,
-                                            color = if (seleccionada) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.secondary,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = if (seleccionada) TextoSobreOscuro else MaterialTheme.colorScheme.secondary,
                                         )
                                     }
                                 }
@@ -417,11 +413,12 @@ fun RevisionScreen(
                             // ── 2. Tarjeta Hero de Muestra Evaluada ───────────────
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = FormaTarjeta,
                                 color = Color.White,
-                                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                                border = BordeDeTarjeta,
+                                shadowElevation = ElevacionTarjeta,
                             ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
+                                Column(modifier = Modifier.padding(16.dp)) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -430,9 +427,8 @@ fun RevisionScreen(
                                         Column {
                                             Text(
                                                 "EVALUANDO MUESTRA",
-                                                style = MaterialTheme.typography.labelSmall,
+                                                style = Rotulo,
                                                 color = MaterialTheme.colorScheme.secondary,
-                                                fontWeight = FontWeight.Bold,
                                             )
                                             Text(
                                                 muestra.codigo,
@@ -441,7 +437,7 @@ fun RevisionScreen(
                                                 color = MaterialTheme.colorScheme.onSurface,
                                             )
                                             Text(
-                                                "${muestra.codigoLinea} • Tren de Cultivo ${muestra.tren}",
+                                                "${muestra.codigoLinea} • Tren de cultivo ${muestra.tren}",
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = MaterialTheme.colorScheme.secondary,
                                             )
@@ -451,13 +447,14 @@ fun RevisionScreen(
                                             ChipEstado(muestra.estado)
                                             Spacer(Modifier.height(4.dp))
                                             Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = SuperficieCampo,
+                                                border = BorderStroke(1.dp, Linea),
                                             ) {
                                                 Text(
-                                                    "Prof: ${muestra.profundidadM}m",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.SemiBold,
+                                                    "PROF. ${muestra.profundidadM}M",
+                                                    style = Rotulo,
+                                                    color = MaterialTheme.colorScheme.secondary,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                                 )
                                             }
@@ -469,34 +466,35 @@ fun RevisionScreen(
                                     // Tira de métricas marinas
                                     Surface(
                                         modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                        shape = FormaCampo,
+                                        color = SuperficieCampo,
+                                        border = BorderStroke(1.dp, Linea),
                                     ) {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(10.dp),
+                                                .padding(12.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                         ) {
                                             Column {
-                                                Text("Densidad", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                Text("DENSIDAD", style = Rotulo, color = MaterialTheme.colorScheme.secondary)
                                                 Row(verticalAlignment = Alignment.Bottom) {
-                                                    Text("${muestra.conteoIndM}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                                                    Text(" ind/m", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text("${muestra.conteoIndM}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                                    Text(" ind/m", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 3.dp))
                                                 }
                                             }
                                             Column {
-                                                Text("Calibre Prom.", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                Text("CALIBRE PROM.", style = Rotulo, color = MaterialTheme.colorScheme.secondary)
                                                 Row(verticalAlignment = Alignment.Bottom) {
-                                                    Text("${muestra.tallaMm}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                                                    Text(" mm", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text("${muestra.tallaMm}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                                    Text(" mm", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 3.dp))
                                                 }
                                             }
                                             Column {
-                                                Text("Rendimiento", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                Text("RENDIMIENTO", style = Rotulo, color = MaterialTheme.colorScheme.secondary)
                                                 Row(verticalAlignment = Alignment.Bottom) {
-                                                    Text("${muestra.rendimientoKgM}", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                                                    Text(" kg/m", fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary)
+                                                    Text("${muestra.rendimientoKgM}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                                    Text(" kg/m", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 3.dp))
                                                 }
                                             }
                                         }
@@ -507,15 +505,16 @@ fun RevisionScreen(
                             // ── 3. Fotografía de la muestra ─────────────────────
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = FormaTarjeta,
                                 color = Color.White,
-                                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                                border = BordeDeTarjeta,
+                                shadowElevation = ElevacionTarjeta,
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .aspectRatio(4f / 3f)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(FormaTarjeta)
                                         // Toda la foto es el área táctil para ampliar
                                         .then(
                                             if (muestra.fotoRuta != null) {
@@ -539,13 +538,13 @@ fun RevisionScreen(
                                                 .align(Alignment.TopEnd)
                                                 .padding(10.dp)
                                                 .clip(RoundedCornerShape(50))
-                                                .background(Color.White)
-                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                .background(Principal)
+                                                .padding(horizontal = 12.dp, vertical = 7.dp),
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = Color(0xFF0F172A), modifier = Modifier.size(16.dp))
-                                                Spacer(Modifier.width(2.dp))
-                                                Text("Ampliar", color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                                Spacer(Modifier.width(4.dp))
+                                                Text("Ampliar", color = Color.White, style = MaterialTheme.typography.labelMedium)
                                             }
                                         }
                                     }
@@ -555,18 +554,18 @@ fun RevisionScreen(
                             // ── 4. Formulario de Dictamen Técnico ───────────────
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = FormaTarjeta,
                                 color = Color.White,
-                                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+                                border = BordeDeTarjeta,
+                                shadowElevation = ElevacionTarjeta,
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(14.dp),
+                                    modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
                                     Text(
-                                        "DICTAMEN TÉCNICO DEL SUPERVISOR",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.Bold,
+                                        "Dictamen técnico del supervisor",
+                                        style = MaterialTheme.typography.titleMedium,
                                     )
 
                                     // Botones de Decisión (Validar / Corregir)
@@ -582,19 +581,19 @@ fun RevisionScreen(
                                                 .weight(1f)
                                                 .height(56.dp)
                                                 .semantics { selected = esValidado },
-                                            shape = RoundedCornerShape(10.dp),
+                                            shape = FormaCampo,
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = if (esValidado) EstadoValidadoTexto else EstadoValidadoFondo,
                                                 contentColor = if (esValidado) Color.White else EstadoValidadoTexto,
                                             ),
                                             border = androidx.compose.foundation.BorderStroke(
-                                                width = if (esValidado) 2.dp else 1.5.dp,
+                                                width = 1.dp,
                                                 color = EstadoValidadoTexto,
                                             ),
                                         ) {
                                             Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(Modifier.width(6.dp))
-                                            Text("VALIDAR", fontWeight = FontWeight.Bold)
+                                            Text("Validar", style = MaterialTheme.typography.titleSmall)
                                         }
 
                                         // Botón CORREGIR: mismos colores que el chip Corregido
@@ -606,19 +605,19 @@ fun RevisionScreen(
                                                 .weight(1f)
                                                 .height(56.dp)
                                                 .semantics { selected = esCorregido },
-                                            shape = RoundedCornerShape(10.dp),
+                                            shape = FormaCampo,
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = if (esCorregido) coloresCorregido.texto else coloresCorregido.fondo,
                                                 contentColor = if (esCorregido) Color.White else coloresCorregido.texto,
                                             ),
                                             border = androidx.compose.foundation.BorderStroke(
-                                                width = if (esCorregido) 2.dp else 1.5.dp,
+                                                width = 1.dp,
                                                 color = coloresCorregido.texto,
                                             ),
                                         ) {
                                             Icon(Icons.Filled.EditNote, contentDescription = null, modifier = Modifier.size(18.dp))
                                             Spacer(Modifier.width(6.dp))
-                                            Text("CORREGIR", fontWeight = FontWeight.Bold)
+                                            Text("Corregir", style = MaterialTheme.typography.titleSmall)
                                         }
                                     }
 
@@ -628,7 +627,7 @@ fun RevisionScreen(
                                             error,
                                             color = MaterialTheme.colorScheme.error,
                                             style = MaterialTheme.typography.bodySmall,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Medium,
                                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                                         )
                                     }
@@ -636,8 +635,8 @@ fun RevisionScreen(
                                     // Chips de motivos rápidos
                                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Text(
-                                            "Justificaciones técnicas frecuentes:",
-                                            style = MaterialTheme.typography.labelSmall,
+                                            "JUSTIFICACIONES TÉCNICAS FRECUENTES",
+                                            style = Rotulo,
                                             color = MaterialTheme.colorScheme.secondary,
                                         )
                                         Row(
@@ -661,7 +660,7 @@ fun RevisionScreen(
                                         placeholder = { Text("Ingresa el fundamento del dictamen o qué se corrigió...") },
                                         modifier = Modifier.fillMaxWidth(),
                                         minLines = 3,
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = FormaCampo,
                                         isError = uiState.errorComentario != null,
                                         supportingText = {
                                             if (uiState.errorComentario != null) {
@@ -671,8 +670,10 @@ fun RevisionScreen(
                                             }
                                         },
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                            focusedBorderColor = Acento,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                            focusedLabelColor = AcentoTexto,
+                                            cursorColor = Acento,
                                         ),
                                     )
 
@@ -682,8 +683,8 @@ fun RevisionScreen(
                                         enabled = !uiState.guardando,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(54.dp),
-                                        shape = RoundedCornerShape(10.dp),
+                                            .height(56.dp),
+                                        shape = FormaBoton,
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.primary,
                                             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -694,7 +695,7 @@ fun RevisionScreen(
                                         } else {
                                             Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                                             Spacer(Modifier.width(8.dp))
-                                            Text("Confirmar y Guardar Dictamen", fontWeight = FontWeight.Bold)
+                                            Text("Confirmar y guardar dictamen", style = MaterialTheme.typography.titleMedium)
                                         }
                                     }
                                 }
@@ -732,7 +733,7 @@ fun RevisionScreen(
                 Button(onClick = {
                     confirmando = false
                     onGuardar()
-                }) { Text("Registrar", fontWeight = FontWeight.Bold) }
+                }) { Text("Registrar", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmando = false }) { Text("Seguir revisando") }
@@ -761,13 +762,12 @@ private fun MotivoChip(texto: String, onClick: () -> Unit) {
             .clip(RoundedCornerShape(50))
             .clickable(onClickLabel = "Agregar motivo al comentario", role = Role.Button, onClick = onClick),
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Text(
             text = texto,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         )
     }
