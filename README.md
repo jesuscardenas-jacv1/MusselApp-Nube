@@ -36,7 +36,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Historial con búsqueda, filtros por estado y período, y orden | Historial | `HistorialViewModel` (`combine` + `stateIn`) y `FiltrosHistorial` |
 | Detalle de la muestra con dictamen del supervisor | Detalle | `DetalleViewModel` lee la muestra por id desde Room |
 | Ficha técnica en PDF: guardar, imprimir o compartir | Detalle | `FichaPdf` con `PrintManager` y `FileProvider` |
-| Revisión del supervisor: validar o corregir (comentario obligatorio al corregir) | Supervisión | `RevisionViewModel` registra la revisión y cambia el estado |
+| Revisión del supervisor: validar o corregir (al corregir, comentario de al menos 5 caracteres, igual que en el portal) | Supervisión | `RevisionViewModel` registra la revisión y cambia el estado |
 | Posición GPS de la muestra y distancia al centro de cultivo | Vista previa, Detalle | `UbicadorGps` (servicios de ubicación de Google) con permiso en tiempo de ejecución; sin permiso o sin señal la muestra se guarda igual |
 | Clima y estado del mar al muestrear (viento, racha, ola, temperatura del agua, marea) | Detalle, ficha PDF | API REST de [Open-Meteo](https://open-meteo.com) con Retrofit (`ClimaRepository`); guardar nunca espera a la red |
 | Alertas automáticas para el supervisor (fuera del área, densidad, cholgas, talla, mal tiempo) | Supervisión, Detalle, portal web | `AlertasMuestra.evaluar()`, reglas puras con los límites en `Umbrales` |
@@ -97,7 +97,7 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 92 pruebas unitarias (validaciones, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew testDebugUnitTest          # 98 pruebas unitarias (validaciones, regla del comentario al corregir, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
 ./gradlew connectedDebugAndroidTest  # 25 pruebas instrumentadas con Room real, migraciones y sincronización con una nube falsa (requiere teléfono o emulador)
 ```
 
