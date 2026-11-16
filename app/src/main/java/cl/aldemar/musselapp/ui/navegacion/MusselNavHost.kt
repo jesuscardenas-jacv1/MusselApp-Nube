@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -30,6 +31,7 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.remember
 import cl.aldemar.musselapp.MusselApplication
+import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.ui.muestra.ParametrosMuestra
 import cl.aldemar.musselapp.ui.detalle.DetalleRoute
@@ -176,6 +178,7 @@ fun MusselNavHost(
                 centroInicial = loginState.centro,
                 reconteo = original?.let { ParametrosMuestra(it.centroId, it.tren, it.linea, it.profundidadM) },
                 codigoReconteo = original?.codigo,
+                catalogoDe = { centroId -> MusselApplication.contenedor.catalogoRepository.observar(centroId) },
                 onVolver = ::volver,
                 onContinuar = { parametros ->
                     borradorViewModel.guardarParametros(parametros)
@@ -213,10 +216,18 @@ fun MusselNavHost(
             // La posición se lee al llegar aquí, para que esté lista al confirmar
             val ubicacion by borradorViewModel.ubicacion.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { borradorViewModel.buscarUbicacion() }
+            // Trenes y líneas del centro de la muestra, para cuando el operario corrige la ubicación
+            val centroBorrador = borrador.parametros?.centroId
+            val catalogo by produceState(CatalogoCultivo.porDefecto, centroBorrador) {
+                if (centroBorrador != null) {
+                    MusselApplication.contenedor.catalogoRepository.observar(centroBorrador).collect { value = it }
+                }
+            }
             VistaPreviaScreen(
                 borrador = borrador,
                 guardando = guardandoMuestra,
                 ubicacion = ubicacion,
+                catalogo = catalogo,
                 onVolver = ::volver,
                 onRepetirFoto = ::volver,
                 onFotoCambiada = borradorViewModel::actualizarFoto,

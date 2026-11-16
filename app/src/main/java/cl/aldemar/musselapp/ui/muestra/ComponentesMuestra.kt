@@ -112,14 +112,13 @@ internal enum class Estrato(val rango: String, val nombre: String, val profundid
     }
 }
 
-// TODO: mover trenes y líneas al repositorio cuando existan datos reales
-// El código (A, B, C) es el que usa Muestra.tren; el texto es solo para mostrar
+// Qué trenes y líneas hay en cada centro lo dice la base (CatalogoCultivo).
+// Aquí queda solo el texto con que se muestra cada tren: la tabla `trenes` guarda el código (A, B, C), no el nombre
 internal val Trenes = listOf(
     "A" to "Tren A - Longline Sur",
     "B" to "Tren B - Longline Centro",
     "C" to "Tren C - Longline Norte",
 )
-internal val Lineas = (1..12).toList()
 
 internal fun etiquetaLinea(linea: Int) = "Línea %02d (Cuerda colectora 6m)".format(linea)
 

@@ -1,6 +1,7 @@
 package cl.aldemar.musselapp.ui.muestra
 
 import androidx.lifecycle.ViewModel
+import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,6 +41,11 @@ class MuestraViewModel : ViewModel() {
         }
     }
 
+    /** Trenes y líneas del centro elegido, leídos de la base. No cambia lo que ya eligió el operario. */
+    fun usarCatalogo(catalogo: CatalogoCultivo) {
+        _uiState.update { it.copy(catalogo = catalogo) }
+    }
+
     // Al cambiar un campo se borra su error, como en cambiarTitulo de la Clase 7
 
     fun cambiarCentro(centro: CentroCultivo) {
@@ -64,8 +70,8 @@ class MuestraViewModel : ViewModel() {
         // Reglas de negocio: los cuatro parámetros son obligatorios
         // y deben ser valores de las listas del centro
         val centroInvalido = actual.centro == null
-        val trenInvalido = Trenes.none { it.first == actual.tren }
-        val lineaInvalida = actual.linea == null || actual.linea !in Lineas
+        val trenInvalido = !actual.catalogo.tieneTren(actual.tren)
+        val lineaInvalida = !actual.catalogo.tieneLinea(actual.tren, actual.linea)
         val estratoInvalido = actual.profundidadM == null || actual.profundidadM !in 0..6
 
         if (centroInvalido || trenInvalido || lineaInvalida || estratoInvalido) {
@@ -106,7 +112,13 @@ class MuestraViewModel : ViewModel() {
     }
 
     fun limpiar() {
-        // Todos los campos vacíos y sin mensajes, salvo el centro de la sesión
-        _uiState.value = MuestraUiState(centro = centroSesion)
+        // Todos los campos vacíos y sin mensajes, salvo el centro de la sesión.
+        // Si el centro no cambia se conserva su catálogo, porque la Screen solo lo carga al cambiar de centro
+        _uiState.update {
+            MuestraUiState(
+                centro = centroSesion,
+                catalogo = if (it.centro == centroSesion) it.catalogo else CatalogoCultivo.porDefecto,
+            )
+        }
     }
 }

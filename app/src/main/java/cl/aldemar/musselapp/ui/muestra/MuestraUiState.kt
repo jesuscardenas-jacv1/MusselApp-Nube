@@ -1,5 +1,6 @@
 package cl.aldemar.musselapp.ui.muestra
 
+import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
 
 /**
@@ -12,6 +13,8 @@ data class MuestraUiState(
     val tren: String? = null, // código del tren: "A", "B" o "C"
     val linea: Int? = null,
     val profundidadM: Int? = null,
+    /** Trenes y líneas del centro elegido; la Screen lo actualiza con lo que hay en la base. */
+    val catalogo: CatalogoCultivo = CatalogoCultivo.porDefecto,
     val errorCentro: String? = null,
     val errorTren: String? = null,
     val errorLinea: String? = null,
