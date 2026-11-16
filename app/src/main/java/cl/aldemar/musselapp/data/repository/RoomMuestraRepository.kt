@@ -8,7 +8,7 @@ import cl.aldemar.musselapp.data.local.conPosicion
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
-import cl.aldemar.musselapp.data.nube.NubeSync
+import cl.aldemar.musselapp.data.nube.ServicioNube
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.data.local.DatosIniciales
@@ -30,7 +30,8 @@ import kotlinx.coroutines.flow.stateIn
 class RoomMuestraRepository(
     private val db: MusselDatabase,
     alcance: CoroutineScope,
-    private val nube: NubeSync? = null,
+    /** Nube (Firestore en la app, una falsa en las pruebas); null para funcionar solo local. */
+    private val nube: ServicioNube? = null,
     private val alcanceNube: CoroutineScope = alcance,
     private val latenciaSincronizacionMs: Long = 1500,
     private val alRevisar: (Muestra, EstadoMuestra, String?) -> Unit = { _, _, _ -> },
