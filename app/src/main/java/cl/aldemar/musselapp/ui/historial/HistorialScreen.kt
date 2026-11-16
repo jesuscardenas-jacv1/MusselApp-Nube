@@ -81,6 +81,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.border
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.AcentoSuave
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
+import cl.aldemar.musselapp.ui.theme.BordeCampo
+import cl.aldemar.musselapp.ui.theme.BordeDeCampo
+import cl.aldemar.musselapp.ui.theme.BordeDeTarjeta
+import cl.aldemar.musselapp.ui.theme.BordeTarjeta
+import cl.aldemar.musselapp.ui.theme.ElevacionTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaCampo
+import cl.aldemar.musselapp.ui.theme.FormaTarjetaChica
+import cl.aldemar.musselapp.ui.theme.Linea
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.SuperficieCampo
+import cl.aldemar.musselapp.ui.theme.tarjetaMussel
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
@@ -238,7 +255,7 @@ fun HistorialScreen(
 @Composable
 private fun BarraBusqueda(texto: String, onTextoChange: (String) -> Unit) {
     val focusManager = LocalFocusManager.current
-    TextField(
+    OutlinedTextField(
         value = texto,
         onValueChange = onTextoChange,
         modifier = Modifier
@@ -257,16 +274,17 @@ private fun BarraBusqueda(texto: String, onTextoChange: (String) -> Unit) {
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(12.dp),
-        colors = TextFieldDefaults.colors(
+        shape = FormaCampo,
+        colors = OutlinedTextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surface,
             unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
+            focusedBorderColor = Acento,
+            unfocusedBorderColor = BordeCampo,
+            cursorColor = Acento,
             focusedLeadingIconColor = MaterialTheme.colorScheme.secondary,
             unfocusedLeadingIconColor = MaterialTheme.colorScheme.secondary,
-            focusedPlaceholderColor = MaterialTheme.colorScheme.outline,
-            unfocusedPlaceholderColor = MaterialTheme.colorScheme.outline,
+            focusedPlaceholderColor = MaterialTheme.colorScheme.secondary,
+            unfocusedPlaceholderColor = MaterialTheme.colorScheme.secondary,
         ),
     )
 }
@@ -291,7 +309,7 @@ private fun SelectorPeriodoYOrden(
             DropdownMenu(expanded = menuAbierto, onDismissRequest = { menuAbierto = false }) {
                 Periodo.entries.forEach { opcion ->
                     DropdownMenuItem(
-                        text = { Text(opcion.etiqueta, fontWeight = if (opcion == periodo) FontWeight.Bold else null) },
+                        text = { Text(opcion.etiqueta, fontWeight = if (opcion == periodo) FontWeight.SemiBold else null) },
                         onClick = {
                             onPeriodoChange(opcion)
                             menuAbierto = false
@@ -314,8 +332,9 @@ private fun BotonClaro(
 ) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = FormaCampo,
+        color = MaterialTheme.colorScheme.surface,
+        border = BordeDeCampo,
         modifier = modifier.heightIn(min = 48.dp),
     ) {
         Row(
@@ -327,7 +346,6 @@ private fun BotonClaro(
             Text(
                 texto,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = if (iconoFinal != null) Modifier.weight(1f) else Modifier,
@@ -351,10 +369,10 @@ private fun ChipsEstado(
             val cantidad = conteos[filtro] ?: 0
             Surface(
                 onClick = { onFiltroChange(filtro) },
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(50),
                 color = if (activo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                 contentColor = if (activo) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                shadowElevation = if (activo) 0.dp else 1.dp,
+                border = if (activo) null else BordeDeCampo,
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -364,13 +382,12 @@ private fun ChipsEstado(
                         Box(Modifier.size(9.dp).clip(CircleShape).background(color))
                         Spacer(Modifier.width(8.dp))
                     }
-                    Text(filtro.etiqueta, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text(filtro.etiqueta, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(6.dp))
                     if (activo) {
                         Text(
                             "$cantidad",
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
                                 .background(Color.White.copy(alpha = 0.2f))
@@ -399,18 +416,17 @@ private fun AvisoToque() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(EstadoValidadoFondo)
+            .clip(FormaCampo)
+            .background(AcentoSuave)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Filled.TouchApp, contentDescription = null, tint = EstadoValidadoTexto, modifier = Modifier.size(20.dp))
+        Icon(Icons.Filled.TouchApp, contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(10.dp))
         Text(
             "Toca una muestra para ver sus datos; desde ahí puedes abrir el detalle completo",
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
-            color = EstadoValidadoTexto,
+            color = AcentoTexto,
         )
     }
 }
@@ -420,24 +436,21 @@ private fun ResumenTalla(promedioMm: Double, cantidad: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .tarjetaMussel(FormaTarjetaChica)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Filled.WaterDrop, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+        Icon(Icons.Filled.WaterDrop, contentDescription = null, tint = Acento, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
         Text(
             "Promedio talla: ${"%.1f".format(Locale("es", "CL"), promedioMm)} mm",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.weight(1f),
         )
         Text(
             "$cantidad ${if (cantidad == 1) "muestra" else "muestras"}",
             style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = AcentoValidado,
+            color = MaterialTheme.colorScheme.secondary,
         )
     }
 }
@@ -459,9 +472,10 @@ private fun TarjetaMuestra(
     val giroFlecha by animateFloatAsState(if (expandida) 180f else 0f, label = "flecha")
     Surface(
         onClick = onAlternar,
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjetaChica,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 1.dp,
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
@@ -482,7 +496,6 @@ private fun TarjetaMuestra(
                     Text(
                         "Muestra %03d · L%02d Tren %s".format(muestra.id, muestra.linea, muestra.tren),
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
@@ -543,15 +556,16 @@ private fun MetricasMuestra(muestra: Muestra) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (densidadBaja) AlertaFondo.copy(alpha = 0.5f) else MaterialTheme.colorScheme.background)
+            .clip(FormaCampo)
+            .background(if (densidadBaja) AlertaFondo else SuperficieCampo)
+            .border(1.dp, if (densidadBaja) AlertaFondo else Linea, FormaCampo)
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
         Metrica(
             "Densidad", "${muestra.conteoIndM} ind/m", Modifier.weight(1.1f),
             color = if (densidadBaja) AlertaTexto else null,
         )
-        Metrica("Talla Media", "${muestra.tallaMm} mm", Modifier.weight(1f))
+        Metrica("Talla media", "${muestra.tallaMm} mm", Modifier.weight(1f))
         Metrica("Profundidad", "${muestra.profundidadM} m", Modifier.weight(1f))
     }
 }
@@ -560,15 +574,15 @@ private fun MetricasMuestra(muestra: Muestra) {
 private fun Metrica(titulo: String, valor: String, modifier: Modifier, color: Color? = null) {
     Column(modifier = modifier) {
         Text(
-            titulo,
-            style = MaterialTheme.typography.labelMedium,
+            titulo.uppercase(),
+            style = Rotulo,
             color = color ?: MaterialTheme.colorScheme.secondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             valor,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = color ?: MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
@@ -581,14 +595,14 @@ private fun Aviso(icono: ImageVector, texto: String, fondo: Color, colorTexto: C
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(FormaCampo)
             .background(fondo)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icono, contentDescription = null, tint = colorTexto, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
-        Text(texto, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = colorTexto)
+        Text(texto, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = colorTexto)
     }
 }
 
@@ -598,24 +612,25 @@ private fun AccionesTarjeta(codigo: String, puedeRecontar: Boolean, onRecontar: 
         if (puedeRecontar) {
             OutlinedButton(
                 onClick = onRecontar,
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+                shape = FormaCampo,
+                border = BordeDeCampo,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(Icons.Filled.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Recontar", fontWeight = FontWeight.Bold, maxLines = 1)
+                Text("Recontar", style = MaterialTheme.typography.labelLarge, maxLines = 1)
             }
         }
         Button(
             onClick = onVerDetalle,
-            shape = RoundedCornerShape(10.dp),
+            shape = FormaCampo,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
             modifier = Modifier.weight(1f),
         ) {
-            Text("Ver detalle", fontWeight = FontWeight.Bold, maxLines = 1)
+            Text("Ver detalle", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, maxLines = 1)
             Spacer(Modifier.width(6.dp))
             // Decorativo: el texto del botón ya lo anuncia (evita doble lectura en TalkBack)
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -685,12 +700,13 @@ private fun EstadoVacio(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainer),
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, BordeTarjeta, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(32.dp))
         }
-        Text(titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(titulo, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Text(
             detalle,
             style = MaterialTheme.typography.bodySmall,
@@ -699,13 +715,13 @@ private fun EstadoVacio(
         )
         when {
             hayFiltros -> OutlinedButton(onClick = onRestablecer, shape = RoundedCornerShape(10.dp)) {
-                Text("Quitar búsqueda y filtros", fontWeight = FontWeight.Bold)
+                Text("Quitar búsqueda y filtros", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             }
             criterios.periodo != Periodo.TODO -> Button(onClick = onVerTodo, shape = RoundedCornerShape(10.dp)) {
-                Text("Ver todo el historial", fontWeight = FontWeight.Bold)
+                Text("Ver todo el historial", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             }
             puedeRegistrar -> Button(onClick = onRegistrar, shape = RoundedCornerShape(10.dp)) {
-                Text("Registrar muestra", fontWeight = FontWeight.Bold)
+                Text("Registrar muestra", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             }
         }
     }

@@ -85,6 +85,17 @@ Documento en `muestras/{id}` (id único por muestra, por ejemplo un UUID):
 | `operador` | string | `"Carla Vera"` |
 | `operadorRut` | string | `"111111111"` |
 | `tieneFoto` | booleano | `true` si la muestra tiene foto en `fotos/{id}` |
+| `lat`, `lon` | número o null | `-42.3741`, `-73.6220` (posición del teléfono al guardar; null sin GPS) |
+| `precisionM` | número o null | `12` (precisión del GPS en metros) |
+| `distanciaCentroM` | número o null | `180` (metros al punto de referencia del centro) |
+| `clima` | mapa o null | `tempAireC`, `vientoKn`, `rachaKn`, `vientoDir`, `codigo`, `descripcion`, `olaM`, `tempAguaC`, `mareaM`, `obtenidoEn` (Open-Meteo) |
+| `alertas` | lista de strings | `["FUERA_DE_AREA", "MAL_TIEMPO"]` |
+
+Las alertas las calcula **solo la app** al registrar (`AlertasMuestra.kt`); el portal las muestra tal como llegaron. Valores posibles:
+`FUERA_DE_AREA`, `DENSIDAD_BAJA` (críticas), `SIN_UBICACION`, `UBICACION_IMPRECISA`, `DESVIO_DENSIDAD`, `CHOLGAS_ALTAS`, `TALLA_FUERA_DE_RANGO` y `MAL_TIEMPO`.
+Si el supervisor corrige el conteo en el portal, la lista no se recalcula: por eso el detalle la rotula "Alertas al registrar".
+Se ven en la bandeja (insignia junto al código), en el detalle (con un mapa chico de la posición y el área del centro), en el panel
+"Alertas" del Dashboard y como columnas en Datos y en las exportaciones. Las muestras anteriores a la v5 de la app no traen estos campos.
 
 La foto **no** va en la muestra: va en la colección `fotos`, un documento por muestra con el mismo id y el campo
 `fotoBase64` (`"data:image/jpeg;base64,..."`, máx. 800 px, menos de 500 KB). Así el portal y los teléfonos, que escuchan

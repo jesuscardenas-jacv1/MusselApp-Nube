@@ -35,7 +35,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Anchor
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
@@ -95,6 +94,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.AcentoSuave
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
+import cl.aldemar.musselapp.ui.theme.BordeCampo
+import cl.aldemar.musselapp.ui.theme.BordeDeTarjeta
+import cl.aldemar.musselapp.ui.theme.ElevacionTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaBoton
+import cl.aldemar.musselapp.ui.theme.FormaCampo
+import cl.aldemar.musselapp.ui.theme.FormaTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaTarjetaChica
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.Superficie
+import cl.aldemar.musselapp.ui.theme.SuperficieCampo
+import cl.aldemar.musselapp.ui.theme.TextoSobreOscuro
 import cl.aldemar.musselapp.R
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.model.Rol
@@ -228,7 +243,7 @@ private sealed interface PasoLogin {
 private fun PasoSeleccionPerfil(onRolChange: (Rol) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            EtiquetaConIcono("Perfil Operativo", Icons.Filled.Badge)
+            Text("Perfil operativo", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Seleccione con qué perfil desea ingresar",
                 style = MaterialTheme.typography.bodyMedium,
@@ -249,9 +264,10 @@ private fun PasoSeleccionPerfil(onRolChange: (Rol) -> Unit) {
 @Composable
 private fun TarjetaPerfil(rol: Rol, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 2.dp,
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = false, role = Role.Button, onClick = onClick),
@@ -263,15 +279,15 @@ private fun TarjetaPerfil(rol: Rol, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primary),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AcentoSuave),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(iconoRol(rol), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(28.dp))
+                Icon(iconoRol(rol), contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(28.dp))
             }
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(rol.etiqueta, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(rol.etiqueta, style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(2.dp))
                 Text(rol.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
             }
@@ -305,9 +321,10 @@ private fun PasoCredenciales(
     PerfilSeleccionado(rol = rol, habilitado = !uiState.cargando, onCambiar = onCambiarPerfil)
 
     Card(
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BordeDeTarjeta,
+        elevation = CardDefaults.cardElevation(defaultElevation = ElevacionTarjeta),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -343,9 +360,9 @@ private fun PasoCredenciales(
                     ) {
                         Text(
                             "¿Olvidó PIN?",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = AcentoTexto,
                         )
                     }
                 },
@@ -371,8 +388,6 @@ private fun PasoCredenciales(
 
             SelectorCentro(centro = uiState.centro, onCentroChange = onCentroChange)
 
-            TarjetaModoOffline()
-
             BotonIngresar(cargando = uiState.cargando) {
                 focusManager.clearFocus()
                 onIngresar()
@@ -385,7 +400,7 @@ private fun PasoCredenciales(
 @Composable
 private fun PerfilSeleccionado(rol: Rol, habilitado: Boolean, onCambiar: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjetaChica,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
         modifier = Modifier.fillMaxWidth(),
@@ -397,11 +412,11 @@ private fun PerfilSeleccionado(rol: Rol, habilitado: Boolean, onCambiar: () -> U
             Icon(iconoRol(rol), contentDescription = null, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Perfil Operativo", style = MaterialTheme.typography.labelSmall)
-                Text(rol.etiqueta, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("PERFIL OPERATIVO", style = Rotulo, color = TextoSobreOscuro)
+                Text(rol.etiqueta, style = MaterialTheme.typography.titleMedium)
             }
             TextButton(onClick = onCambiar, enabled = habilitado) {
-                Text("Cambiar", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Text("Cambiar", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -414,9 +429,10 @@ private fun Encabezado() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = FormaTarjeta,
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp,
+            border = BordeDeTarjeta,
+            shadowElevation = ElevacionTarjeta,
         ) {
             Image(
                 painter = painterResource(R.drawable.logo_musselapp),
@@ -439,26 +455,28 @@ private fun Encabezado() {
 @Composable
 private fun EtiquetaConIcono(texto: String, icono: ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+        Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
-        Text(texto, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+        Text(texto.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary)
     }
 }
 
 @Composable
-private fun campoColores() = TextFieldDefaults.colors(
-    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-    errorContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-    focusedIndicatorColor = Color.Transparent,
-    unfocusedIndicatorColor = Color.Transparent,
-    errorIndicatorColor = MaterialTheme.colorScheme.error,
+private fun campoColores() = OutlinedTextFieldDefaults.colors(
+    // Campo con contorno de 3,5:1: se distingue de la tarjeta sin depender del fondo gris
+    focusedContainerColor = Superficie,
+    unfocusedContainerColor = SuperficieCampo,
+    errorContainerColor = SuperficieCampo,
+    focusedBorderColor = Acento,
+    unfocusedBorderColor = BordeCampo,
+    errorBorderColor = MaterialTheme.colorScheme.error,
+    cursorColor = Acento,
     focusedLeadingIconColor = MaterialTheme.colorScheme.secondary,
     unfocusedLeadingIconColor = MaterialTheme.colorScheme.secondary,
     focusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
     unfocusedTrailingIconColor = MaterialTheme.colorScheme.secondary,
-    unfocusedPlaceholderColor = MaterialTheme.colorScheme.outline,
-    focusedPlaceholderColor = MaterialTheme.colorScheme.outline,
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.secondary,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.secondary,
 )
 
 @Composable
@@ -484,10 +502,10 @@ private fun CampoFormulario(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(etiqueta, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(etiqueta.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary)
             accionEtiqueta?.invoke()
         }
-        TextField(
+        OutlinedTextField(
             value = valor,
             onValueChange = onValorChange,
             modifier = modifier
@@ -503,7 +521,7 @@ private fun CampoFormulario(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             singleLine = true,
-            shape = RoundedCornerShape(8.dp),
+            shape = FormaCampo,
             colors = campoColores(),
         )
     }
@@ -514,16 +532,16 @@ private fun CampoFormulario(
 private fun SelectorCentro(centro: CentroCultivo, onCentroChange: (CentroCultivo) -> Unit) {
     var expandido by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        EtiquetaConIcono("Centro de Cultivo Asignado", Icons.Filled.Anchor)
+        EtiquetaConIcono("Centro de cultivo asignado", Icons.Filled.Anchor)
         ExposedDropdownMenuBox(expanded = expandido, onExpandedChange = { expandido = it }) {
-            TextField(
+            OutlinedTextField(
                 value = centro.nombre,
                 onValueChange = {},
                 readOnly = true,
                 singleLine = true,
-                textStyle = MaterialTheme.typography.titleSmall,
+                textStyle = MaterialTheme.typography.titleMedium,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
-                shape = RoundedCornerShape(8.dp),
+                shape = FormaCampo,
                 colors = campoColores(),
                 modifier = Modifier
                     .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -545,41 +563,12 @@ private fun SelectorCentro(centro: CentroCultivo, onCentroChange: (CentroCultivo
     }
 }
 
-/**
- * Aviso informativo: la app siempre guarda en el equipo y envía al sincronizar.
- * Antes era un interruptor que no cambiaba nada, lo que confundía al operario.
- */
-@Composable
-private fun TarjetaModoOffline() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(14.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Icon(Icons.Filled.CloudSync, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text("Funciona sin señal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Las muestras se guardan en este equipo aunque no haya señal en el centro de cultivo, " +
-                    "y se envían al tocar Sincronizar.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-    }
-}
-
 @Composable
 private fun BotonIngresar(cargando: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         enabled = !cargando,
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaBoton,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             disabledContainerColor = MaterialTheme.colorScheme.secondary,
@@ -587,8 +576,7 @@ private fun BotonIngresar(cargando: Boolean, onClick: () -> Unit) {
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .shadow(4.dp, RoundedCornerShape(12.dp)),
+            .height(56.dp),
     ) {
         if (cargando) {
             CircularProgressIndicator(
@@ -597,11 +585,11 @@ private fun BotonIngresar(cargando: Boolean, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSecondary,
             )
             Spacer(Modifier.width(12.dp))
-            Text("VERIFICANDO CREDENCIAL...", fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Text("Verificando credencial…", style = MaterialTheme.typography.titleMedium)
         } else {
             Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
             Spacer(Modifier.width(12.dp))
-            Text("INGRESAR AL SISTEMA", fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+            Text("Ingresar al sistema", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.width(12.dp))
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
         }

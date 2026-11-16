@@ -36,10 +36,15 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Detalle de la muestra con dictamen del supervisor | Detalle | `DetalleViewModel` lee la muestra por id desde Room |
 | Ficha técnica en PDF: guardar, imprimir o compartir | Detalle | `FichaPdf` con `PrintManager` y `FileProvider` |
 | Revisión del supervisor: validar o corregir (comentario obligatorio al corregir) | Supervisión | `RevisionViewModel` registra la revisión y cambia el estado |
+| Posición GPS de la muestra y distancia al centro de cultivo | Vista previa, Detalle | `UbicadorGps` (servicios de ubicación de Google) con permiso en tiempo de ejecución; sin permiso o sin señal la muestra se guarda igual |
+| Clima y estado del mar al muestrear (viento, racha, ola, temperatura del agua, marea) | Detalle, ficha PDF | API REST de [Open-Meteo](https://open-meteo.com) con Retrofit (`ClimaRepository`); guardar nunca espera a la red |
+| Alertas automáticas para el supervisor (fuera del área, densidad, cholgas, talla, mal tiempo) | Supervisión, Detalle, portal web | `AlertasMuestra.evaluar()`, reglas puras con los límites en `Umbrales` |
 | Métricas de la jornada y muestras recientes | Principal | `PrincipalViewModel` + `ResumenJornada` |
 | Seguridad local | Login | PIN guardado con hash PBKDF2, bloqueo tras 5 intentos fallidos y base excluida del respaldo |
 
-**Recursos del dispositivo integrados al flujo:** cámara, galería (Photo Picker), documentos (ficha PDF para imprimir o compartir) y fecha/hora del registro.
+**Recursos del dispositivo integrados al flujo:** cámara, galería (Photo Picker), ubicación (GPS), documentos (ficha PDF para imprimir o compartir) y fecha/hora del registro.
+
+**Servicio externo:** el clima y el estado del mar vienen de Open-Meteo (gratis, sin clave). Son datos modelados: en canales interiores el oleaje es una referencia, no una medición. Los límites de las alertas son supuestos del caso académico, no normas del rubro.
 
 ## 3. Capturas
 
@@ -90,8 +95,8 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 55 pruebas unitarias (validaciones, filtros, ViewModels, hash del PIN)
-./gradlew connectedDebugAndroidTest  # 16 pruebas instrumentadas con Room real (requiere teléfono o emulador)
+./gradlew testDebugUnitTest          # 87 pruebas unitarias (validaciones, filtros, ViewModels, hash del PIN, alertas, distancia, clima)
+./gradlew connectedDebugAndroidTest  # 18 pruebas instrumentadas con Room real (requiere teléfono o emulador)
 ```
 
 ## 5. Arquitectura
@@ -147,6 +152,8 @@ El modelo de datos (diagrama entidad-relación y tablas) está documentado en [`
 - **Navigation Compose**
 - Persistencia local con **Room 2.8** (SQLite, KSP)
 - **CameraX** y Activity Result API (permisos, Photo Picker)
+- **Retrofit** + Gson para la API REST de clima (Open-Meteo)
+- **Google Play Services Location** para la posición GPS
 - **Gradle** (Kotlin DSL), Android Studio
 - Diseño: **Google Stitch**, Mermaid para UML
 

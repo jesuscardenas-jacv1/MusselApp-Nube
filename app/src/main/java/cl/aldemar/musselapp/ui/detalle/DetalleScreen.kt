@@ -1,5 +1,7 @@
 package cl.aldemar.musselapp.ui.detalle
 
+import cl.aldemar.musselapp.ui.componentes.TarjetaAlertas
+import cl.aldemar.musselapp.ui.componentes.TarjetaCondiciones
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -75,6 +77,22 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.BordeDeCampo
+import cl.aldemar.musselapp.ui.theme.BordeDeTarjeta
+import cl.aldemar.musselapp.ui.theme.DatoMedido
+import cl.aldemar.musselapp.ui.theme.ElevacionTarjeta
+import cl.aldemar.musselapp.ui.theme.FormaBoton
+import cl.aldemar.musselapp.ui.theme.FormaCampo
+import cl.aldemar.musselapp.ui.theme.FormaTarjeta
+import cl.aldemar.musselapp.ui.theme.Linea
+import cl.aldemar.musselapp.ui.theme.Principal
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.SuperficieCampo
+import cl.aldemar.musselapp.ui.theme.TextoSobreOscuro
+import cl.aldemar.musselapp.ui.theme.tarjetaMussel
 import cl.aldemar.musselapp.R
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.model.EstadoMuestra
@@ -187,49 +205,33 @@ fun DetalleScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                        .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onVolver) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .tarjetaMussel(FormaBoton)
+                            .clickable(onClickLabel = "Volver", role = Role.Button, onClick = onVolver),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = MaterialTheme.colorScheme.onBackground,
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.logo_musselapp),
-                            contentDescription = "Logo MusselApp",
-                            modifier = Modifier.size(26.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
+                    Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Detalle Muestra",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                        Text(
-                            text = "MusselApp • Operaciones",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                        )
+                        Text(text = "Detalle de muestra", style = MaterialTheme.typography.titleLarge)
+                        Text(text = "MUSSELAPP • OPERACIONES", style = Rotulo, color = MaterialTheme.colorScheme.secondary)
                     }
                     // Al tocar el avatar se ve el perfil y se puede cerrar sesión, como en las demás pantallas
                     MenuPerfil(usuario = usuario, centro = centro, onCerrarSesion = onCerrarSesion)
@@ -293,6 +295,10 @@ fun DetalleScreen(
                         // ── 4. Resumen biométrico ─────────────────────────────
                         TarjetaResumenBiometrico(muestra = muestra)
 
+                        // ── Alertas automáticas y condiciones al muestrear ────
+                        TarjetaAlertas(muestra = muestra)
+                        TarjetaCondiciones(muestra = muestra)
+
                         // ── 5. Trazabilidad ───────────────────────────────────
                         TarjetaTrazabilidad(muestra = muestra)
 
@@ -307,8 +313,8 @@ fun DetalleScreen(
                                 onClick = { guardarFicha.launch(FichaMuestra.nombreArchivo(muestra)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                    .height(56.dp),
+                                shape = FormaBoton,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary,
                                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -316,19 +322,21 @@ fun DetalleScreen(
                             ) {
                                 Icon(Icons.Filled.PictureAsPdf, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Descargar Ficha Técnica PDF", fontWeight = FontWeight.SemiBold)
+                                Text("Descargar ficha técnica PDF", style = MaterialTheme.typography.titleSmall)
                             }
 
                             OutlinedButton(
                                 onClick = onVolver,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                    .height(48.dp),
+                                shape = FormaBoton,
+                                border = BordeDeCampo,
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
                             ) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Volver", fontWeight = FontWeight.SemiBold)
+                                Text("Volver", style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     }
@@ -358,12 +366,14 @@ private fun FranjaContextualDetalle(
     Surface(
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
-        shadowElevation = 2.dp,
+        shape = FormaTarjeta,
+        shadowElevation = ElevacionTarjeta,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 14.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -380,8 +390,7 @@ private fun FranjaContextualDetalle(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "${muestra.codigo} • Tren ${muestra.tren} • ${muestra.codigoLinea}",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
@@ -415,23 +424,17 @@ private fun FranjaContextualDetalle(
 private fun ItemMicroMetrica(etiqueta: String, valor: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color.White.copy(alpha = 0.12f))
-            .padding(horizontal = 6.dp, vertical = 6.dp),
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color.White.copy(alpha = 0.10f))
+            .padding(horizontal = 8.dp, vertical = 8.dp),
     ) {
         Column {
-            Text(
-                text = etiqueta,
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 11.sp,
-                color = Color.White.copy(alpha = 0.7f),
-                fontWeight = FontWeight.Bold,
-            )
+            Text(text = etiqueta, style = Rotulo, color = TextoSobreOscuro, maxLines = 1)
             Text(
                 text = valor,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleSmall,
                 color = Color.White,
+                maxLines = 1,
             )
         }
     }
@@ -445,20 +448,21 @@ private fun TarjetaFotoMuestra(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Filled.CenterFocusStrong,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
+                    tint = Acento,
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("Fotografía de la muestra", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("Fotografía de la muestra", style = MaterialTheme.typography.titleMedium)
             }
 
             Spacer(Modifier.height(10.dp))
@@ -467,7 +471,7 @@ private fun TarjetaFotoMuestra(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(FormaCampo)
                     // Toda la foto es el área táctil para ampliar (antes solo una píldora de ~32 dp)
                     .then(
                         if (muestra.fotoRuta != null) {
@@ -484,17 +488,11 @@ private fun TarjetaFotoMuestra(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xEEFFFFFF))
-                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                        .clip(RoundedCornerShape(50))
+                        .background(Principal)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
                 ) {
-                    Text(
-                        fechaHora(muestra.registradaEn),
-                        color = Color(0xFF0F172A),
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Text(fechaHora(muestra.registradaEn), color = Color.White, style = Rotulo)
                 }
 
                 if (muestra.fotoRuta != null) {
@@ -503,13 +501,13 @@ private fun TarjetaFotoMuestra(
                             .align(Alignment.BottomEnd)
                             .padding(8.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(Color.White)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .background(Principal)
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = Color(0xFF0F172A), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Ampliar", color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Ampliar", color = Color.White, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -532,12 +530,13 @@ private fun TarjetaDictamenTecnico(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
@@ -546,9 +545,9 @@ private fun TarjetaDictamenTecnico(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.RateReview, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.RateReview, contentDescription = null, tint = Acento, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Dictamen del supervisor", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text("Dictamen del supervisor", style = MaterialTheme.typography.titleMedium)
                 }
                 ChipEstado(muestra.estado)
             }
@@ -556,23 +555,23 @@ private fun TarjetaDictamenTecnico(
             // Quién revisó y cuándo (datos de la tabla revisiones)
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = FormaCampo,
+                color = SuperficieCampo,
+                border = BorderStroke(1.dp, Linea),
             ) {
-                Column(modifier = Modifier.padding(10.dp)) {
+                Column(modifier = Modifier.padding(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
                             muestra.revisadaPor ?: "Pendiente de revisión",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleSmall,
                         )
                         muestra.revisadaEn?.let { revisada ->
                             Text(
                                 Fechas.relativa(revisada),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.secondary,
                             )
                         }
@@ -581,7 +580,6 @@ private fun TarjetaDictamenTecnico(
                         if (muestra.revisadaPor != null) "Supervisor de Calidad" else "En espera de la revisión del supervisor de calidad",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
-                        fontSize = 12.sp,
                     )
                 }
             }
@@ -602,15 +600,15 @@ private fun TarjetaDictamenTecnico(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = FormaCampo,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
+                        containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = Color.White,
                     ),
                 ) {
-                    Icon(Icons.Filled.RateReview, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.RateReview, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Revisar esta muestra", fontWeight = FontWeight.Bold)
+                    Text("Revisar esta muestra", style = MaterialTheme.typography.titleSmall)
                 }
             }
         }
@@ -623,30 +621,16 @@ private fun CajaTexto(etiqueta: String, texto: String, colorBorde: Color) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(8.dp),
-            )
+            .clip(FormaCampo)
+            .background(SuperficieCampo)
+            .border(width = 1.dp, color = Linea, shape = FormaCampo)
             .drawLeftBorder(color = colorBorde, strokeWidth = 4.dp)
             .padding(12.dp),
     ) {
         Column {
-            Text(
-                etiqueta,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.secondary,
-                fontWeight = FontWeight.Bold,
-            )
+            Text(etiqueta, style = Rotulo, color = MaterialTheme.colorScheme.secondary)
             Spacer(Modifier.height(4.dp))
-            Text(
-                texto,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF1E293B),
-            )
+            Text(texto, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -660,12 +644,13 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
@@ -674,37 +659,37 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Analytics, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Analytics, contentDescription = null, tint = Acento, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Resumen biométrico", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text("Resumen biométrico", style = MaterialTheme.typography.titleMedium)
                 }
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(50))
                         .background(if (esBajo) AlertaFondo else EstadoValidadoFondo)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .padding(horizontal = 9.dp, vertical = 4.dp),
                 ) {
-                    Text("$desvioTexto DESVÍO", color = colorDesvio, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("$desvioTexto DESVÍO", color = colorDesvio, style = Rotulo, fontWeight = FontWeight.SemiBold)
                 }
             }
 
             // Densidad medida por el operario frente a la densidad de referencia
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                shape = FormaCampo,
+                color = SuperficieCampo,
+                border = BorderStroke(1.dp, Linea),
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Densidad (conteo manual)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+                    Text("DENSIDAD (CONTEO MANUAL)", style = Rotulo, color = MaterialTheme.colorScheme.secondary)
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             "${muestra.conteoIndM}",
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = DatoMedido,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("ind / m", fontSize = 14.sp, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 4.dp))
+                        Text("ind / m", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 4.dp))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -716,17 +701,15 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                         Spacer(Modifier.width(2.dp))
                         Text(
                             "$desvioTexto respecto a la densidad de referencia (${Muestra.DENSIDAD_ESTANDAR_IND_M} ind/m)",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.labelMedium,
                             color = colorDesvio,
-                            fontWeight = FontWeight.Medium,
                         )
                     }
                     // Cholgas: otra especie de la misma familia, contada aparte en el mismo tramo
                     Text(
                         "Cholgas: " + (muestra.cholgasIndM?.let { "$it ind / m" } ?: "no registradas"),
-                        fontSize = 13.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(top = 6.dp),
                     )
                 }
@@ -748,18 +731,18 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
 private fun ItemMetricaBiometrica(titulo: String, valor: String, unidad: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        shape = FormaCampo,
+        color = SuperficieCampo,
+        border = BorderStroke(1.dp, Linea),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(titulo, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(2.dp))
-            Text(valor, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(1.dp))
-            Text(unidad, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
+            Text(titulo.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary, maxLines = 1)
+            Spacer(Modifier.height(4.dp))
+            Text(valor, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(unidad, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
         }
     }
 }
@@ -769,18 +752,19 @@ private fun ItemMetricaBiometrica(titulo: String, valor: String, unidad: String,
 private fun TarjetaTrazabilidad(muestra: Muestra) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = FormaTarjeta,
         color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BordeDeTarjeta,
+        shadowElevation = ElevacionTarjeta,
     ) {
         Column(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.VerifiedUser, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.VerifiedUser, contentDescription = null, tint = Acento, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Trazabilidad", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("Trazabilidad", style = MaterialTheme.typography.titleMedium)
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -807,12 +791,12 @@ private fun ItemFilaTrazabilidad(label: String, valor: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
         Spacer(Modifier.width(12.dp))
         Text(
             valor,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.End,
         )

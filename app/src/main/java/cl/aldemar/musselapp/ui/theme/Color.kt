@@ -2,17 +2,34 @@ package cl.aldemar.musselapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta MusselApp (README · Identidad visual)
-val Principal = Color(0xFF0F172A)   // TopAppBar, botones de acción clave
-val Secundario = Color(0xFF334155)  // Botones secundarios, navegación, íconos
-val Fondo = Color(0xFFF1F5F9)       // Fondo general (evita deslumbramiento en terreno)
-val Texto = Color(0xFF000000)       // Títulos y datos de alto contraste
-val Adicional = Color(0xFF475569)   // Bordes, divisores y textos secundarios (contraste AA sobre Fondo y campos)
+// Paleta MusselApp (rediseño "variante C": tarjetas blancas con borde y sombra sobre un fondo gris azulado).
+// Entre paréntesis, el contraste con el fondo donde se usa (mínimo WCAG: 4,5:1 texto, 3:1 bordes).
 
-// Tonos de apoyo para superficies (campos y tarjetas)
-val Superficie = Color(0xFFFFFFFF)
-val SuperficieCampo = Color(0xFFE2E8F0)
-val Error = Color(0xFFB91C1C)
+// Superficies
+val Fondo = Color(0xFFE3E8EF)           // fondo de pantalla (la tarjeta blanca destaca 1,23:1 más el borde)
+val Superficie = Color(0xFFFFFFFF)      // tarjetas, barras inferiores y menús
+val SuperficieCampo = Color(0xFFF4F6F9) // campo sin completar
+val SuperficieTenue = Color(0xFFEEF2F7) // recuadros de íconos y códigos dentro de una tarjeta
+val Linea = Color(0xFFE2E8F0)           // separadores decorativos dentro de una tarjeta
+val BordeTarjeta = Color(0xFFB6C2D2)    // contorno de las tarjetas
+val BordeCampo = Color(0xFF7C8BA1)      // contorno de campos y opciones (3,5:1 sobre blanco)
+
+// Texto: solo dos tonos
+val Texto = Color(0xFF0F172A)           // títulos y datos (17,9:1 sobre blanco)
+val TextoSecundario = Color(0xFF475569) // apoyo, unidades y rótulos (7,6:1 blanco · 6,2:1 fondo)
+val TextoSobreOscuro = Color(0xFFCBD5E1) // texto secundario sobre Principal (12:1)
+
+// Acción y acento
+val Principal = Color(0xFF0F172A)       // botón principal, opción elegida y paso actual
+val Acento = Color(0xFF0F766E)          // íconos, foco y lo ya completado (5,5:1 sobre blanco)
+val AcentoSuave = Color(0xFFDDF3EF) // fondo de "Editar", del menú activo y de avisos
+val AcentoTexto = Color(0xFF0B5E57)     // texto sobre AcentoSuave (6,6:1)
+val AcentoSobreOscuro = Color(0xFF5EEAD4) // íconos de acento sobre Principal (11:1)
+val Error = Color(0xFFB91C1C)           // errores y acciones de borrado (6,5:1 sobre blanco)
+
+// Nombres anteriores, usados por las pantallas con sesión iniciada
+val Secundario = TextoSecundario
+val Adicional = BordeCampo
 
 // Estados de una muestra (chips del historial y la pantalla principal)
 val EstadoValidadoFondo = Color(0xFFDBEAFE)

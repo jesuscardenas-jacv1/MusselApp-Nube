@@ -1,7 +1,9 @@
 package cl.aldemar.musselapp
 
 import android.content.Context
+import cl.aldemar.musselapp.data.clima.ClimaRepository
 import cl.aldemar.musselapp.data.local.MusselDatabase
+import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
 import cl.aldemar.musselapp.data.nube.AvisoRevision
 import cl.aldemar.musselapp.data.nube.Conectividad
 import cl.aldemar.musselapp.data.nube.Notificador
@@ -41,11 +43,14 @@ class AppContainer(context: Context) {
 
     private val notificador by lazy { Notificador(appContext) }
 
-    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext),
+    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext), clima = ClimaRepository(),
             alRevisar = { muestra, estado, comentario ->
                 notificador.avisarRevision(muestra, estado, comentario)
                 avisos.update { it + AvisoRevision(muestra.codigo, muestra.codigoLinea, estado, comentario) }
             }) }
+
+    /** Posición del teléfono al registrar una muestra (los ViewModels no tienen Context). */
+    val ubicador: UbicadorGps by lazy { UbicadorGps(appContext) }
 
     val conectividad: Conectividad by lazy { Conectividad(appContext) }
 

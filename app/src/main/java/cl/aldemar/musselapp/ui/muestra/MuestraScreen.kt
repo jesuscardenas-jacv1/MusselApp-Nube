@@ -1,5 +1,16 @@
 package cl.aldemar.musselapp.ui.muestra
 
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
+import cl.aldemar.musselapp.data.model.EstadoMuestra
+import cl.aldemar.musselapp.ui.theme.colores
 import android.widget.Toast
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +44,9 @@ import androidx.compose.material.icons.filled.DirectionsBoat
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import cl.aldemar.musselapp.ui.theme.FormaCampo
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,6 +99,15 @@ fun MuestraScreen(
         vm.prefijar(centro, r.tren, r.linea, r.profundidadM)
     }
 
+    // Permiso de ubicación: se pide una vez al entrar. Si se niega, la muestra se guarda igual
+    var ubicacionPermitida by remember { mutableStateOf(tienePermisoUbicacion(context)) }
+    val pedirUbicacion = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { respuesta -> ubicacionPermitida = respuesta.values.any { it } }
+    LaunchedEffect(Unit) {
+        if (!ubicacionPermitida) pedirUbicacion.launch(UbicadorGps.PERMISOS)
+    }
+
     // Cuando el ViewModel confirma que todo es válido, se muestra el mensaje y se avanza
     LaunchedEffect(state.parametrosValidos) {
         val parametros = state.parametrosValidos ?: return@LaunchedEffect
@@ -98,13 +121,13 @@ fun MuestraScreen(
             .fillMaxSize()
             .background(Paleta.Fondo)
     ) {
-        BarraSuperior(onVolver)
+        BarraFlujo(titulo = "MusselApp", rotulo = "Nueva muestra", paso = 1, onVolver = onVolver)
 
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             EncabezadoPasos()
@@ -117,11 +140,19 @@ fun MuestraScreen(
                 )
             }
 
-            Tarjeta {
-                TituloTarjeta("Ubicación de Muestreo", Icons.Filled.LocationOn)
+            if (!ubicacionPermitida) {
+                AvisoFormulario(
+                    icono = Icons.Filled.LocationOn,
+                    texto = "Sin permiso de ubicación: la muestra se guardará sin posición y el supervisor verá un aviso.",
+                    color = EstadoMuestra.PENDIENTE.colores.texto
+                )
+            }
 
+            Tarjeta(espacio = 10.dp) {
+                TituloTarjeta("Ubicación de muestreo", Icons.Filled.LocationOn)
+                Spacer(Modifier.height(2.dp))
                 Selector(
-                    etiqueta = "Centro de Cultivo",
+                    etiqueta = "Centro de cultivo",
                     valor = state.centro?.nombre,
                     vacio = "Selecciona un centro",
                     icono = Icons.Filled.Business,
@@ -140,7 +171,7 @@ fun MuestraScreen(
                     )
                 }
                 Selector(
-                    etiqueta = "Tren de Cultivo (Longline)",
+                    etiqueta = "Tren de cultivo (longline)",
                     valor = state.tren?.let { nombreTren(it) },
                     vacio = "Selecciona un tren",
                     icono = Icons.Filled.DirectionsBoat,
@@ -149,7 +180,7 @@ fun MuestraScreen(
                     onElegir = { i -> vm.cambiarTren(Trenes[i].first) }
                 )
                 Selector(
-                    etiqueta = "Línea de Siembra",
+                    etiqueta = "Línea de siembra",
                     valor = state.linea?.let { etiquetaLinea(it) },
                     vacio = "Selecciona una línea",
                     icono = Icons.Filled.Anchor,
@@ -160,18 +191,13 @@ fun MuestraScreen(
             }
 
             Tarjeta {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        TituloTarjeta("Estrato de Profundidad", Icons.Filled.Straighten)
-                    }
-                    Text(
-                        text = "Cuerda 6m",
-                        color = Paleta.Etiqueta,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                TituloTarjeta("Estrato de profundidad", Icons.Filled.Straighten) {
+                    TextoRotulo(
+                        texto = "Cuerda 6m",
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Paleta.Borde)
+                            .background(Paleta.Campo)
+                            .border(1.dp, Paleta.Linea, RoundedCornerShape(6.dp))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
@@ -197,199 +223,76 @@ fun MuestraScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Paleta.Pie)
+                .border(width = 1.dp, color = Paleta.Linea)
                 .navigationBarsPadding()
                 .padding(16.dp)
         ) {
             // El botón siempre se puede presionar: el ViewModel decide si hay errores
-            BotonContinuar(onClick = vm::guardar)
+            BotonPrincipal(
+                texto = "Continuar a captura",
+                iconoFin = Icons.AutoMirrored.Filled.ArrowForward,
+                onClick = vm::guardar
+            )
             // Separación para que los dos botones no se lean como uno solo ni se toquen por error
             Spacer(modifier = Modifier.height(12.dp))
-            BotonLimpiar(onClick = vm::limpiar)
+            BotonSecundario(texto = "Limpiar formulario", icono = Icons.Filled.CleaningServices, onClick = vm::limpiar)
         }
     }
 }
 
-@Composable
-private fun BarraSuperior(onVolver: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Paleta.Barra)
-            .statusBarsPadding()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clickable(onClickLabel = "Volver", role = Role.Button, onClick = onVolver),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Volver",
-                tint = Color.White
-            )
-        }
-        Column(modifier = Modifier.padding(start = 4.dp)) {
-            Text(
-                text = "MusselApp • Nueva muestra",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                // Antes decía "ONLINE / SINCRONIZADO" fijo, aunque no hubiera conexión
-                text = "Paso 1 · Parámetros de la muestra",
-                color = Paleta.TextoBarra,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
+private fun tienePermisoUbicacion(context: Context): Boolean = UbicadorGps.PERMISOS.any {
+    ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
 }
 
-/** Aviso breve dentro del formulario (reconteo, centro distinto al de la sesión). */
+/** Aviso breve dentro del formulario (reconteo, centro distinto al de la sesión, ubicación). */
 @Composable
-private fun AvisoFormulario(icono: ImageVector, texto: String, color: Color) {
+internal fun AvisoFormulario(icono: ImageVector, texto: String, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(FormaCampo)
             .background(color.copy(alpha = 0.10f))
+            .border(1.dp, color.copy(alpha = 0.35f), FormaCampo)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(imageVector = icono, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        Text(text = texto, color = Paleta.Texto, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = texto, color = Paleta.Texto, style = MaterialTheme.typography.bodySmall)
     }
 }
 
+/** Título de la pantalla (nivel 2) y avance: paso actual en oscuro, pendientes con contorno. */
 @Composable
 private fun EncabezadoPasos() {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Nueva Muestra de Choritos",
-                color = Paleta.Texto,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = "PASO 1 DE 3",
-                color = Paleta.Acento,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Paleta.AcentoSuave)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            repeat(3) { i ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(if (i == 0) Paleta.Acento else Paleta.Borde)
-                )
-            }
-        }
+        Text(
+            text = "Nueva muestra de choritos",
+            color = Paleta.Texto,
+            style = MaterialTheme.typography.headlineSmall
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("1. Parámetros", "2. Foto", "3. Validación").forEachIndexed { i, texto ->
-                Text(
-                    text = texto,
-                    color = if (i == 0) Paleta.Texto else Paleta.Etiqueta,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .then(
+                                if (i == 0) Modifier.background(Paleta.Primario)
+                                else Modifier.border(1.dp, Paleta.BordeCampo, RoundedCornerShape(3.dp))
+                            )
+                    )
+                    Text(
+                        text = texto,
+                        color = if (i == 0) Paleta.Texto else Paleta.TextoSuave,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (i == 0) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1
+                    )
+                }
             }
-        }
-    }
-}
-
-@Composable
-private fun TituloTarjeta(texto: String, icono: ImageVector) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Paleta.Primario),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icono,
-                contentDescription = null,
-                tint = Paleta.SobrePrimario,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-        Text(
-            text = texto,
-            color = Paleta.Texto,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun BotonContinuar(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Paleta.Primario)
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "Continuar a Captura",
-            color = Paleta.SobrePrimario,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun BotonLimpiar(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(12.dp))
-            // Botón secundario con contorno: se distingue como acción, sin competir con "Continuar"
-            .background(Paleta.Superficie)
-            .border(1.5.dp, Paleta.BordeFuerte, RoundedCornerShape(12.dp))
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Filled.CleaningServices,
-                contentDescription = null,
-                tint = Paleta.Etiqueta,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-            text = "Limpiar formulario",
-            color = Paleta.Etiqueta,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }

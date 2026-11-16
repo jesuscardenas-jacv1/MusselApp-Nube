@@ -1,7 +1,11 @@
 package cl.aldemar.musselapp.data.repository
 
 import cl.aldemar.musselapp.data.local.MusselDatabase
+import cl.aldemar.musselapp.data.clima.FuenteClima
 import cl.aldemar.musselapp.data.local.aModelo
+import cl.aldemar.musselapp.data.local.conClima
+import cl.aldemar.musselapp.data.local.conPosicion
+import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.nube.NubeSync
@@ -30,6 +34,9 @@ class RoomMuestraRepository(
     private val alcanceNube: CoroutineScope = alcance,
     private val latenciaSincronizacionMs: Long = 1500,
     private val alRevisar: (Muestra, EstadoMuestra, String?) -> Unit = { _, _, _ -> },
+    /** Clima de la muestra; null en las pruebas que no usan red. */
+    private val clima: FuenteClima? = null,
+    private val reloj: () -> Long = System::currentTimeMillis,
 ) : MuestraRepository {
 
     private val muestraDao = db.muestraDao()
@@ -92,15 +99,36 @@ class RoomMuestraRepository(
                 registradaEn = muestra.registradaEn,
                 sincronizada = false,
                 fotoRuta = muestra.fotoRuta,
-            ),
+            ).conPosicion(muestra.posicion).conClima(muestra.clima),
         )
-        // Envío inmediato en segundo plano; si falla, queda pendiente para "Sincronizar"
-        if (nube != null) alcanceNube.launch { subirMuestra(nuevoId) }
+        // Guardar nunca espera a la red: el clima y el envío van en segundo plano.
+        // Si fallan, la muestra queda pendiente para "Sincronizar"
+        if (nube != null || clima != null) alcanceNube.launch { subirMuestra(nuevoId) }
+    }
+
+    /**
+     * Pide el clima de una muestra que aún no lo tiene. Solo mientras es reciente: pasado el
+     * plazo, el clima "actual" ya no es el del momento en que se tomó la muestra.
+     */
+    private suspend fun completarClima(m: Muestra): Muestra {
+        val fuente = clima ?: return m
+        if (m.clima != null || reloj() - m.registradaEn > PLAZO_CLIMA_MS) return m
+        // Se consulta en la posición de la muestra; sin GPS, en el punto del centro
+        val centro = CentroCultivo.porId(m.centroId)
+        val lat = m.posicion?.lat ?: centro?.lat ?: return m
+        val lon = m.posicion?.lon ?: centro?.lon ?: return m
+        val c = fuente.obtener(lat, lon) ?: return m
+        muestraDao.guardarClima(
+            m.id, c.tempAireC, c.vientoKn, c.rachaKn, c.vientoDir, c.codigo, c.olaM, c.tempAguaC, c.mareaM, c.obtenidoEn,
+        )
+        return m.copy(clima = c)
     }
 
     private suspend fun subirMuestra(id: Long): Boolean {
-        val m = muestraDao.observarPorId(id).first()?.aModelo() ?: return false
-        val ok = nube?.subir(m) == true
+        val guardada = muestraDao.observarPorId(id).first()?.aModelo() ?: return false
+        val m = completarClima(guardada)
+        if (nube == null) return false
+        val ok = nube.subir(m)
         if (ok) muestraDao.marcarSincronizada(id)
         return ok
     }
@@ -111,6 +139,11 @@ class RoomMuestraRepository(
             return muestraDao.marcarSincronizadas()
         }
         return muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
+    }
+
+    companion object {
+        /** Tiempo durante el cual todavía se pide el clima de una muestra guardada sin internet. */
+        const val PLAZO_CLIMA_MS = 2 * 60 * 60 * 1000L
     }
 
     /** Acepta un RUT con o sin formato y devuelve el RUT normalizado si el usuario existe. */

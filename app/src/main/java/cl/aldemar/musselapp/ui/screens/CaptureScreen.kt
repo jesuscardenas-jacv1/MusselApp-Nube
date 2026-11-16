@@ -123,15 +123,23 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import cl.aldemar.musselapp.ui.muestra.Paleta
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.navigationBarsPadding
+import cl.aldemar.musselapp.ui.muestra.BarraFlujo
+import cl.aldemar.musselapp.ui.theme.FormaTarjetaChica
+import cl.aldemar.musselapp.ui.theme.tarjetaMussel
 import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
 import cl.aldemar.musselapp.util.AlmacenFotos
 import java.io.File
 
-// Colores del sistema de diseño (DESIGN.md)
-private val Navy = Color(0xFF0F172A)
-private val Fondo = Color(0xFFF1F5F9)
-private val GrisTexto = Color(0xFF94A3B8)
+// Colores del flujo de muestreo (ui/theme)
+private val Navy = Paleta.Primario
+private val GrisTexto = Paleta.TextoSobreOscuro
 
 /**
  * Paso 2 del registro: fotografía de la muestra.
@@ -318,15 +326,16 @@ fun CaptureScreen(
             .fillMaxSize()
             .background(Paleta.Fondo)
     ) {
-        BarraSuperior(onVolver = onVolver)
+        BarraFlujo(titulo = "MusselApp", rotulo = "Nueva muestra", paso = 2, onVolver = onVolver)
 
         // Zona de cámara
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .clipToBounds()
-                .background(Color.Black)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Navy)
         ) {
             when {
                 foto != null -> {
@@ -342,9 +351,9 @@ fun CaptureScreen(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(10.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(RoundedCornerShape(50))
                             .background(Navy)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
@@ -354,7 +363,7 @@ fun CaptureScreen(
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
-                        Text("Toca para ampliar", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Toca para ampliar", color = Color.White, style = MaterialTheme.typography.labelMedium)
                     }
                 }
                 fotoArchivo != null || procesando -> CircularProgressIndicator(
@@ -373,8 +382,9 @@ fun CaptureScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             TarjetaAlineacion()
 
@@ -462,25 +472,44 @@ private fun ZonaSinFoto(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Navy)
+            .padding(14.dp)
+            // Marco punteado: indica dónde va a quedar la foto
+            .drawBehind {
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.3f),
+                    cornerRadius = CornerRadius(16.dp.toPx()),
+                    style = Stroke(
+                        width = 1.5.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f))
+                    )
+                )
+            }
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Filled.PhotoCamera,
-            contentDescription = null,
-            tint = GrisTexto,
-            modifier = Modifier.size(64.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.White.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.PhotoCamera,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(32.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Foto de la muestra",
             color = Color.White,
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = when {
                 tienePermiso ->
@@ -490,7 +519,7 @@ private fun ZonaSinFoto(
                 else -> "Se necesita permiso de cámara. Toca el botón para concederlo o usa la Galería."
             },
             color = GrisTexto,
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center
         )
         if (permisoBloqueado) {
@@ -657,37 +686,6 @@ private tailrec fun Context.buscarActividad(): Activity? = when (this) {
     else -> null
 }
 
-@Composable
-private fun BarraSuperior(onVolver: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Navy)
-            .statusBarsPadding()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Igual que en Muestra y Vista previa: se puede volver al paso anterior
-        IconButton(onClick = onVolver) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "MusselApp • Nueva muestra",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Paso 2 · Fotografía de la muestra",
-                color = GrisTexto,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
 // Esquinas blancas del visor.
 // TODO: chips flotantes (flash, grilla, etc.) si se requieren
 @Composable
@@ -719,37 +717,26 @@ private fun TarjetaAlineacion() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Paleta.Superficie)
-            .border(1.5.dp, Paleta.Borde, RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .tarjetaMussel(FormaTarjetaChica)
+            .padding(14.dp),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Paleta.AcentoSuave),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Filled.Straighten,
-                contentDescription = null,
-                tint = Paleta.Acento
-            )
+            Icon(imageVector = Icons.Filled.Straighten, contentDescription = null, tint = Paleta.AcentoTexto)
         }
-        Column {
-            Text(
-                text = "Alineación de Muestra",
-                color = Paleta.Texto,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = "Alineación de muestra", color = Paleta.Texto, style = MaterialTheme.typography.titleMedium)
             Text(
                 text = "Mantenga la regla calibrada paralela a la línea de choritos para una foto clara.",
                 color = Paleta.TextoSuave,
-                fontSize = 12.sp
+                style = MaterialTheme.typography.bodySmall
             )
         }
     }
@@ -762,28 +749,21 @@ private fun BotonLateral(
     seleccionado: Boolean,
     onClick: () -> Unit
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (seleccionado) Paleta.Borde else Paleta.Campo)
-                .border(1.5.dp, Paleta.BordeCampo, RoundedCornerShape(12.dp))
+                .tarjetaMussel(FormaTarjetaChica, fondo = if (seleccionado) Paleta.Primario else Paleta.Superficie)
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icono,
                 contentDescription = texto,
-                tint = if (seleccionado) Color.White else Paleta.Etiqueta
+                tint = if (seleccionado) Color.White else Paleta.Texto
             )
         }
-        Text(
-            text = texto,
-            color = Paleta.Etiqueta,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Text(text = texto, color = Paleta.Texto, style = MaterialTheme.typography.labelMedium)
     }
 }
 
