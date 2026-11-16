@@ -108,8 +108,9 @@ class RevisionViewModel(
                 _uiState.update { it.copy(errorDictamen = "Selecciona un dictamen: Validar o Corregir") }
                 false
             }
-            estado.estadoElegido == EstadoMuestra.CORREGIDO && estado.comentarioTecnico.isBlank() -> {
-                _uiState.update { it.copy(errorComentario = "Debes indicar qué se corrigió en la muestra") }
+            ReglasDictamen.errorComentario(estado.estadoElegido, estado.comentarioTecnico) != null -> {
+                val error = ReglasDictamen.errorComentario(estado.estadoElegido, estado.comentarioTecnico)
+                _uiState.update { it.copy(errorComentario = error) }
                 false
             }
             else -> true
@@ -127,8 +128,9 @@ class RevisionViewModel(
             return
         }
 
-        if (nuevoEstado == EstadoMuestra.CORREGIDO && estadoActual.comentarioTecnico.isBlank()) {
-            _uiState.update { it.copy(errorComentario = "Debes indicar qué se corrigió en la muestra") }
+        val errorComentario = ReglasDictamen.errorComentario(nuevoEstado, estadoActual.comentarioTecnico)
+        if (errorComentario != null) {
+            _uiState.update { it.copy(errorComentario = errorComentario) }
             return
         }
 
