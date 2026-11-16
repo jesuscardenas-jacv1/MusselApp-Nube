@@ -31,6 +31,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # En el repo gradlew no está marcado como ejecutable (se subió desde Windows)
+      - run: chmod +x ./gradlew
+
       - name: Compilar y correr pruebas unitarias
         run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
 
@@ -57,6 +60,9 @@ jobs:
             25
 
       - uses: gradle/actions/setup-gradle@v4
+
+      # En el repo gradlew no está marcado como ejecutable (se subió desde Windows)
+      - run: chmod +x ./gradlew
 
       - name: Habilitar KVM para el emulador
         run: |
