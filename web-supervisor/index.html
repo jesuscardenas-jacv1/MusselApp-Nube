@@ -1801,14 +1801,22 @@
   // Mapa chico del detalle: punto de la muestra y círculo del área del centro
   var miniMapa = null;
   function quitarMiniMapa() { if (miniMapa) { try { miniMapa.remove(); } catch (e) { /* ya no existe */ } miniMapa = null; } }
+  // Teselas del mapa. Los servidores de OpenStreetMap (tile.openstreetmap.org) rechazan con 403
+  // las peticiones sin Referer, que es lo que pasa al abrir este archivo con doble clic (file://).
+  // CARTO usa datos de OpenStreetMap y acepta esas peticiones, sin clave.
+  var TESELAS_MAPA = {
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    opciones: { maxZoom: 19, subdomains: 'abcd',
+      attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' }
+  };
+
   function dibujarMiniMapa(m) {
     var el = $('mini-mapa');
     if (!el || m.lat == null || m.lon == null) return;
     if (typeof L === 'undefined') { el.textContent = 'No se pudo cargar el mapa.'; return; }
     var c = INFO_CENTRO[m.centroId], fuera = m.alertas.indexOf('FUERA_DE_AREA') >= 0;
     miniMapa = L.map(el, { zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18,
-      attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(miniMapa);
+    L.tileLayer(TESELAS_MAPA.url, TESELAS_MAPA.opciones).addTo(miniMapa);
     miniMapa.setView([m.lat, m.lon], 12, { animate: false });
     var capas = [];
     if (c) {
@@ -2871,9 +2879,8 @@
         '<section class="tarjeta ficha-centro" id="m-ficha" aria-live="polite"></section></aside></div>';
       if (typeof L === 'undefined') { $('mapa-leaflet').innerHTML = vacio('sinred', 'No se pudo cargar el mapa', 'Revisa la conexión a internet y recarga la página.'); return; }
       mapa = L.map('mapa-leaflet', { zoomControl: true, scrollWheelZoom: true, attributionControl: true });
-      // Teselas de OpenStreetMap (sin clave); se suavizan con CSS para un fondo claro
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18,
-        attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(mapa);
+      // Teselas de CARTO (ver TESELAS_MAPA); se suavizan con CSS para un fondo claro
+      L.tileLayer(TESELAS_MAPA.url, TESELAS_MAPA.opciones).addTo(mapa);
       marcadores = {};
       IDS_CENTROS.forEach(function (id) {
         var i = INFO_CENTRO[id];

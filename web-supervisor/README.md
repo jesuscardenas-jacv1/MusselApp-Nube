@@ -35,7 +35,7 @@ El botón **Contraer menú** la reduce a una franja de iconos; la preferencia se
    - Al final están las **Herramientas de demostración** (también desde el menú del usuario).
 4. **Historial**: árbol Centro → Tren → Línea con contadores y color del último estado, migas de pan, resumen del nodo, gráfico de talla y densidad,
    mapa de calor trenes × líneas (por estado o por desvío) y línea de tiempo de las muestras. Búsqueda y filtros por estado y periodo.
-5. **Mapa**: los cuatro centros sobre un mapa de OpenStreetMap (coordenadas ficticias aproximadas). Al elegir un centro el mapa se acerca
+5. **Mapa**: los cuatro centros sobre un mapa con datos de OpenStreetMap (teselas de CARTO; coordenadas ficticias aproximadas). Al elegir un centro el mapa se acerca
    y el panel muestra sus datos, con accesos a su historial y a su dashboard.
 
 En todas las pantallas: buscador superior (código, centro, tren, línea u operario; tecla `/`), campana con las últimas llegadas,
@@ -63,7 +63,7 @@ No disparan avisos de muestra nueva ni llegan a los teléfonos. **Borrar histori
 base de Firestore, por si hay que volver a él.
 
 ## Librerías (por CDN, sin instalación)
-Firebase compat 10.14.1, Chart.js 4.4.6, Leaflet 1.9.4 (teselas de OpenStreetMap), SheetJS 0.20.3 y las tipografías Inter y Plus Jakarta Sans.
+Firebase compat 10.14.1, Chart.js 4.4.6, Leaflet 1.9.4 (teselas de CARTO con datos de OpenStreetMap, sin clave; se usan porque los servidores de OpenStreetMap rechazan el portal abierto como archivo), SheetJS 0.20.3 y las tipografías Inter y Plus Jakarta Sans.
 Si alguna no carga (sin internet), la pantalla correspondiente muestra un aviso en lugar de fallar.
 
 ## Datos que la app del operario debe escribir
