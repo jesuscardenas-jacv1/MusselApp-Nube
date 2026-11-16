@@ -37,6 +37,8 @@ class RoomMuestraRepository(
     private val alcanceNube: CoroutineScope = alcance,
     private val latenciaSincronizacionMs: Long = 1500,
     private val alRevisar: (Muestra, EstadoMuestra, String?) -> Unit = { _, _, _ -> },
+    /** Muestra que el supervisor borró en el portal y ya se borró de Room (para avisar y borrar su foto). */
+    private val alEliminar: (Muestra) -> Unit = {},
     /** Clima de la muestra; null en las pruebas que no usan red. */
     private val clima: FuenteClima? = null,
     private val reloj: () -> Long = System::currentTimeMillis,
@@ -56,7 +58,7 @@ class RoomMuestraRepository(
 
     init {
         // Dictámenes del supervisor llegados desde la nube: se guardan en Room y la UI se actualiza sola
-        nube?.escucharVeredictos { v ->
+        nube?.escucharVeredictos(alEliminar = { id -> eliminarDesdeNube(id) }) { v ->
             alcanceNube.launch {
                 try {
                     // De a uno: si la nube repite el mismo dictamen, el segundo ya encuentra la muestra revisada
@@ -72,6 +74,23 @@ class RoomMuestraRepository(
                 } catch (e: Exception) {
                     android.util.Log.w("RoomMuestraRepo", "No se pudo aplicar el dictamen", e)
                 }
+            }
+        }
+    }
+
+    /**
+     * El supervisor borró la muestra en el portal: se borra también del teléfono y se avisa.
+     * Va por el mismo candado que los dictámenes para no cruzarse con uno que esté llegando.
+     */
+    private fun eliminarDesdeNube(id: Long) {
+        alcanceNube.launch {
+            try {
+                aplicandoDictamen.withLock {
+                    val local = muestraDao.observarPorId(id).first()?.aModelo() ?: return@launch
+                    if (muestraDao.eliminar(id) > 0) alEliminar(local)
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("RoomMuestraRepo", "No se pudo borrar la muestra eliminada en el portal", e)
             }
         }
     }

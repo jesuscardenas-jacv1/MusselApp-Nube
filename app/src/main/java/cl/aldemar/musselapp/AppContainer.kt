@@ -47,6 +47,10 @@ class AppContainer(context: Context) {
             alRevisar = { muestra, estado, comentario ->
                 notificador.avisarRevision(muestra, estado, comentario)
                 avisos.update { it + AvisoRevision(muestra.codigo, muestra.codigoLinea, estado, comentario) }
+            },
+            alEliminar = { muestra ->
+                notificador.avisarEliminacion(muestra)
+                AlmacenFotos.borrar(appContext, muestra.fotoRuta)
             }) }
 
     /** Posición del teléfono al registrar una muestra (los ViewModels no tienen Context). */

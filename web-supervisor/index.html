@@ -2022,13 +2022,13 @@
   }
   function eliminarMuestra(id) {
     var m = porId[id || detalleId]; if (!m || !fuente || !fuente.listo()) return;
-    if (!confirm('¿Eliminar la ' + m.codigo + '? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Eliminar la ' + m.codigo + '? También se borrará del teléfono del operario, que recibirá un aviso. Esta acción no se puede deshacer.')) return;
     fuente.eliminar([m.id]).then(function () { toast('Muestra eliminada', m.codigo, 'ok'); if (detalleId === m.id) cerrarDetalle(); })
       .catch(function () { toast('No se eliminó', 'Revisa la conexión e inténtalo de nuevo.', 'mal'); });
   }
   function eliminarVarias(ids, texto) {
     if (!fuente || !fuente.listo() || !ids.length) return;
-    if (!confirm('¿Eliminar ' + ids.length + ' muestra(s) ' + (texto || 'de esta lista') + '? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Eliminar ' + ids.length + ' muestra(s) ' + (texto || 'de esta lista') + '? También se borrarán de los teléfonos, que recibirán un aviso. Esta acción no se puede deshacer.')) return;
     fuente.eliminar(ids).then(function () {
       ids.forEach(function (id) { delete tabla.sel[id]; });
       toast('Listo', 'Se eliminaron ' + ids.length + ' muestra(s).', 'ok');
@@ -2036,7 +2036,7 @@
   }
   function borrarTodas() {
     if (!fuente || !fuente.listo()) return;
-    if (!confirm('¿Eliminar TODAS las muestras ' + (MODO_EJEMPLO ? 'de ejemplo (solo en memoria)' : 'de la nube') + '? Esta acción no se puede deshacer.')) return;
+    if (!confirm('¿Eliminar TODAS las muestras ' + (MODO_EJEMPLO ? 'de ejemplo (solo en memoria)' : 'de la nube? También se borrarán de los teléfonos de los operarios') + '. Esta acción no se puede deshacer.')) return;
     fuente.borrarTodas().then(function (n) { tabla.sel = {}; toast('Listo', 'Se eliminaron ' + n + ' muestra(s).', 'ok'); })
       .catch(function () { toast('No se eliminó', 'No se pudieron borrar las muestras.', 'mal'); });
   }

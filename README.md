@@ -42,6 +42,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Alertas automáticas para el supervisor (fuera del área, densidad, cholgas, talla, mal tiempo) | Supervisión, Detalle, portal web | `AlertasMuestra.evaluar()`, reglas puras con los límites en `Umbrales` |
 | Métricas de la jornada y muestras recientes | Principal | `PrincipalViewModel` + `ResumenJornada` |
 | Sincronización con la nube y dictamen desde el computador | Todas, portal web | `NubeSync` (Firestore) detrás de la interfaz `ServicioNube`; Room sigue siendo la fuente de verdad, se guarda sin red y se sube después. `ProteccionDictamen` evita que un reintento pise un dictamen del supervisor |
+| Muestra borrada en el portal | Notificación, Historial | Al eliminar una muestra en el portal, el teléfono que la registró la borra (con sus revisiones y su foto) y avisa con una notificación |
 | Seguridad local | Login | PIN guardado con hash PBKDF2, bloqueo tras 5 intentos fallidos y base excluida del respaldo |
 
 **Recursos del dispositivo integrados al flujo:** cámara, galería (Photo Picker), ubicación (GPS), documentos (ficha PDF para imprimir o compartir) y fecha/hora del registro.

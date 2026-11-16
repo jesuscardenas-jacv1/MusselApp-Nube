@@ -86,6 +86,10 @@ interface MuestraDao {
     @Query("UPDATE muestras SET sincronizada = 1 WHERE id = :id")
     suspend fun marcarSincronizada(id: Long)
 
+    /** Borra la muestra; sus revisiones se borran en cascada. Devuelve cuántas filas se borraron. */
+    @Query("DELETE FROM muestras WHERE id = :id")
+    suspend fun eliminar(id: Long): Int
+
     /** Guarda el clima consultado después de insertar la muestra (guardar nunca espera a la red). */
     @Query(
         """

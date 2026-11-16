@@ -11,6 +11,9 @@ interface ServicioNube {
     /** Sube (o actualiza) la muestra. Devuelve true si el servidor la confirmó. */
     suspend fun subir(m: Muestra): Boolean
 
-    /** Escucha en vivo los dictámenes del supervisor para las muestras de este teléfono. */
-    fun escucharVeredictos(alAplicar: (VeredictoNube) -> Unit)
+    /**
+     * Escucha en vivo los dictámenes del supervisor para las muestras de este teléfono.
+     * [alEliminar] recibe el id local de cada muestra de este teléfono que el supervisor borró en el portal.
+     */
+    fun escucharVeredictos(alEliminar: (Long) -> Unit = {}, alAplicar: (VeredictoNube) -> Unit)
 }

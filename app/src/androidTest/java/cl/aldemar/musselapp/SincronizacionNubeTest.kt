@@ -41,6 +41,7 @@ class SincronizacionNubeTest {
     private lateinit var alcance: CoroutineScope
     private val alcancesExtra = mutableListOf<CoroutineScope>()
     private val revisadas = mutableListOf<Triple<Muestra, EstadoMuestra, String?>>()
+    private val eliminadas = mutableListOf<Muestra>()
 
     @Before
     fun preparar() = runBlocking {
@@ -64,6 +65,7 @@ class SincronizacionNubeTest {
             alcanceNube = alcanceNube,
             latenciaSincronizacionMs = 0,
             alRevisar = { m, estado, comentario -> synchronized(revisadas) { revisadas += Triple(m, estado, comentario) } },
+            alEliminar = { m -> synchronized(eliminadas) { eliminadas += m } },
         )
 
     private fun alcanceInmediato() =
@@ -87,6 +89,8 @@ class SincronizacionNubeTest {
     private suspend fun cantidadRevisiones(id: Long) = db.muestraDao().observarRevisiones(id).first().size
 
     private fun revisadasAhora() = synchronized(revisadas) { revisadas.toList() }
+
+    private fun eliminadasAhora() = synchronized(eliminadas) { eliminadas.toList() }
 
     /** El trabajo con la nube corre en segundo plano: se espera hasta 5 s a que se cumpla la condición. */
     private suspend fun esperar(mensaje: String, condicion: suspend () -> Boolean) {
@@ -215,6 +219,56 @@ class SincronizacionNubeTest {
         }
         assertEquals("Llegó primero", muestra(id).comentarioSupervisor)
         esperar("se avisa al operario") { revisadasAhora().size == 1 }
+    }
+
+    // ── N9: muestra borrada en el portal ───────────────────────────────────
+
+    @Test
+    fun eliminadaEnElPortal_seBorraDelTelefonoConSusRevisionesYAvisa() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.VALIDADO)
+        assertTrue(cantidadRevisiones(id) > 0)
+        val total = db.muestraDao().contar()
+
+        nube.eliminar(id)
+
+        esperar("la muestra desaparece de Room") { db.muestraDao().observarPorId(id).first() == null }
+        assertEquals(total - 1, db.muestraDao().contar())
+        assertEquals(0, cantidadRevisiones(id))
+        esperar("se avisa una vez al operario") { eliminadasAhora().size == 1 }
+        assertEquals(id, eliminadasAhora().single().id)
+        esperar("la lista viva ya no la tiene") { repositorio.muestras.value.none { it.id == id } }
+    }
+
+    @Test
+    fun eliminadaEnElPortal_idInexistente_seIgnoraSinAvisar() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val total = db.muestraDao().contar()
+
+        nube.eliminar(ID_INEXISTENTE)
+        delay(ESPERA_NEGATIVA_MS)
+
+        assertEquals(total, db.muestraDao().contar())
+        assertTrue(eliminadasAhora().isEmpty())
+    }
+
+    @Test
+    fun eliminadaEnElPortal_dosVeces_avisaUnaSolaVez() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+
+        nube.eliminar(id)
+        nube.eliminar(id)
+
+        esperar("la muestra desaparece de Room") { db.muestraDao().observarPorId(id).first() == null }
+        delay(ESPERA_NEGATIVA_MS)
+        assertEquals(1, eliminadasAhora().size)
     }
 
     private companion object {
