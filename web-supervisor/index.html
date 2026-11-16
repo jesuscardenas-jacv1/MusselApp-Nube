@@ -1803,10 +1803,13 @@
   function quitarMiniMapa() { if (miniMapa) { try { miniMapa.remove(); } catch (e) { /* ya no existe */ } miniMapa = null; } }
   // Teselas del mapa. Los servidores de OpenStreetMap (tile.openstreetmap.org) rechazan con 403
   // las peticiones sin Referer, que es lo que pasa al abrir este archivo con doble clic (file://).
-  // CARTO usa datos de OpenStreetMap y acepta esas peticiones, sin clave.
+  // CARTO usa datos de OpenStreetMap y acepta esas peticiones, pero exige una clave
+  // (gratis, uso no comercial hasta 5M teselas/mes; pedida por Lucas en carto.com/basemaps/apikey).
+  // La clave viaja en cada URL de tesela, así que es pública por diseño.
+  var CLAVE_CARTO = 'cb1_59ux_1_466cc64e1543dba53828813f';
   var TESELAS_MAPA = {
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    opciones: { maxZoom: 19, subdomains: 'abcd',
+    url: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=' + CLAVE_CARTO,
+    opciones: { maxZoom: 19,
       attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' }
   };
 
