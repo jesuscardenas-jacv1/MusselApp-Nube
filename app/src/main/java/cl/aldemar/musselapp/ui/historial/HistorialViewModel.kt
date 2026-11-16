@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import cl.aldemar.musselapp.MusselApplication
 import cl.aldemar.musselapp.data.repository.MuestraRepository
 import cl.aldemar.musselapp.util.Textos
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -58,13 +59,15 @@ class HistorialViewModel(
         if (local.value.sincronizando) return
         local.update { it.copy(sincronizando = true) }
         viewModelScope.launch {
-            val enviadas = muestraRepository.sincronizar()
-            local.update {
-                it.copy(
-                    sincronizando = false,
-                    mensaje = Textos.resultadoSincronizacion(enviadas),
-                )
+            // Si el envío falla, el ícono no debe quedar girando para siempre
+            val mensaje = try {
+                Textos.resultadoSincronizacion(muestraRepository.sincronizar())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                "No se pudo sincronizar. Las muestras siguen guardadas en el equipo"
             }
+            local.update { it.copy(sincronizando = false, mensaje = mensaje) }
         }
     }
 

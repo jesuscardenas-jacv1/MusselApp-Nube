@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.ChecklistRtl
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Dataset
-import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.HistoryEdu
@@ -42,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -199,7 +200,7 @@ private fun AccionPrincipal(rol: Rol, pendientesRevision: Int, onClick: () -> Un
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    if (operario) Icons.Filled.AddCircle else Icons.Filled.FactCheck,
+                    if (operario) Icons.Filled.AddCircle else Icons.AutoMirrored.Filled.FactCheck,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(36.dp),
@@ -491,7 +492,8 @@ private fun haceCuanto(instante: Long, ahora: Long = System.currentTimeMillis())
 @Preview(showBackground = true, heightDp = 1600)
 @Composable
 private fun PrincipalOperarioPreview() {
-    val muestras = FakeMuestraRepository().muestras.value
+    val repositorio = remember { FakeMuestraRepository() }
+    val muestras by repositorio.muestras.collectAsState()
     MusselAppTheme {
         PrincipalScreen(
             usuario = Usuario("11.111.111-1", "Carla Vera", Rol.OPERARIO),

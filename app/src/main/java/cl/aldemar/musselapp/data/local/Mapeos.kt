@@ -26,6 +26,7 @@ fun MuestraCompleta.aModelo() = Muestra(
     revisadaEn = revisadaEn,
     comentarioSupervisor = comentarioSupervisor,
     fotoRuta = muestra.fotoRuta,
+    cholgasIndM = muestra.cholgasIndM,
 )
 
 fun UsuarioEntity.aModelo() = Usuario(

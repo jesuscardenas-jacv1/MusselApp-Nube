@@ -10,6 +10,7 @@ import android.util.Log
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -69,13 +70,20 @@ class NubeSync(context: Context) {
                 "profundidadM" to m.profundidadM,
                 "tallaMm" to m.tallaMm,
                 "conteoIndM" to m.conteoIndM,
+                "cholgasIndM" to m.cholgasIndM,
                 "observacion" to m.observacion,
                 "estado" to m.estado.name,
                 "registradaEn" to m.registradaEn,
                 "operador" to m.operador,
                 "operadorRut" to m.operadorRut,
             )
-            fotoBase64(m.fotoRuta)?.let { datos["fotoBase64"] = it }
+            // La foto va en su propio documento (fotos/{id}): así quien escucha la colección de muestras
+            // (el portal y los teléfonos) no descarga todas las fotos; el portal la pide al abrir la muestra
+            val foto = fotoBase64(m.fotoRuta)
+            if (foto != null) {
+                datos["tieneFoto"] = true
+                datos["fotoBase64"] = FieldValue.delete() // las versiones anteriores la guardaban dentro de la muestra
+            }
             if (m.estado != EstadoMuestra.PENDIENTE) {
                 datos["revisadaPor"] = m.revisadaPor
                 datos["revisadaEn"] = m.revisadaEn
@@ -83,8 +91,10 @@ class NubeSync(context: Context) {
             }
             withTimeout(TIMEOUT_MS) {
                 suspendCancellableCoroutine { cont ->
-                    db.collection(COLECCION).document(docId(m.id))
-                        .set(datos, SetOptions.merge())
+                    val lote = db.batch()
+                    lote.set(db.collection(COLECCION).document(docId(m.id)), datos, SetOptions.merge())
+                    if (foto != null) lote.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
+                    lote.commit()
                         .addOnSuccessListener { Log.i(TAG, "Subida OK ${docId(m.id)}"); if (cont.isActive) cont.resume(true) }
                         .addOnFailureListener { Log.e(TAG, "Subida FALLÓ", it); if (cont.isActive) cont.resume(false) }
                 }
@@ -168,6 +178,8 @@ class NubeSync(context: Context) {
         /** Interruptor de seguridad: en false la app funciona solo local, como antes. */
         const val ACTIVA = true
         private const val COLECCION = "muestras"
+        /** Fotos de las muestras, una por documento con el mismo id que la muestra. */
+        private const val COLECCION_FOTOS = "fotos"
         private const val TAG = "NubeSync"
         private const val TIMEOUT_MS = 10_000L
         private const val LADO_MAX = 800

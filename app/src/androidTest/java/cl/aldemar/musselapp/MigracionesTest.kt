@@ -86,4 +86,31 @@ class MigracionesTest {
             assertTrue(!HashPin.verificar("1234", c.getString(1)))
         }
     }
+
+    @Test
+    fun de3a4_seAgreganLasCholgasSinTocarLasMuestras() {
+        // Base en versión 3 con una muestra guardada antes de que existieran las cholgas
+        helper.createDatabase(nombre, 3).apply {
+            execSQL("INSERT INTO centros (id, nombre) VALUES ('dalcahue', 'Centro Dalcahue')")
+            execSQL("INSERT INTO trenes (id, centro_id, codigo) VALUES (1, 'dalcahue', 'A')")
+            execSQL("INSERT INTO lineas (id, tren_id, numero) VALUES (1, 1, 4)")
+            execSQL("INSERT INTO usuarios (rut, nombre, rol, pin) VALUES ('111111111', 'Carla Vera', 'OPERARIO', 'x')")
+            execSQL(
+                "INSERT INTO muestras (id, linea_id, operador_rut, profundidad_m, talla_mm, conteo_ind_m, " +
+                    "observacion, estado, registrada_en, sincronizada, foto_ruta) " +
+                    "VALUES (1, 1, '111111111', 5, 35, 282, '', 'PENDIENTE', 0, 0, NULL)",
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(nombre, 4, true, Migraciones.DE_3_A_4)
+
+        // La muestra antigua se conserva y queda sin cholgas registradas (null, no 0)
+        db.query("SELECT conteo_ind_m, cholgas_ind_m FROM muestras").use { c ->
+            assertEquals(1, c.count)
+            c.moveToNext()
+            assertEquals(282, c.getInt(0))
+            assertTrue(c.isNull(1))
+        }
+    }
 }

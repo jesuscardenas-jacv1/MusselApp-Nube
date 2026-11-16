@@ -28,6 +28,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.remember
+import cl.aldemar.musselapp.MusselApplication
+import cl.aldemar.musselapp.data.model.CentroCultivo
+import cl.aldemar.musselapp.ui.muestra.ParametrosMuestra
 import cl.aldemar.musselapp.ui.detalle.DetalleRoute
 import cl.aldemar.musselapp.ui.historial.HistorialRoute
 import cl.aldemar.musselapp.ui.login.LoginRoute
@@ -40,12 +44,7 @@ import cl.aldemar.musselapp.ui.principal.PrincipalRoute
 import cl.aldemar.musselapp.ui.revision.RevisionRoute
 import cl.aldemar.musselapp.ui.screens.CaptureScreen
 
-/**
- * Grafo de navegación de la app.
- *
- * Para integrar una pantalla nueva, reemplazar la PantallaEnConstruccion de su ruta
- * por la pantalla real, sin cambiar el nombre de la ruta.
- */
+/** Grafo de navegación de la app. */
 // Transiciones suaves del flujo Muestra → Captura → Vista previa
 private val entradaFlujo: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
     slideInHorizontally(tween(380)) { it / 4 } + fadeIn(tween(380))
@@ -103,8 +102,17 @@ fun MusselNavHost(
         navController.popBackStack()
     }
 
+    // Cada muestra nueva parte de cero: si se abandonó un registro a medias, no quedan
+    // conteo, talla, notas ni foto del intento anterior. Se limpia al ENTRAR al registro
+    // (menú, botón principal o Recontar), no al volver atrás desde Captura, para no perder lo hecho.
+    fun empezarMuestraNueva() {
+        borradorViewModel.actualizarFoto(null) // borra la foto del intento abandonado
+        borradorViewModel.limpiar()
+    }
+
     // Menú inferior: funciona como pestañas sobre la Principal, sin apilar pantallas repetidas
     fun navegarDesdeMenu(destino: Destino) {
+        if (destino == Destino.NUEVA_MUESTRA) empezarMuestraNueva()
         if (destino == Destino.MUESTRAS) {
             navController.popBackStack(Rutas.PRINCIPAL, inclusive = false)
         } else {
@@ -139,26 +147,35 @@ fun MusselNavHost(
                 centro = loginState.centro,
                 onCerrarSesion = loginViewModel::onCerrarSesion,
                 onNavegar = ::navegarDesdeMenu,
-                onVerMuestra = { id -> navController.navigate(Rutas.detalle(id)) },
+                // Un doble toque rápido no apila dos Detalle iguales
+                onVerMuestra = { id -> navController.navigate(Rutas.detalle(id)) { launchSingleTop = true } },
             )
         }
 
         // ── Registro de muestra (Jesús Cárdenas) ──────────────────────────
         composable(
             Rutas.MUESTRA,
+            arguments = listOf(
+                navArgument(Rutas.ARG_RECONTAR) {
+                    type = NavType.LongType
+                    defaultValue = Rutas.SIN_MUESTRA
+                },
+            ),
             enterTransition = entradaFlujo,
             exitTransition = salidaFlujo,
             popEnterTransition = entradaAtras,
             popExitTransition = salidaAtras,
-        ) {
-            // Cada muestra nueva parte de cero: si se abandonó un registro a medias, no quedan
-            // conteo, talla, notas ni foto del intento anterior
-            LaunchedEffect(Unit) {
-                borradorViewModel.actualizarFoto(null) // borra la foto del intento abandonado
-                borradorViewModel.limpiar()
+        ) { entrada ->
+            // Reconteo: se copia la ubicación de la muestra original para no volver a elegirla
+            val recontarId = entrada.arguments?.getLong(Rutas.ARG_RECONTAR) ?: Rutas.SIN_MUESTRA
+            val original = remember(recontarId) {
+                if (recontarId == Rutas.SIN_MUESTRA) null
+                else MusselApplication.contenedor.muestraRepository.muestras.value.find { it.id == recontarId }
             }
             MuestraScreen(
                 centroInicial = loginState.centro,
+                reconteo = original?.let { ParametrosMuestra(it.centroId, it.tren, it.linea, it.profundidadM) },
+                codigoReconteo = original?.codigo,
                 onVolver = ::volver,
                 onContinuar = { parametros ->
                     borradorViewModel.guardarParametros(parametros)
@@ -175,6 +192,9 @@ fun MusselNavHost(
             popExitTransition = salidaAtras,
         ) {
             CaptureScreen(
+                // Al volver desde la Vista previa se ve la foto ya confirmada y se puede continuar
+                fotoExistente = borrador.fotoRuta,
+                onVolver = ::volver,
                 onFotoLista = { ruta ->
                     borradorViewModel.guardarFoto(ruta)
                     navController.navigate(Rutas.VISTA_PREVIA)
@@ -200,13 +220,23 @@ fun MusselNavHost(
                 onObservacionCambiada = borradorViewModel::actualizarObservacion,
                 onConteoCambiado = borradorViewModel::actualizarConteo,
                 onTallaCambiada = borradorViewModel::actualizarTalla,
+                onCholgasCambiadas = borradorViewModel::actualizarCholgas,
                 onConfirmar = {
                     // El guardado vive en el ViewModel; aquí solo se navega con el resultado
                     val operador = usuario ?: return@VistaPreviaScreen
+                    // Si se guarda en otro centro, se dice dónde: no aparecerá en el resumen de la sesión
+                    // (se calcula antes de guardar, porque al guardar el borrador se limpia)
+                    val centroGuardado = borrador.parametros?.centroId
+                    val mensaje = if (centroGuardado != null && centroGuardado != loginState.centro.id) {
+                        val nombre = CentroCultivo.disponibles.find { it.id == centroGuardado }?.nombre ?: centroGuardado
+                        "Muestra guardada en $nombre"
+                    } else {
+                        "Muestra guardada"
+                    }
                     borradorViewModel.confirmar(
                         operador = operador,
                         alGuardar = {
-                            Toast.makeText(context, "Muestra guardada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
                             navController.popBackStack(Rutas.PRINCIPAL, inclusive = false)
                         },
                         alFallar = { motivo ->
@@ -224,9 +254,12 @@ fun MusselNavHost(
                 usuario = sesion,
                 centro = loginState.centro,
                 onNavegar = ::navegarDesdeMenu,
-                onVerMuestra = { id -> navController.navigate(Rutas.detalle(id)) },
-                // Por ahora el reconteo abre el formulario de Nueva Muestra
-                onRecontar = { navController.navigate(Rutas.MUESTRA) },
+                onVerMuestra = { id -> navController.navigate(Rutas.detalle(id)) { launchSingleTop = true } },
+                // Recontar abre Nueva Muestra con la ubicación (centro, tren, línea, estrato) ya elegida
+                onRecontar = { id ->
+                    empezarMuestraNueva()
+                    navController.navigate(Rutas.muestra(recontarId = id))
+                },
                 onCerrarSesion = loginViewModel::onCerrarSesion,
             )
         }

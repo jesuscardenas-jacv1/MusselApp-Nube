@@ -15,7 +15,6 @@ data class LoginUiState(
     val password: String = "",
     val passwordVisible: Boolean = false,
     val centro: CentroCultivo = CentroCultivo.disponibles.first(),
-    val modoOffline: Boolean = true,
     val rutError: String? = null,
     val passwordError: String? = null,
     val cargando: Boolean = false,

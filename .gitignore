@@ -16,3 +16,6 @@ captures/
 .cxx/
 *.apk
 *.aab
+
+# Caché local del compilador de Kotlin
+.kotlin/

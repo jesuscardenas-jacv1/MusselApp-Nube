@@ -84,6 +84,8 @@ import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.ui.componentes.MenuPerfil
 import cl.aldemar.musselapp.ui.componentes.ChipEstado
 import cl.aldemar.musselapp.ui.componentes.FotoMuestra
+import androidx.compose.ui.semantics.Role
+import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import cl.aldemar.musselapp.ui.theme.AlertaFondo
 import cl.aldemar.musselapp.ui.theme.AlertaTexto
 import cl.aldemar.musselapp.ui.theme.EstadoValidadoFondo
@@ -198,7 +200,7 @@ fun DetalleScreen(
                     IconButton(onClick = onVolver) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver al Historial",
+                            contentDescription = "Volver",
                             tint = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
@@ -326,7 +328,7 @@ fun DetalleScreen(
                             ) {
                                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Volver al Historial", fontWeight = FontWeight.SemiBold)
+                                Text("Volver", fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -335,56 +337,15 @@ fun DetalleScreen(
         }
     }
 
-    // Foto ampliada (solo si la muestra tiene foto)
+    // Foto ampliada a pantalla completa, con pellizco para acercar y giro
     val muestraZoom = uiState.muestra
-    if (uiState.modalZoomAbierto && muestraZoom != null && muestraZoom.fotoRuta != null) {
-        Dialog(onDismissRequest = { onAlternarZoom(false) }) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp)),
-                color = Color.Black,
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "Fotografía ${muestraZoom.codigo}",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        IconButton(onClick = { onAlternarZoom(false) }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Cerrar", tint = Color.White)
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(8.dp)),
-                    ) {
-                        FotoMuestra(
-                            fotoRuta = muestraZoom.fotoRuta,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Conteo: ${muestraZoom.conteoIndM} ind/m • Talla media: ${muestraZoom.tallaMm} mm",
-                        color = Color.LightGray,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
+    val rutaZoom = muestraZoom?.fotoRuta
+    if (uiState.modalZoomAbierto && muestraZoom != null && rutaZoom != null) {
+        VisorFoto(
+            ruta = rutaZoom,
+            onCerrar = { onAlternarZoom(false) },
+            titulo = "${muestraZoom.codigo} • ${muestraZoom.conteoIndM} ind/m • ${muestraZoom.tallaMm} mm",
+        )
     }
 }
 
@@ -418,17 +379,17 @@ private fun FranjaContextualDetalle(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Muestra #${muestra.codigo} • Tren ${muestra.tren} • ${muestra.codigoLinea}",
+                        "${muestra.codigo} • Tren ${muestra.tren} • ${muestra.codigoLinea}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
                 Row {
-                    IconButton(onClick = onCompartir, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onCompartir) {
                         Icon(Icons.Filled.Share, contentDescription = "Compartir", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                     }
-                    IconButton(onClick = onImprimir, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onImprimir) {
                         Icon(Icons.Filled.Print, contentDescription = "Imprimir", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
                     }
                 }
@@ -462,7 +423,7 @@ private fun ItemMicroMetrica(etiqueta: String, valor: String, modifier: Modifier
             Text(
                 text = etiqueta,
                 style = MaterialTheme.typography.labelSmall,
-                fontSize = 9.sp,
+                fontSize = 11.sp,
                 color = Color.White.copy(alpha = 0.7f),
                 fontWeight = FontWeight.Bold,
             )
@@ -506,7 +467,15 @@ private fun TarjetaFotoMuestra(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(4f / 3f)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(8.dp))
+                    // Toda la foto es el área táctil para ampliar (antes solo una píldora de ~32 dp)
+                    .then(
+                        if (muestra.fotoRuta != null) {
+                            Modifier.clickable(onClickLabel = "Ampliar la fotografía", role = Role.Button, onClick = onExpandir)
+                        } else {
+                            Modifier
+                        },
+                    ),
             ) {
                 FotoMuestra(fotoRuta = muestra.fotoRuta, modifier = Modifier.fillMaxSize())
 
@@ -535,13 +504,12 @@ private fun TarjetaFotoMuestra(
                             .padding(8.dp)
                             .clip(RoundedCornerShape(50))
                             .background(Color.White)
-                            .clickable(onClickLabel = "Ampliar la fotografía", onClick = onExpandir)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.ZoomIn, contentDescription = null, tint = Color(0xFF0F172A), modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Expandir", color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Ampliar", color = Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -753,6 +721,14 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                             fontWeight = FontWeight.Medium,
                         )
                     }
+                    // Cholgas: otra especie de la misma familia, contada aparte en el mismo tramo
+                    Text(
+                        "Cholgas: " + (muestra.cholgasIndM?.let { "$it ind / m" } ?: "no registradas"),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
                 }
             }
 

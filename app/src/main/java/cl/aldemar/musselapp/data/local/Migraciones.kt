@@ -43,5 +43,15 @@ object Migraciones {
         }
     }
 
-    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3)
+    /**
+     * v3 → v4: se agrega el conteo de cholgas por metro. Las muestras que ya estaban
+     * guardadas quedan con null (no se registró), no con 0 (se contó y no había).
+     */
+    val DE_3_A_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE muestras ADD COLUMN cholgas_ind_m INTEGER")
+        }
+    }
+
+    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4)
 }

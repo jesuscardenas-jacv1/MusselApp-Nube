@@ -23,11 +23,16 @@ data class Muestra(
     /** Comentario técnico del supervisor al validar o corregir la muestra. */
     val comentarioSupervisor: String? = null,
     val fotoRuta: String? = null,
+    /**
+     * Cholgas contadas en el mismo tramo de cuerda, en individuos por metro. Son otra especie
+     * de la misma familia que el chorito y se anotan aparte. null en las muestras anteriores a v4.
+     */
+    val cholgasIndM: Int? = null,
 ) {
     val codigoLinea: String get() = "L%02d".format(linea)
 
-    /** Código de trazabilidad, por ejemplo "MST-010". */
-    val codigo: String get() = "MST-%03d".format(id)
+    /** Código de trazabilidad que ve el usuario, por ejemplo "Muestra 010". */
+    val codigo: String get() = "Muestra %03d".format(id)
 
     /** Rendimiento estimado en kg por metro. */
     val rendimientoKgM: Double get() = ((conteoIndM * tallaMm * 0.00028 * 10).toInt() / 10.0).coerceAtLeast(0.1)

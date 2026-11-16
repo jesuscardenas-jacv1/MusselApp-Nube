@@ -36,7 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Anchor
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Sailing
@@ -116,7 +116,6 @@ fun LoginRoute(viewModel: LoginViewModel = viewModel()) {
         onPasswordChange = viewModel::onPasswordChange,
         onTogglePasswordVisible = viewModel::onTogglePasswordVisible,
         onCentroChange = viewModel::onCentroChange,
-        onModoOfflineChange = viewModel::onModoOfflineChange,
         onIngresar = viewModel::ingresar,
         onMensajeMostrado = viewModel::onMensajeMostrado,
     )
@@ -135,7 +134,6 @@ fun LoginScreen(
     onPasswordChange: (String) -> Unit,
     onTogglePasswordVisible: () -> Unit,
     onCentroChange: (CentroCultivo) -> Unit,
-    onModoOfflineChange: (Boolean) -> Unit,
     onIngresar: () -> Unit,
     onMensajeMostrado: () -> Unit,
 ) {
@@ -204,7 +202,6 @@ fun LoginScreen(
                                     onPasswordChange = onPasswordChange,
                                     onTogglePasswordVisible = onTogglePasswordVisible,
                                     onCentroChange = onCentroChange,
-                                    onModoOfflineChange = onModoOfflineChange,
                                     onIngresar = onIngresar,
                                     onOlvidoPin = {
                                         scope.launch { snackbarHostState.showSnackbar("Solicite el restablecimiento del PIN a su supervisor") }
@@ -286,7 +283,7 @@ private fun TarjetaPerfil(rol: Rol, onClick: () -> Unit) {
 
 private fun iconoRol(rol: Rol): ImageVector = when (rol) {
     Rol.OPERARIO -> Icons.Filled.Sailing
-    Rol.SUPERVISOR -> Icons.Filled.FactCheck
+    Rol.SUPERVISOR -> Icons.AutoMirrored.Filled.FactCheck
 }
 
 /** Paso 2: credenciales del perfil elegido. */
@@ -299,7 +296,6 @@ private fun PasoCredenciales(
     onPasswordChange: (String) -> Unit,
     onTogglePasswordVisible: () -> Unit,
     onCentroChange: (CentroCultivo) -> Unit,
-    onModoOfflineChange: (Boolean) -> Unit,
     onIngresar: () -> Unit,
     onOlvidoPin: () -> Unit,
 ) {
@@ -318,7 +314,7 @@ private fun PasoCredenciales(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             CampoFormulario(
-                etiqueta = "RUT / Código de Operario",
+                etiqueta = "RUT",
                 valor = uiState.rut,
                 onValorChange = onRutChange,
                 icono = Icons.Filled.Fingerprint,
@@ -334,11 +330,11 @@ private fun PasoCredenciales(
             )
 
             CampoFormulario(
-                etiqueta = "Contraseña de Seguridad",
+                etiqueta = "PIN de seguridad",
                 valor = uiState.password,
                 onValorChange = onPasswordChange,
                 icono = Icons.Filled.Lock,
-                placeholder = "PIN",
+                placeholder = "Ingresa tu PIN",
                 error = uiState.passwordError,
                 accionEtiqueta = {
                     TextButton(
@@ -357,7 +353,7 @@ private fun PasoCredenciales(
                     IconButton(onClick = onTogglePasswordVisible) {
                         Icon(
                             if (uiState.passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = if (uiState.passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                            contentDescription = if (uiState.passwordVisible) "Ocultar PIN" else "Mostrar PIN",
                         )
                     }
                 },
@@ -375,7 +371,7 @@ private fun PasoCredenciales(
 
             SelectorCentro(centro = uiState.centro, onCentroChange = onCentroChange)
 
-            TarjetaModoOffline(activo = uiState.modoOffline, onCambio = onModoOfflineChange)
+            TarjetaModoOffline()
 
             BotonIngresar(cargando = uiState.cargando) {
                 focusManager.clearFocus()
@@ -549,8 +545,12 @@ private fun SelectorCentro(centro: CentroCultivo, onCentroChange: (CentroCultivo
     }
 }
 
+/**
+ * Aviso informativo: la app siempre guarda en el equipo y envía al sincronizar.
+ * Antes era un interruptor que no cambiaba nada, lo que confundía al operario.
+ */
 @Composable
-private fun TarjetaModoOffline(activo: Boolean, onCambio: (Boolean) -> Unit) {
+private fun TarjetaModoOffline() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -562,23 +562,15 @@ private fun TarjetaModoOffline(activo: Boolean, onCambio: (Boolean) -> Unit) {
         Icon(Icons.Filled.CloudSync, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text("Modo Offline Terreno", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text("Funciona sin señal", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Text(
-                "Permite registrar cosechas y biometrías sin señal celular en pontón o bote de apoyo.",
+                "Las muestras se guardan en este equipo aunque no haya señal en el centro de cultivo, " +
+                    "y se envían al tocar Sincronizar.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary,
             )
         }
-        Spacer(Modifier.width(8.dp))
-        Switch(
-            checked = activo,
-            onCheckedChange = onCambio,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = MaterialTheme.colorScheme.primary,
-                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        )
     }
 }
 
@@ -624,7 +616,7 @@ private fun PasoPerfilPreview() {
             uiState = LoginUiState(),
             onRolChange = {}, onCambiarPerfil = {}, onRutChange = {},
             onPasswordChange = {}, onTogglePasswordVisible = {}, onCentroChange = {},
-            onModoOfflineChange = {}, onIngresar = {}, onMensajeMostrado = {},
+            onIngresar = {}, onMensajeMostrado = {},
         )
     }
 }
@@ -637,7 +629,7 @@ private fun PasoCredencialesPreview() {
             uiState = LoginUiState(rol = Rol.OPERARIO, rut = "11.111.111-1", password = "1234"),
             onRolChange = {}, onCambiarPerfil = {}, onRutChange = {},
             onPasswordChange = {}, onTogglePasswordVisible = {}, onCentroChange = {},
-            onModoOfflineChange = {}, onIngresar = {}, onMensajeMostrado = {},
+            onIngresar = {}, onMensajeMostrado = {},
         )
     }
 }

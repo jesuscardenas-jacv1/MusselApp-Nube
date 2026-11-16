@@ -19,9 +19,25 @@ class MuestraViewModel : ViewModel() {
     // uiState es de solo lectura para la Screen
     val uiState: StateFlow<MuestraUiState> = _uiState.asStateFlow()
 
+    /** Centro de la sesión: "Limpiar formulario" vuelve a él en vez de dejar el campo vacío. */
+    private var centroSesion: CentroCultivo? = null
+
     /** Deja elegido el centro con el que inició sesión, si aún no hay uno. */
     fun iniciar(centroInicial: CentroCultivo?) {
+        centroSesion = centroInicial
         _uiState.update { if (it.centro == null) it.copy(centro = centroInicial) else it }
+    }
+
+    /**
+     * Reconteo: copia la ubicación de una muestra existente (centro, tren, línea y estrato)
+     * para no volver a elegirla. Solo se aplica con el formulario aún vacío, así no pisa
+     * lo que el operario ya cambió al volver a esta pantalla.
+     */
+    fun prefijar(centro: CentroCultivo, tren: String, linea: Int, profundidadM: Int) {
+        _uiState.update {
+            if (it.tren != null || it.linea != null || it.profundidadM != null) it
+            else it.copy(centro = centro, tren = tren, linea = linea, profundidadM = profundidadM)
+        }
     }
 
     // Al cambiar un campo se borra su error, como en cambiarTitulo de la Clase 7
@@ -90,7 +106,7 @@ class MuestraViewModel : ViewModel() {
     }
 
     fun limpiar() {
-        // Todos los campos vacíos y sin mensajes
-        _uiState.value = MuestraUiState()
+        // Todos los campos vacíos y sin mensajes, salvo el centro de la sesión
+        _uiState.value = MuestraUiState(centro = centroSesion)
     }
 }

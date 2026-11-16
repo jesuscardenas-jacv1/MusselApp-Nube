@@ -16,10 +16,10 @@ object FichaMuestra {
     /** Pie de la ficha: el caso es académico y los datos son ficticios. */
     const val PIE = "MusselApp · Caso académico AquaSample / ALDEMAR SpA · Datos ficticios"
 
-    fun titulo(muestra: Muestra): String = "Ficha técnica · Muestra ${muestra.codigo}"
+    fun titulo(muestra: Muestra): String = "Ficha técnica · ${muestra.codigo}"
 
-    /** Nombre del archivo PDF, por ejemplo "Ficha_MST-012.pdf". */
-    fun nombreArchivo(muestra: Muestra): String = "Ficha_${muestra.codigo}.pdf"
+    /** Nombre del archivo PDF, por ejemplo "Ficha_Muestra_012.pdf". */
+    fun nombreArchivo(muestra: Muestra): String = "Ficha_${muestra.codigo.replace(' ', '_')}.pdf"
 
     /** Filas "etiqueta → valor" de la ficha, en el orden en que se muestran. */
     fun filas(muestra: Muestra, zona: TimeZone = TimeZone.getDefault()): List<Pair<String, String>> = listOf(
@@ -27,6 +27,7 @@ object FichaMuestra {
         "Tren / Línea" to "Tren ${muestra.tren} · ${muestra.codigoLinea}",
         "Profundidad" to "${muestra.profundidadM} m",
         "Conteo" to "${muestra.conteoIndM} ind/m",
+        "Cholgas" to (muestra.cholgasIndM?.let { "$it ind/m" } ?: "No registrado"),
         "Talla media" to "${muestra.tallaMm} mm",
         "Rendimiento estimado" to "${muestra.rendimientoKgM} kg/m",
         "Estado" to muestra.estado.etiqueta,

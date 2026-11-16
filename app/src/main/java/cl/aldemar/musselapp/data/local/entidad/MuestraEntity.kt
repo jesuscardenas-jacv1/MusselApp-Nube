@@ -42,4 +42,6 @@ data class MuestraEntity(
     /** false mientras la muestra no se envía al servidor (sincronización futura). */
     val sincronizada: Boolean,
     @ColumnInfo(name = "foto_ruta") val fotoRuta: String?,
+    /** Cholgas por metro (desde la versión 4 de la base); null en las muestras antiguas. */
+    @ColumnInfo(name = "cholgas_ind_m") val cholgasIndM: Int? = null,
 )

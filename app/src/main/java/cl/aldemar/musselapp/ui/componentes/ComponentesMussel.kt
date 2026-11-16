@@ -119,7 +119,8 @@ fun BarraSuperiorMussel(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        if (pendientesSincronizar == 0) "ONLINE / SINCRONIZADO" else "ONLINE / $pendientesSincronizar EN COLA",
+                        // Estado real de la cola: antes decía "ONLINE" siempre, aunque no hubiera conexión
+                        if (pendientesSincronizar == 0) "TODO SINCRONIZADO" else "$pendientesSincronizar EN COLA DE ENVÍO",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f),

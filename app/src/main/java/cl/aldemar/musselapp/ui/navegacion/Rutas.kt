@@ -2,14 +2,16 @@ package cl.aldemar.musselapp.ui.navegacion
 
 import cl.aldemar.musselapp.ui.principal.Destino
 
-/**
- * Rutas de navegación de MusselApp (inventario de pantallas 3.1).
- * Cada integrante reemplaza la pantalla provisoria de su ruta en MusselNavHost.
- */
+/** Rutas de navegación de MusselApp (inventario de pantallas 3.1). */
 object Rutas {
     const val LOGIN = "login"
     const val PRINCIPAL = "principal"
-    const val MUESTRA = "muestra"
+    const val ARG_RECONTAR = "recontar"
+
+    /** Nueva muestra; con [ARG_RECONTAR] se abre prellenada con la ubicación de esa muestra. */
+    const val MUESTRA = "muestra?$ARG_RECONTAR={$ARG_RECONTAR}"
+    fun muestra(recontarId: Long? = null) =
+        if (recontarId == null) "muestra" else "muestra?$ARG_RECONTAR=$recontarId"
     const val CAPTURA = "captura"
     const val VISTA_PREVIA = "vista_previa"
     const val HISTORIAL = "historial"
@@ -31,7 +33,7 @@ object Rutas {
 val Destino.ruta: String
     get() = when (this) {
         Destino.MUESTRAS -> Rutas.PRINCIPAL
-        Destino.NUEVA_MUESTRA -> Rutas.MUESTRA
+        Destino.NUEVA_MUESTRA -> Rutas.muestra()
         Destino.HISTORIAL -> Rutas.HISTORIAL
         Destino.SUPERVISION -> Rutas.revision()
     }

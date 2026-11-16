@@ -49,7 +49,7 @@ class FiltrosHistorialTest {
         assertEquals(listOf(1L), ids(CriteriosHistorial(periodo = Periodo.TODO, busqueda = "l04")))
         assertEquals(listOf(2L), ids(CriteriosHistorial(periodo = Periodo.TODO, busqueda = "epifauna")))
         assertEquals(listOf(1L, 4L), ids(CriteriosHistorial(periodo = Periodo.TODO, busqueda = "tren b")))
-        assertEquals(listOf(3L), ids(CriteriosHistorial(periodo = Periodo.TODO, busqueda = "mst-003")))
+        assertEquals(listOf(3L), ids(CriteriosHistorial(periodo = Periodo.TODO, busqueda = "muestra 003")))
     }
 
     @Test

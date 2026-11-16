@@ -38,6 +38,8 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterAltOff
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Search
@@ -63,6 +65,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -206,7 +209,15 @@ fun HistorialScreen(
             }
 
             if (uiState.muestras.isEmpty()) {
-                item { EstadoVacio(onRestablecer = onRestablecerFiltros) }
+                item {
+                    EstadoVacio(
+                        criterios = uiState.criterios,
+                        puedeRegistrar = usuario.rol == Rol.OPERARIO,
+                        onRestablecer = onRestablecerFiltros,
+                        onVerTodo = { onPeriodoChange(Periodo.TODO) },
+                        onRegistrar = { onNavegar(Destino.NUEVA_MUESTRA) },
+                    )
+                }
             } else {
                 items(uiState.muestras, key = { it.id }) { muestra ->
                     TarjetaMuestra(
@@ -606,7 +617,8 @@ private fun AccionesTarjeta(codigo: String, puedeRecontar: Boolean, onRecontar: 
         ) {
             Text("Ver detalle", fontWeight = FontWeight.Bold, maxLines = 1)
             Spacer(Modifier.width(6.dp))
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Ver detalle de #$codigo", modifier = Modifier.size(18.dp))
+            // Decorativo: el texto del botón ya lo anuncia (evita doble lectura en TalkBack)
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -632,8 +644,36 @@ private fun EstadoEnvio(muestra: Muestra) {
     }
 }
 
+/**
+ * Estado vacío que explica POR QUÉ no hay resultados y ofrece la salida adecuada:
+ * quitar filtros, ampliar el periodo o registrar la primera muestra.
+ */
 @Composable
-private fun EstadoVacio(onRestablecer: () -> Unit) {
+private fun EstadoVacio(
+    criterios: CriteriosHistorial,
+    puedeRegistrar: Boolean,
+    onRestablecer: () -> Unit,
+    onVerTodo: () -> Unit,
+    onRegistrar: () -> Unit,
+) {
+    val hayFiltros = criterios.busqueda.isNotBlank() || criterios.filtro != FiltroEstado.TODOS
+    val (icono, titulo, detalle) = when {
+        hayFiltros -> Triple(
+            Icons.Filled.FilterAltOff,
+            "Sin muestras coincidentes",
+            "No hay registros que coincidan con la búsqueda o el estado seleccionado.",
+        )
+        criterios.periodo != Periodo.TODO -> Triple(
+            Icons.Filled.EventBusy,
+            if (criterios.periodo == Periodo.HOY) "Sin muestras hoy" else "Sin muestras en los últimos 7 días",
+            "Aún no se registran muestras en este periodo. Puedes revisar el historial completo.",
+        )
+        else -> Triple(
+            Icons.Filled.Inventory2,
+            "Aún no hay muestras registradas",
+            "Cuando se registre la primera muestra de este centro aparecerá aquí.",
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -648,17 +688,25 @@ private fun EstadoVacio(onRestablecer: () -> Unit) {
                 .background(MaterialTheme.colorScheme.surfaceContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.FilterAltOff, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(32.dp))
+            Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(32.dp))
         }
-        Text("Sin muestras coincidentes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         Text(
-            "No se encontraron registros que coincidan con la búsqueda o los filtros seleccionados.",
+            detalle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.secondary,
             textAlign = TextAlign.Center,
         )
-        OutlinedButton(onClick = onRestablecer, shape = RoundedCornerShape(10.dp)) {
-            Text("Restablecer filtros", fontWeight = FontWeight.Bold)
+        when {
+            hayFiltros -> OutlinedButton(onClick = onRestablecer, shape = RoundedCornerShape(10.dp)) {
+                Text("Quitar búsqueda y filtros", fontWeight = FontWeight.Bold)
+            }
+            criterios.periodo != Periodo.TODO -> Button(onClick = onVerTodo, shape = RoundedCornerShape(10.dp)) {
+                Text("Ver todo el historial", fontWeight = FontWeight.Bold)
+            }
+            puedeRegistrar -> Button(onClick = onRegistrar, shape = RoundedCornerShape(10.dp)) {
+                Text("Registrar muestra", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -666,7 +714,8 @@ private fun EstadoVacio(onRestablecer: () -> Unit) {
 @Preview(showBackground = true, heightDp = 1800)
 @Composable
 private fun HistorialPreview() {
-    val todas = FakeMuestraRepository().muestras.value
+    val repositorio = remember { FakeMuestraRepository() }
+    val todas by repositorio.muestras.collectAsState()
     val resultado = FiltrosHistorial.aplicar(todas, CriteriosHistorial(periodo = Periodo.TODO))
     MusselAppTheme {
         HistorialScreen(

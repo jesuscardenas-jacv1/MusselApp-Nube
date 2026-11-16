@@ -59,7 +59,17 @@ class AppContainer(context: Context) {
     }
 
     val authRepository: AuthRepository by lazy {
-        RoomAuthRepository(database.usuarioDao(), bloqueo = BloqueoLogin(PreferenciasIntentos(appContext)))
+        RoomAuthRepository(
+            database.usuarioDao(),
+            bloqueo = BloqueoLogin(PreferenciasIntentos(appContext)),
+            esperarDatos = database::esperarDatosIniciales,
+        )
+    }
+
+    init {
+        // Abre la base y carga los datos iniciales mientras el usuario completa el login,
+        // así las pantallas no arrancan con listas vacías ni el primer login choca con la semilla
+        alcanceApp.launch { database.esperarDatosIniciales() }
     }
 
     /** Borra una foto de la app (los ViewModels no tienen Context). */

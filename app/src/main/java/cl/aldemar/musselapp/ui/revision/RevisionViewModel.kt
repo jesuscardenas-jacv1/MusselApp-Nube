@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -20,15 +21,26 @@ class RevisionViewModel(
     private val _uiState = MutableStateFlow(RevisionUiState())
     val uiState: StateFlow<RevisionUiState> = _uiState.asStateFlow()
 
+    /** Centro con el que se inició sesión; null revisa todos los centros. */
+    private val centroId = MutableStateFlow<String?>(null)
+
+    // Debe ir después de centroId: Kotlin inicializa en orden de declaración y
+    // viewModelScope arranca de inmediato, así que antes combine recibía null y la app se cerraba
     init {
         observarMuestras()
     }
 
+    /** La cola muestra solo el centro de la sesión, igual que Principal e Historial. */
+    fun mostrarCentro(id: String) {
+        centroId.value = id
+    }
+
     private fun observarMuestras() {
         viewModelScope.launch {
-            repository.muestras.collect { todas ->
+            combine(repository.muestras, centroId) { todas, centro ->
                 // Validado y Corregido son dictámenes finales: la cola tiene solo las pendientes
-                val pendientes = todas.filter { it.estado == EstadoMuestra.PENDIENTE }
+                todas.filter { it.estado == EstadoMuestra.PENDIENTE && (centro == null || it.centroId == centro) }
+            }.collect { pendientes ->
                 _uiState.update { estadoActual ->
                     val actualValido = pendientes.any { it.id == estadoActual.muestraSeleccionadaId }
                     val nuevaSeleccionada = if (actualValido) estadoActual.muestraSeleccionadaId else pendientes.firstOrNull()?.id
@@ -49,12 +61,13 @@ class RevisionViewModel(
                 estadoElegido = null,
                 comentarioTecnico = "",
                 errorComentario = null,
+                errorDictamen = null,
             )
         }
     }
 
     fun elegirEstado(estado: EstadoMuestra) {
-        _uiState.update { it.copy(estadoElegido = estado, errorComentario = null) }
+        _uiState.update { it.copy(estadoElegido = estado, errorComentario = null, errorDictamen = null) }
     }
 
     fun actualizarComentario(texto: String) {
@@ -79,7 +92,27 @@ class RevisionViewModel(
     fun enfocarMuestra(id: Long) {
         _uiState.update { actual ->
             if (actual.muestraSeleccionadaId == id) actual
-            else actual.copy(muestraSeleccionadaId = id, estadoElegido = null, comentarioTecnico = "", errorComentario = null)
+            else actual.copy(muestraSeleccionadaId = id, estadoElegido = null, comentarioTecnico = "", errorComentario = null, errorDictamen = null)
+        }
+    }
+
+    /**
+     * Revisa el dictamen antes de pedir confirmación. Devuelve true si se puede guardar;
+     * si falta algo, deja el error junto al control correspondiente.
+     */
+    fun validarDictamen(): Boolean {
+        val estado = _uiState.value
+        if (estado.muestraActual == null) return false
+        return when {
+            estado.estadoElegido == null -> {
+                _uiState.update { it.copy(errorDictamen = "Selecciona un dictamen: Validar o Corregir") }
+                false
+            }
+            estado.estadoElegido == EstadoMuestra.CORREGIDO && estado.comentarioTecnico.isBlank() -> {
+                _uiState.update { it.copy(errorComentario = "Debes indicar qué se corrigió en la muestra") }
+                false
+            }
+            else -> true
         }
     }
 
@@ -90,7 +123,7 @@ class RevisionViewModel(
         val nuevoEstado = estadoActual.estadoElegido
 
         if (nuevoEstado == null) {
-            _uiState.update { it.copy(errorComentario = "Debes seleccionar un dictamen: Validar o Corregir") }
+            _uiState.update { it.copy(errorDictamen = "Selecciona un dictamen: Validar o Corregir") }
             return
         }
 
@@ -117,7 +150,7 @@ class RevisionViewModel(
                         estadoElegido = null,
                         comentarioTecnico = "",
                         errorComentario = null,
-                        mensajeToast = "Dictamen registrado para muestra ${muestra.codigo}",
+                        mensajeToast = "Dictamen registrado para la ${muestra.codigo}",
                     )
                 }
                 onExito()
