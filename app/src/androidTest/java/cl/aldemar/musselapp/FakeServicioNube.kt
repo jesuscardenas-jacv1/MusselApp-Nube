@@ -19,13 +19,15 @@ class FakeServicioNube(
     val subidas = mutableListOf<Long>()
 
     private var alAplicar: ((VeredictoNube) -> Unit)? = null
+    private var alEliminar: ((Long) -> Unit)? = null
 
     override suspend fun subir(m: Muestra): Boolean {
         synchronized(subidas) { subidas += m.id }
         return subidaOk
     }
 
-    override fun escucharVeredictos(alAplicar: (VeredictoNube) -> Unit) {
+    override fun escucharVeredictos(alEliminar: (Long) -> Unit, alAplicar: (VeredictoNube) -> Unit) {
+        this.alEliminar = alEliminar
         this.alAplicar = alAplicar
         veredictosIniciales.forEach(alAplicar)
     }
@@ -34,6 +36,12 @@ class FakeServicioNube(
     fun emitir(veredicto: VeredictoNube) {
         val destino = alAplicar ?: error("El repositorio todavía no se suscribió a los veredictos")
         destino(veredicto)
+    }
+
+    /** Simula que el supervisor borró en el portal la muestra con este id local. */
+    fun eliminar(muestraId: Long) {
+        val destino = alEliminar ?: error("El repositorio todavía no se suscribió a la nube")
+        destino(muestraId)
     }
 
     fun idsSubidos(): List<Long> = synchronized(subidas) { subidas.toList() }

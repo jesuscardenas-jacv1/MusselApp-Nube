@@ -128,8 +128,8 @@ class NubeSync(context: Context) : ServicioNube {
         }
     }
 
-    /** Escucha en vivo los dictámenes del supervisor para las muestras de este teléfono. */
-    override fun escucharVeredictos(alAplicar: (VeredictoNube) -> Unit) {
+    /** Escucha en vivo los dictámenes y los borrados del supervisor para las muestras de este teléfono. */
+    override fun escucharVeredictos(alEliminar: (Long) -> Unit, alAplicar: (VeredictoNube) -> Unit) {
         val db = firestore ?: return
         try {
             db.collection(COLECCION).addSnapshotListener { snap, error ->
@@ -138,10 +138,16 @@ class NubeSync(context: Context) : ServicioNube {
                     return@addSnapshotListener
                 }
                 for (cambio in snap.documentChanges) {
-                    if (cambio.type == DocumentChange.Type.REMOVED) continue
                     val doc = cambio.document
                     if (!doc.id.startsWith("${instalacion}_")) continue
                     val id = doc.id.substringAfterLast('_').toLongOrNull() ?: continue
+                    // El supervisor borró la muestra en el portal. El teléfono nunca borra documentos,
+                    // así que un REMOVED siempre viene del portal. Si la app estaba cerrada, el documento
+                    // sigue en la caché local de Firestore y el REMOVED llega al sincronizar con el servidor
+                    if (cambio.type == DocumentChange.Type.REMOVED) {
+                        alEliminar(id)
+                        continue
+                    }
                     val estado = runCatching { EstadoMuestra.valueOf(doc.getString("estado") ?: "") }
                         .getOrNull() ?: continue
                     if (estado == EstadoMuestra.PENDIENTE) continue
