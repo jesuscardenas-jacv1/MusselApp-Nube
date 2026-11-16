@@ -20,6 +20,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 - El **operario** registra la muestra (centro, tren, línea y estrato), adjunta una fotografía, ingresa conteo y talla, y la guarda en el teléfono aunque no haya señal.
 - El **supervisor** revisa las muestras pendientes y las deja **Validadas** o **Corregidas** con un comentario técnico.
 - Todo queda en un **historial** consultable, con búsqueda, filtros y detalle de cada muestra.
+- Cuando hay señal, cada muestra se **sube a la nube** (Firestore) y el supervisor la puede dictaminar desde el **portal web**; el dictamen vuelve al teléfono con un aviso.
 
 > Proyecto académico con datos ficticios. No reemplaza el criterio técnico de ALDEMAR ni realiza conteo automático.
 
@@ -40,6 +41,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Clima y estado del mar al muestrear (viento, racha, ola, temperatura del agua, marea) | Detalle, ficha PDF | API REST de [Open-Meteo](https://open-meteo.com) con Retrofit (`ClimaRepository`); guardar nunca espera a la red |
 | Alertas automáticas para el supervisor (fuera del área, densidad, cholgas, talla, mal tiempo) | Supervisión, Detalle, portal web | `AlertasMuestra.evaluar()`, reglas puras con los límites en `Umbrales` |
 | Métricas de la jornada y muestras recientes | Principal | `PrincipalViewModel` + `ResumenJornada` |
+| Sincronización con la nube y dictamen desde el computador | Todas, portal web | `NubeSync` (Firestore) detrás de la interfaz `ServicioNube`; Room sigue siendo la fuente de verdad, se guarda sin red y se sube después. `ProteccionDictamen` evita que un reintento pise un dictamen del supervisor |
 | Seguridad local | Login | PIN guardado con hash PBKDF2, bloqueo tras 5 intentos fallidos y base excluida del respaldo |
 
 **Recursos del dispositivo integrados al flujo:** cámara, galería (Photo Picker), ubicación (GPS), documentos (ficha PDF para imprimir o compartir) y fecha/hora del registro.
@@ -68,9 +70,9 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 
 1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/jesuscardenas-jacv1/Proyecto-ALDEMAR.git
+   git clone https://github.com/jesuscardenas-jacv1/MusselApp-Nube.git
    ```
-2. Abrir la carpeta `Proyecto-ALDEMAR` en Android Studio y esperar la sincronización de Gradle.
+2. Abrir la carpeta `MusselApp-Nube` en Android Studio y esperar la sincronización de Gradle.
 3. Conectar un teléfono con la **depuración USB** activada (o iniciar un emulador).
 4. Elegir la configuración **app** y presionar **Run ▶**.
 
@@ -95,9 +97,15 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 87 pruebas unitarias (validaciones, filtros, ViewModels, hash del PIN, alertas, distancia, clima)
-./gradlew connectedDebugAndroidTest  # 18 pruebas instrumentadas con Room real (requiere teléfono o emulador)
+./gradlew testDebugUnitTest          # 92 pruebas unitarias (validaciones, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew connectedDebugAndroidTest  # 25 pruebas instrumentadas con Room real, migraciones y sincronización con una nube falsa (requiere teléfono o emulador)
 ```
+
+Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/android.yml`) en cada push a `main`, `feature/**`, `fix/**` o `mejoras/**` y en cada PR: compila, corre las unitarias y las instrumentadas en un emulador, y deja el APK de debug como artefacto descargable por 14 días.
+
+### Portal web del supervisor
+
+El supervisor revisa y dictamina las muestras desde el computador abriendo [`web-supervisor/index.html`](web-supervisor/index.html) con doble clic en Chrome (sin servidor ni instalación). Se conecta al proyecto Firebase `musselapp-demo` y se actualiza en vivo. Entra con el supervisor de prueba (`22.222.222-2` / `1234`) o con **Ver con datos de ejemplo** para probar sin nube. Detalle de pantallas y funcionamiento en [`web-supervisor/README.md`](web-supervisor/README.md).
 
 ## 5. Arquitectura
 
@@ -110,7 +118,11 @@ flowchart LR
     VM --> REPO["Repository<br/>AuthRepository · MuestraRepository"]
     REPO --> DAO["Room · DAO<br/>MuestraDao · UsuarioDao · CatalogoDao"]
     DAO --> DB[("SQLite<br/>musselapp.db")]
+    REPO <-->|sube muestras / recibe dictámenes| NUBE["ServicioNube · NubeSync<br/>Firestore (musselapp-demo)"]
+    WEB["Portal web del supervisor<br/>web-supervisor/index.html"] <--> NUBE
 ```
+
+Room es la **fuente de verdad**: la app guarda primero en el teléfono y luego sube a Firestore. Si no hay red, la muestra queda pendiente de sincronizar y se reintenta.
 
 ```
 app/src/main/java/cl/aldemar/musselapp/
@@ -118,6 +130,8 @@ app/src/main/java/cl/aldemar/musselapp/
 ├── data/
 │   ├── local/               # Room: MusselDatabase, Migraciones, dao/, entidad/
 │   ├── model/               # Muestra, Usuario, Rol, EstadoMuestra, CentroCultivo
+│   ├── nube/                # ServicioNube, NubeSync (Firestore), ProteccionDictamen, avisos
+│   ├── clima/ ubicacion/    # Open-Meteo (Retrofit) y GPS
 │   └── repository/          # interfaces + implementaciones Room y de prueba
 ├── ui/
 │   ├── login/ principal/ muestra/ screens/ historial/ detalle/ revision/
@@ -151,10 +165,12 @@ El modelo de datos (diagrama entidad-relación y tablas) está documentado en [`
 - Arquitectura **MVVM** con **ViewModel** y **StateFlow**
 - **Navigation Compose**
 - Persistencia local con **Room 2.8** (SQLite, KSP)
+- **Firebase Cloud Firestore** para sincronizar muestras y dictámenes
 - **CameraX** y Activity Result API (permisos, Photo Picker)
 - **Retrofit** + Gson para la API REST de clima (Open-Meteo)
 - **Google Play Services Location** para la posición GPS
-- **Gradle** (Kotlin DSL), Android Studio
+- **Gradle** (Kotlin DSL), Android Studio, **GitHub Actions** (CI)
+- Portal web: HTML y JavaScript sin framework, Firebase (SDK compat), Chart.js, Leaflet con teselas de CARTO
 - Diseño: **Google Stitch**, Mermaid para UML
 
 ## 9. Identidad visual
@@ -208,7 +224,7 @@ flowchart TD
 
 ## 11. Diseño de interfaces
 
-Diseños base generados con **Google Stitch** (Material Design 3), guardados en [`docs/diseno/interfaces/`](docs/diseno/interfaces/). Las capturas de la app real están en la sección 3.
+Diseños base generados con **Google Stitch** (Material Design 3), guardados en [`docs/diseno/interfaces/`](docs/diseno/interfaces/). La exportación original de Stitch (HTML y capturas de cada pantalla, y el sistema de diseño) está en [`docs/diseno/stitch/`](docs/diseno/stitch/). Las capturas de la app real están en la sección 3.
 
 | Pantalla | Objetivo | Diseño |
 |---|---|---|
@@ -233,6 +249,7 @@ Diseños base generados con **Google Stitch** (Material Design 3), guardados en 
 ## 12. Estructura del repositorio
 
 ```
+.github/workflows/           # CI: build + pruebas unitarias e instrumentadas
 app/                         # código fuente de la app Android
 ├── schemas/                 # esquemas exportados de Room (uno por versión)
 └── src/
@@ -245,7 +262,9 @@ docs/
 ├── diseno/
 │   ├── logo.png · logo.svg
 │   ├── flujo-usuario-uml.png · flujo-usuario-uml.mmd
-│   └── interfaces/          # pantallas diseñadas en Stitch
+│   ├── interfaces/          # pantallas diseñadas en Stitch
+│   └── stitch/              # exportación original de Google Stitch
 └── evidencias/
     └── clase-02/            # Evidencia_Clase_02_Diseno_EquipoPipeno
+web-supervisor/              # portal web del supervisor (index.html + README)
 ```
