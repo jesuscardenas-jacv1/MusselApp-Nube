@@ -65,6 +65,8 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     // Posición del teléfono al registrar la muestra
     implementation(libs.play.services.location)
+    // Orientación EXIF de las fotos (reemplaza a android.media.ExifInterface, obsoleta)
+    implementation(libs.androidx.exifinterface)
     // room-testing (MigrationTestHelper) necesita kotlinx-serialization 1.8.1; la app traía 1.7.3 y la
     // prueba de migración fallaba con AbstractMethodError. Se fija la versión para que coincidan.
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")

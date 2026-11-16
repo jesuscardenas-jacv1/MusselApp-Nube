@@ -3,7 +3,7 @@ package cl.aldemar.musselapp.util
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 
 /**
  * Lectura de las fotos de muestras. Toda la app usa esta función para que la evidencia
