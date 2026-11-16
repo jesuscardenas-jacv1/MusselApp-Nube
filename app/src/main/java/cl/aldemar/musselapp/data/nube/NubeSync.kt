@@ -36,7 +36,7 @@ data class VeredictoNube(
  * esta clase solo copia las muestras a la nube y trae de vuelta los dictámenes.
  * Todo fallo es no fatal: la muestra queda pendiente de sincronizar.
  */
-class NubeSync(context: Context) {
+class NubeSync(context: Context) : ServicioNube {
 
     private val prefs = context.applicationContext.getSharedPreferences("nube", Context.MODE_PRIVATE)
 
@@ -61,7 +61,7 @@ class NubeSync(context: Context) {
     private fun docId(muestraId: Long) = "${instalacion}_$muestraId"
 
     /** Sube (o actualiza) la muestra. Devuelve true si el servidor la confirmó. */
-    suspend fun subir(m: Muestra): Boolean {
+    override suspend fun subir(m: Muestra): Boolean {
         val db = firestore ?: run { Log.e(TAG, "subir: sin Firestore"); return false }
         return try {
             Log.i(TAG, "Subiendo ${docId(m.id)}")
@@ -107,10 +107,17 @@ class NubeSync(context: Context) {
             }
             withTimeout(TIMEOUT_MS) {
                 suspendCancellableCoroutine { cont ->
-                    val lote = db.batch()
-                    lote.set(db.collection(COLECCION).document(docId(m.id)), datos, SetOptions.merge())
-                    if (foto != null) lote.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
-                    lote.commit()
+                    val refMuestra = db.collection(COLECCION).document(docId(m.id))
+                    // Transacción en vez de lote: se lee primero lo que hay en la nube para que un reintento
+                    // (por ejemplo, tras un corte de internet) no pise un dictamen que el supervisor ya dejó.
+                    // Sin conexión la transacción falla de inmediato y la muestra queda pendiente, igual que antes.
+                    db.runTransaction { tx ->
+                        val remoto = tx.get(refMuestra)
+                        val estadoRemoto = if (remoto.exists()) remoto.getString("estado") else null
+                        tx.set(refMuestra, ProteccionDictamen.filtrar(datos, m.estado, estadoRemoto), SetOptions.merge())
+                        if (foto != null) tx.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
+                        null
+                    }
                         .addOnSuccessListener { Log.i(TAG, "Subida OK ${docId(m.id)}"); if (cont.isActive) cont.resume(true) }
                         .addOnFailureListener { Log.e(TAG, "Subida FALLÓ", it); if (cont.isActive) cont.resume(false) }
                 }
@@ -122,7 +129,7 @@ class NubeSync(context: Context) {
     }
 
     /** Escucha en vivo los dictámenes del supervisor para las muestras de este teléfono. */
-    fun escucharVeredictos(alAplicar: (VeredictoNube) -> Unit) {
+    override fun escucharVeredictos(alAplicar: (VeredictoNube) -> Unit) {
         val db = firestore ?: return
         try {
             db.collection(COLECCION).addSnapshotListener { snap, error ->

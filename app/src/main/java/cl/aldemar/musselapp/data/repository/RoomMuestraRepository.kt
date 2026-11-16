@@ -8,7 +8,7 @@ import cl.aldemar.musselapp.data.local.conPosicion
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
-import cl.aldemar.musselapp.data.nube.NubeSync
+import cl.aldemar.musselapp.data.nube.ServicioNube
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.data.local.DatosIniciales
@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Repositorio de muestras sobre la base Room. Reemplaza a [FakeMuestraRepository]
@@ -30,7 +32,8 @@ import kotlinx.coroutines.flow.stateIn
 class RoomMuestraRepository(
     private val db: MusselDatabase,
     alcance: CoroutineScope,
-    private val nube: NubeSync? = null,
+    /** Nube (Firestore en la app, una falsa en las pruebas); null para funcionar solo local. */
+    private val nube: ServicioNube? = null,
     private val alcanceNube: CoroutineScope = alcance,
     private val latenciaSincronizacionMs: Long = 1500,
     private val alRevisar: (Muestra, EstadoMuestra, String?) -> Unit = { _, _, _ -> },
@@ -41,6 +44,9 @@ class RoomMuestraRepository(
 
     private val muestraDao = db.muestraDao()
     private val usuarioDao = db.usuarioDao()
+
+    /** Los dictámenes de la nube se aplican uno a la vez. */
+    private val aplicandoDictamen = Mutex()
 
     /** Lista viva: Room vuelve a emitir cada vez que cambia una tabla de la consulta. */
     override val muestras: StateFlow<List<Muestra>> =
@@ -53,11 +59,16 @@ class RoomMuestraRepository(
         nube?.escucharVeredictos { v ->
             alcanceNube.launch {
                 try {
-                    val local = muestras.value.firstOrNull { it.id == v.muestraId } ?: return@launch
-                    if (local.estado != EstadoMuestra.PENDIENTE) return@launch
-                    muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
-                    muestraDao.marcarSincronizada(v.muestraId)
-                    alRevisar(local, v.estado, v.comentario)
+                    // De a uno: si la nube repite el mismo dictamen, el segundo ya encuentra la muestra revisada
+                    aplicandoDictamen.withLock {
+                        // Se consulta Room y no la lista en memoria: al abrir la app, la nube puede entregar
+                        // su snapshot antes de que Room emita la primera lista, y el dictamen se perdería
+                        val local = muestraDao.observarPorId(v.muestraId).first()?.aModelo() ?: return@launch
+                        if (local.estado != EstadoMuestra.PENDIENTE) return@launch
+                        muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
+                        muestraDao.marcarSincronizada(v.muestraId)
+                        alRevisar(local, v.estado, v.comentario)
+                    }
                 } catch (e: Exception) {
                     android.util.Log.w("RoomMuestraRepo", "No se pudo aplicar el dictamen", e)
                 }
