@@ -107,10 +107,17 @@ class NubeSync(context: Context) : ServicioNube {
             }
             withTimeout(TIMEOUT_MS) {
                 suspendCancellableCoroutine { cont ->
-                    val lote = db.batch()
-                    lote.set(db.collection(COLECCION).document(docId(m.id)), datos, SetOptions.merge())
-                    if (foto != null) lote.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
-                    lote.commit()
+                    val refMuestra = db.collection(COLECCION).document(docId(m.id))
+                    // Transacción en vez de lote: se lee primero lo que hay en la nube para que un reintento
+                    // (por ejemplo, tras un corte de internet) no pise un dictamen que el supervisor ya dejó.
+                    // Sin conexión la transacción falla de inmediato y la muestra queda pendiente, igual que antes.
+                    db.runTransaction { tx ->
+                        val remoto = tx.get(refMuestra)
+                        val estadoRemoto = if (remoto.exists()) remoto.getString("estado") else null
+                        tx.set(refMuestra, ProteccionDictamen.filtrar(datos, m.estado, estadoRemoto), SetOptions.merge())
+                        if (foto != null) tx.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
+                        null
+                    }
                         .addOnSuccessListener { Log.i(TAG, "Subida OK ${docId(m.id)}"); if (cont.isActive) cont.resume(true) }
                         .addOnFailureListener { Log.e(TAG, "Subida FALLÓ", it); if (cont.isActive) cont.resume(false) }
                 }

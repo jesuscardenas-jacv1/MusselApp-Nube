@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Repositorio de muestras sobre la base Room. Reemplaza a [FakeMuestraRepository]
@@ -43,6 +45,9 @@ class RoomMuestraRepository(
     private val muestraDao = db.muestraDao()
     private val usuarioDao = db.usuarioDao()
 
+    /** Los dictámenes de la nube se aplican uno a la vez. */
+    private val aplicandoDictamen = Mutex()
+
     /** Lista viva: Room vuelve a emitir cada vez que cambia una tabla de la consulta. */
     override val muestras: StateFlow<List<Muestra>> =
         muestraDao.observarTodas()
@@ -54,11 +59,16 @@ class RoomMuestraRepository(
         nube?.escucharVeredictos { v ->
             alcanceNube.launch {
                 try {
-                    val local = muestras.value.firstOrNull { it.id == v.muestraId } ?: return@launch
-                    if (local.estado != EstadoMuestra.PENDIENTE) return@launch
-                    muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
-                    muestraDao.marcarSincronizada(v.muestraId)
-                    alRevisar(local, v.estado, v.comentario)
+                    // De a uno: si la nube repite el mismo dictamen, el segundo ya encuentra la muestra revisada
+                    aplicandoDictamen.withLock {
+                        // Se consulta Room y no la lista en memoria: al abrir la app, la nube puede entregar
+                        // su snapshot antes de que Room emita la primera lista, y el dictamen se perdería
+                        val local = muestraDao.observarPorId(v.muestraId).first()?.aModelo() ?: return@launch
+                        if (local.estado != EstadoMuestra.PENDIENTE) return@launch
+                        muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
+                        muestraDao.marcarSincronizada(v.muestraId)
+                        alRevisar(local, v.estado, v.comentario)
+                    }
                 } catch (e: Exception) {
                     android.util.Log.w("RoomMuestraRepo", "No se pudo aplicar el dictamen", e)
                 }
