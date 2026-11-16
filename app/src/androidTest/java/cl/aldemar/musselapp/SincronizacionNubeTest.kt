@@ -193,6 +193,30 @@ class SincronizacionNubeTest {
         assertTrue(revisadasAhora().isEmpty())
     }
 
+    // ── F2: carrera al arrancar ────────────────────────────────────────────
+
+    /**
+     * Al abrir la app, Firestore puede entregar su snapshot antes de que Room emita la primera lista.
+     * El dictamen debe aplicarse igual: el repositorio tiene que consultar Room, no la lista en memoria.
+     * La nube falsa emite el veredicto en el mismo instante en que el repositorio se suscribe, y el
+     * alcance inmediato hace que se procese antes de que exista la lista en memoria.
+     */
+    @Test
+    fun veredicto_queLlegaAntesDeLaPrimeraListaDeRoom_seAplicaIgual() = runBlocking {
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val nube = FakeServicioNube(
+            veredictosIniciales = listOf(VeredictoNube(id, EstadoMuestra.VALIDADO, "Llegó primero", System.currentTimeMillis())),
+        )
+
+        crearRepositorio(nube, alcanceNube = alcanceInmediato())
+
+        esperar("el dictamen que llegó antes que Room se aplica") {
+            muestra(id).let { it.estado == EstadoMuestra.VALIDADO && it.sincronizada }
+        }
+        assertEquals("Llegó primero", muestra(id).comentarioSupervisor)
+        esperar("se avisa al operario") { revisadasAhora().size == 1 }
+    }
+
     private companion object {
         const val OBSERVACION_PRUEBA = "Desde la prueba de nube"
         const val ID_INEXISTENTE = 999_999L
