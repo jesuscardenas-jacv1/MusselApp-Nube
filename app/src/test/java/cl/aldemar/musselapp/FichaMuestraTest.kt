@@ -1,7 +1,9 @@
 package cl.aldemar.musselapp
 
+import cl.aldemar.musselapp.data.model.Clima
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
+import cl.aldemar.musselapp.data.model.Posicion
 import cl.aldemar.musselapp.util.FichaMuestra
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -19,6 +21,34 @@ class FichaMuestraTest {
         registradaEn = 0L, sincronizada = false, operador = "Carla Vera",
         revisadaPor = "Diego Muñoz", comentarioSupervisor = "Conteo ajustado",
     )
+
+    @Test
+    fun filas_sinPosicionNiClima_lodicen() {
+        val filas = FichaMuestra.filas(muestra, utc).toMap()
+        assertEquals("No registrada", filas["Ubicación"])
+        assertEquals("No registrada", filas["Distancia al centro"])
+        assertEquals("No registrado", filas["Tiempo"])
+        assertEquals("No registrado", filas["Mar"])
+        assertEquals("Sin ubicación", filas["Alertas al registrar"])
+    }
+
+    @Test
+    fun filas_conPosicionYClima() {
+        val completa = muestra.copy(
+            // Unos 3 km al sur del punto de referencia de Dalcahue
+            posicion = Posicion(-42.401, -73.622, 12.0),
+            clima = Clima(
+                tempAireC = 17.0, vientoKn = 2.4, rachaKn = 5.4, vientoDir = 21, codigo = 3,
+                olaM = 0.08, tempAguaC = 16.3, mareaM = 0.28, obtenidoEn = 0L,
+            ),
+        )
+        val filas = FichaMuestra.filas(completa, utc).toMap()
+        assertEquals("-42.4010, -73.6220 (±12 m)", filas["Ubicación"])
+        assertEquals("3,0 km (fuera del área)", filas["Distancia al centro"])
+        assertEquals("Nublado · 17 °C · viento 2 kn del N (racha 5 kn)", filas["Tiempo"])
+        assertEquals("Ola 0,1 m · agua 16,3 °C · marea +0,28 m", filas["Mar"])
+        assertEquals("Fuera del área", filas["Alertas al registrar"])
+    }
 
     @Test
     fun nombreYTitulo_usanElCodigoDeLaMuestra() {

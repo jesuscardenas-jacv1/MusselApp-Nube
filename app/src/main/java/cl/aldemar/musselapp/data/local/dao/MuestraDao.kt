@@ -86,6 +86,29 @@ interface MuestraDao {
     @Query("UPDATE muestras SET sincronizada = 1 WHERE id = :id")
     suspend fun marcarSincronizada(id: Long)
 
+    /** Guarda el clima consultado después de insertar la muestra (guardar nunca espera a la red). */
+    @Query(
+        """
+        UPDATE muestras SET
+            clima_temp_aire_c = :tempAireC, clima_viento_kn = :vientoKn, clima_racha_kn = :rachaKn,
+            clima_viento_dir = :vientoDir, clima_codigo = :codigo, clima_ola_m = :olaM,
+            clima_temp_agua_c = :tempAguaC, clima_marea_m = :mareaM, clima_obtenido_en = :obtenidoEn
+        WHERE id = :id
+        """,
+    )
+    suspend fun guardarClima(
+        id: Long,
+        tempAireC: Double?,
+        vientoKn: Double?,
+        rachaKn: Double?,
+        vientoDir: Int?,
+        codigo: Int?,
+        olaM: Double?,
+        tempAguaC: Double?,
+        mareaM: Double?,
+        obtenidoEn: Long,
+    )
+
     @Query("SELECT COUNT(*) FROM muestras")
     suspend fun contar(): Int
 }

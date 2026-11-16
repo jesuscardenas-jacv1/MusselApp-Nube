@@ -28,6 +28,10 @@ data class Muestra(
      * de la misma familia que el chorito y se anotan aparte. null en las muestras anteriores a v4.
      */
     val cholgasIndM: Int? = null,
+    /** Posición del teléfono al guardar; null sin permiso, sin señal o en muestras anteriores a v5. */
+    val posicion: Posicion? = null,
+    /** Tiempo y estado del mar al muestrear; null si no hubo internet. */
+    val clima: Clima? = null,
 ) {
     val codigoLinea: String get() = "L%02d".format(linea)
 

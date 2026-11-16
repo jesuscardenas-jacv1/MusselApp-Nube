@@ -1,5 +1,16 @@
 package cl.aldemar.musselapp.ui.muestra
 
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
+import cl.aldemar.musselapp.data.model.EstadoMuestra
+import cl.aldemar.musselapp.ui.theme.colores
 import android.widget.Toast
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
@@ -88,6 +99,15 @@ fun MuestraScreen(
         vm.prefijar(centro, r.tren, r.linea, r.profundidadM)
     }
 
+    // Permiso de ubicación: se pide una vez al entrar. Si se niega, la muestra se guarda igual
+    var ubicacionPermitida by remember { mutableStateOf(tienePermisoUbicacion(context)) }
+    val pedirUbicacion = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { respuesta -> ubicacionPermitida = respuesta.values.any { it } }
+    LaunchedEffect(Unit) {
+        if (!ubicacionPermitida) pedirUbicacion.launch(UbicadorGps.PERMISOS)
+    }
+
     // Cuando el ViewModel confirma que todo es válido, se muestra el mensaje y se avanza
     LaunchedEffect(state.parametrosValidos) {
         val parametros = state.parametrosValidos ?: return@LaunchedEffect
@@ -117,6 +137,14 @@ fun MuestraScreen(
                     icono = Icons.Filled.Refresh,
                     texto = "Reconteo de la $codigoReconteo: se copió su ubicación. Revísala y continúa.",
                     color = Paleta.Acento
+                )
+            }
+
+            if (!ubicacionPermitida) {
+                AvisoFormulario(
+                    icono = Icons.Filled.LocationOn,
+                    texto = "Sin permiso de ubicación: la muestra se guardará sin posición y el supervisor verá un aviso.",
+                    color = EstadoMuestra.PENDIENTE.colores.texto
                 )
             }
 
@@ -212,9 +240,13 @@ fun MuestraScreen(
     }
 }
 
-/** Aviso breve dentro del formulario (reconteo, centro distinto al de la sesión). */
+private fun tienePermisoUbicacion(context: Context): Boolean = UbicadorGps.PERMISOS.any {
+    ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+}
+
+/** Aviso breve dentro del formulario (reconteo, centro distinto al de la sesión, ubicación). */
 @Composable
-private fun AvisoFormulario(icono: ImageVector, texto: String, color: Color) {
+internal fun AvisoFormulario(icono: ImageVector, texto: String, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

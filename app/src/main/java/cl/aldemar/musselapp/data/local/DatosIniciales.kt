@@ -32,7 +32,7 @@ object DatosIniciales {
     suspend fun poblar(db: MusselDatabase, ahora: Long = System.currentTimeMillis()) = db.withTransaction {
         val catalogo = db.catalogoDao()
 
-        catalogo.insertarCentros(CentroCultivo.disponibles.map { CentroEntity(it.id, it.nombre) })
+        catalogo.insertarCentros(CentroCultivo.disponibles.map { CentroEntity(it.id, it.nombre, it.lat, it.lon, it.radioM) })
         CentroCultivo.disponibles.forEach { centro ->
             TRENES.forEach { codigo ->
                 val trenId = catalogo.insertarTren(TrenEntity(centroId = centro.id, codigo = codigo))
@@ -59,7 +59,7 @@ object DatosIniciales {
                     registradaEn = m.registradaEn,
                     sincronizada = m.sincronizada,
                     fotoRuta = m.fotoRuta,
-                ),
+                ).conPosicion(m.posicion).conClima(m.clima),
             )
             if (m.revisadaPor != null) {
                 muestraDao.insertarRevision(

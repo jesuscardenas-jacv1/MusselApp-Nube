@@ -41,7 +41,7 @@ object FichaPdf {
     private const val ANCHO = 595
     private const val ALTO = 842
     private const val MARGEN = 40f
-    private const val ALTO_MAX_FOTO = 260f
+    private const val ALTO_MAX_FOTO = 190f // deja lugar a las filas de ubicación, clima y alertas
 
     /** Authority del FileProvider declarado en el AndroidManifest. */
     private fun authority(context: Context) = "${context.packageName}.archivos"

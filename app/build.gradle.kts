@@ -60,6 +60,11 @@ dependencies {
     // Firebase: sincronización en la nube (demo en tiempo real)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
+    // Clima y estado del mar de cada muestra (API REST de Open-Meteo)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    // Posición del teléfono al registrar la muestra
+    implementation(libs.play.services.location)
     // room-testing (MigrationTestHelper) necesita kotlinx-serialization 1.8.1; la app traía 1.7.3 y la
     // prueba de migración fallaba con AbstractMethodError. Se fija la versión para que coincidan.
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")

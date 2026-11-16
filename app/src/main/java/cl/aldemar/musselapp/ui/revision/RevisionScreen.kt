@@ -1,5 +1,8 @@
 package cl.aldemar.musselapp.ui.revision
 
+import cl.aldemar.musselapp.ui.componentes.InsigniaAlertas
+import cl.aldemar.musselapp.ui.componentes.TarjetaAlertas
+import cl.aldemar.musselapp.ui.componentes.TarjetaCondiciones
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -387,11 +390,18 @@ fun RevisionScreen(
                                         .padding(horizontal = 12.dp, vertical = 8.dp),
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            m.codigo,
-                                            style = MaterialTheme.typography.titleSmall,
-                                            color = if (seleccionada) Color.White else MaterialTheme.colorScheme.onSurface,
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        ) {
+                                            Text(
+                                                m.codigo,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                color = if (seleccionada) Color.White else MaterialTheme.colorScheme.onSurface,
+                                            )
+                                            // Las muestras con alertas se distinguen en la cola sin abrirlas
+                                            InsigniaAlertas(m)
+                                        }
                                         Text(
                                             "${m.codigoLinea} • Tren ${m.tren}",
                                             style = MaterialTheme.typography.labelMedium,
@@ -501,6 +511,10 @@ fun RevisionScreen(
                                     }
                                 }
                             }
+
+                            // ── Alertas automáticas y condiciones al muestrear ──
+                            TarjetaAlertas(muestra = muestra)
+                            TarjetaCondiciones(muestra = muestra)
 
                             // ── 3. Fotografía de la muestra ─────────────────────
                             Surface(

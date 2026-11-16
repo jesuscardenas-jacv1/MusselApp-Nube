@@ -210,9 +210,13 @@ fun MusselNavHost(
             popExitTransition = salidaAtras,
         ) {
             val context = LocalContext.current
+            // La posición se lee al llegar aquí, para que esté lista al confirmar
+            val ubicacion by borradorViewModel.ubicacion.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) { borradorViewModel.buscarUbicacion() }
             VistaPreviaScreen(
                 borrador = borrador,
                 guardando = guardandoMuestra,
+                ubicacion = ubicacion,
                 onVolver = ::volver,
                 onRepetirFoto = ::volver,
                 onFotoCambiada = borradorViewModel::actualizarFoto,

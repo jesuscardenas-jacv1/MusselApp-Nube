@@ -14,7 +14,7 @@ import java.util.TimeZone
 object FichaMuestra {
 
     /** Pie de la ficha: el caso es académico y los datos son ficticios. */
-    const val PIE = "MusselApp · Caso académico AquaSample / ALDEMAR SpA · Datos ficticios"
+    const val PIE = "MusselApp · Caso académico AquaSample / ALDEMAR SpA · Datos ficticios · Clima: Open-Meteo"
 
     fun titulo(muestra: Muestra): String = "Ficha técnica · ${muestra.codigo}"
 
@@ -30,6 +30,11 @@ object FichaMuestra {
         "Cholgas" to (muestra.cholgasIndM?.let { "$it ind/m" } ?: "No registrado"),
         "Talla media" to "${muestra.tallaMm} mm",
         "Rendimiento estimado" to "${muestra.rendimientoKgM} kg/m",
+        "Ubicación" to CodigoTiempo.posicion(muestra.posicion),
+        "Distancia al centro" to distanciaAlCentro(muestra),
+        "Tiempo" to CodigoTiempo.tiempo(muestra.clima),
+        "Mar" to CodigoTiempo.mar(muestra.clima),
+        "Alertas al registrar" to alertas(muestra),
         "Estado" to muestra.estado.etiqueta,
         "Registrada" to fecha(muestra.registradaEn, zona),
         "Operario" to muestra.operador.ifBlank { "—" },
@@ -46,6 +51,17 @@ object FichaMuestra {
             filas(muestra, zona).forEach { (etiqueta, valor) -> appendLine("$etiqueta: $valor") }
             append(PIE)
         }
+
+    /** "180 m (dentro del área)" o "3,2 km (fuera del área)". */
+    fun distanciaAlCentro(muestra: Muestra): String {
+        val centro = CentroCultivo.porId(muestra.centroId)
+        val metros = Distancia.alCentro(muestra, centro) ?: return "No registrada"
+        val area = if (centro != null && metros > centro.radioM) "fuera del área" else "dentro del área"
+        return "${Distancia.texto(metros)} ($area)"
+    }
+
+    fun alertas(muestra: Muestra): String =
+        AlertasMuestra.evaluar(muestra).joinToString(", ") { it.etiqueta }.ifEmpty { "Sin alertas" }
 
     private fun nombreCentro(id: String): String =
         CentroCultivo.disponibles.firstOrNull { it.id == id }?.nombre ?: id

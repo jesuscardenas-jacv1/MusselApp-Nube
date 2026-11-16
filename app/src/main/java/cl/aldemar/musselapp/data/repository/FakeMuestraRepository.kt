@@ -4,7 +4,9 @@ import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.EstadoMuestra.CORREGIDO
 import cl.aldemar.musselapp.data.model.EstadoMuestra.PENDIENTE
 import cl.aldemar.musselapp.data.model.EstadoMuestra.VALIDADO
+import cl.aldemar.musselapp.data.model.Clima
 import cl.aldemar.musselapp.data.model.Muestra
+import cl.aldemar.musselapp.data.model.Posicion
 import cl.aldemar.musselapp.data.model.Usuario
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -85,6 +87,16 @@ class FakeMuestraRepository(
                 // Revisada a mitad del tiempo transcurrido: nunca antes del registro ni en el futuro
                 revisadaEn = if (estado == VALIDADO || estado == CORREGIDO) ahora - haceMin / 2 * MINUTO else null,
                 comentarioSupervisor = comentario,
+                // Posición ficticia dentro del área de Dalcahue; la Muestra 012 queda a unos 3 km
+                // para que el supervisor vea la alerta "Fuera del área"
+                posicion = if (id == 12L) Posicion(-42.3995, -73.6405, 9.0)
+                else Posicion(-42.374 + (id % 5) * 0.0011, -73.622 - (id % 4) * 0.0014, 6.0 + id % 7),
+                clima = Clima(
+                    tempAireC = 12.0 + id % 6, vientoKn = 4.0 + id % 9, rachaKn = 9.0 + id % 11,
+                    vientoDir = (id * 40 % 360).toInt(), codigo = listOf(1, 2, 3, 51, 61)[(id % 5).toInt()],
+                    olaM = 0.1 + (id % 4) * 0.1, tempAguaC = 12.5 + (id % 5) * 0.4, mareaM = -0.6 + (id % 7) * 0.2,
+                    obtenidoEn = ahora - haceMin * MINUTO,
+                ),
             )
 
             val hoy = listOf(

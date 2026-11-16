@@ -1,5 +1,9 @@
 package cl.aldemar.musselapp.ui.muestra
 
+import androidx.compose.material.icons.filled.LocationOn
+import cl.aldemar.musselapp.ui.theme.AlertaTexto
+import cl.aldemar.musselapp.util.Distancia
+import kotlin.math.roundToInt
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.ui.semantics.error
@@ -134,6 +138,8 @@ fun VistaPreviaScreen(
     onTallaCambiada: (Int?) -> Unit = {},
     onCholgasCambiadas: (Int?) -> Unit = {},
     guardando: Boolean = false,
+    // Posición del teléfono para esta muestra (se busca al entrar a esta pantalla)
+    ubicacion: EstadoUbicacion = EstadoUbicacion(),
     onConfirmar: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -208,6 +214,8 @@ fun VistaPreviaScreen(
                     )
                 }
             }
+
+            AvisoUbicacion(ubicacion, parametros?.centroId)
 
             // Fotografía: se toca para verla completa
             TarjetaFoto(
@@ -453,6 +461,38 @@ fun VistaPreviaScreen(
 }
 
 // Foto + acciones en orden: Repetir (cámara), Galería, Eliminar
+/** Dónde está el teléfono respecto al centro elegido. Nunca impide guardar. */
+@Composable
+private fun AvisoUbicacion(ubicacion: EstadoUbicacion, centroId: String?) {
+    val centro = centroId?.let(CentroCultivo::porId)
+    val posicion = ubicacion.posicion
+    val distancia = if (posicion != null && centro != null) {
+        Distancia.metros(posicion.lat, posicion.lon, centro.lat, centro.lon).roundToInt()
+    } else null
+    when {
+        distancia != null && centro != null && distancia > centro.radioM -> AvisoFormulario(
+            icono = Icons.Filled.LocationOn,
+            texto = "Estás a ${Distancia.texto(distancia)} del centro: la muestra se guardará como fuera del área y el supervisor verá una alerta.",
+            color = AlertaTexto
+        )
+        distancia != null -> AvisoFormulario(
+            icono = Icons.Filled.LocationOn,
+            texto = "Ubicación registrada: a ${Distancia.texto(distancia)} del centro, dentro del área.",
+            color = Paleta.Acento
+        )
+        ubicacion.buscando -> AvisoFormulario(
+            icono = Icons.Filled.LocationOn,
+            texto = "Buscando la ubicación del teléfono…",
+            color = Paleta.TextoSuave
+        )
+        else -> AvisoFormulario(
+            icono = Icons.Filled.LocationOn,
+            texto = "Sin ubicación: la muestra se guardará sin posición y el supervisor verá un aviso.",
+            color = PendienteTexto
+        )
+    }
+}
+
 @Composable
 private fun TarjetaFoto(
     rutaFoto: String?,

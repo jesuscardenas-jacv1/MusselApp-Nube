@@ -1,5 +1,7 @@
 package cl.aldemar.musselapp.ui.detalle
 
+import cl.aldemar.musselapp.ui.componentes.TarjetaAlertas
+import cl.aldemar.musselapp.ui.componentes.TarjetaCondiciones
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -292,6 +294,10 @@ fun DetalleScreen(
 
                         // ── 4. Resumen biométrico ─────────────────────────────
                         TarjetaResumenBiometrico(muestra = muestra)
+
+                        // ── Alertas automáticas y condiciones al muestrear ────
+                        TarjetaAlertas(muestra = muestra)
+                        TarjetaCondiciones(muestra = muestra)
 
                         // ── 5. Trazabilidad ───────────────────────────────────
                         TarjetaTrazabilidad(muestra = muestra)

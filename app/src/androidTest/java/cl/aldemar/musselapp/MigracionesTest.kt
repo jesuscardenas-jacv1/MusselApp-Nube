@@ -113,4 +113,46 @@ class MigracionesTest {
             assertTrue(c.isNull(1))
         }
     }
+
+    @Test
+    fun de4a5_seAgreganPosicionYClimaYLosCentrosRecibenCoordenadas() {
+        // Base en versión 4 con una muestra guardada antes de que existieran la posición y el clima
+        helper.createDatabase(nombre, 4).apply {
+            execSQL("INSERT INTO centros (id, nombre) VALUES ('dalcahue', 'Centro Dalcahue')")
+            execSQL("INSERT INTO centros (id, nombre) VALUES ('melinka', 'Centro Melinka')")
+            execSQL("INSERT INTO trenes (id, centro_id, codigo) VALUES (1, 'dalcahue', 'A')")
+            execSQL("INSERT INTO lineas (id, tren_id, numero) VALUES (1, 1, 4)")
+            execSQL("INSERT INTO usuarios (rut, nombre, rol, pin) VALUES ('111111111', 'Carla Vera', 'OPERARIO', 'x')")
+            execSQL(
+                "INSERT INTO muestras (id, linea_id, operador_rut, profundidad_m, talla_mm, conteo_ind_m, " +
+                    "observacion, estado, registrada_en, sincronizada, foto_ruta, cholgas_ind_m) " +
+                    "VALUES (1, 1, '111111111', 5, 35, 282, '', 'PENDIENTE', 0, 0, NULL, 12)",
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(nombre, 5, true, Migraciones.DE_4_A_5)
+
+        // La muestra antigua se conserva, sin posición ni clima (null: no se registró)
+        db.query("SELECT conteo_ind_m, cholgas_ind_m, lat, lon, clima_obtenido_en FROM muestras").use { c ->
+            assertEquals(1, c.count)
+            c.moveToNext()
+            assertEquals(282, c.getInt(0))
+            assertEquals(12, c.getInt(1))
+            assertTrue(c.isNull(2))
+            assertTrue(c.isNull(3))
+            assertTrue(c.isNull(4))
+        }
+        // Los centros del caso reciben su punto de referencia y el radio del área
+        db.query("SELECT lat, lon, radio_m FROM centros WHERE id = 'dalcahue'").use { c ->
+            c.moveToNext()
+            assertEquals(-42.374, c.getDouble(0), 0.0001)
+            assertEquals(-73.622, c.getDouble(1), 0.0001)
+            assertEquals(1500, c.getInt(2))
+        }
+        db.query("SELECT lat FROM centros WHERE id = 'melinka'").use { c ->
+            c.moveToNext()
+            assertEquals(-43.905, c.getDouble(0), 0.0001)
+        }
+    }
 }

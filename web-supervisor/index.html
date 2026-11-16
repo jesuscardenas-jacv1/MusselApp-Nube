@@ -718,6 +718,10 @@
   .ficha dt { font-size: 12px; color: var(--texto-2); font-weight: 600; }
   .ficha dd { margin: 2px 0 0; font-weight: 500; }
   .caja-texto { padding: 14px; border-radius: var(--r-md); background: var(--superficie-2); }
+  .fila-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ficha-cond { margin-top: 8px; }
+  #mini-mapa { height: 180px; margin-top: 12px; border-radius: var(--r-sm); overflow: hidden; background: var(--superficie-3); z-index: 0; }
+  .fuente-clima { margin: 8px 0 0; font-size: 12px; color: var(--texto-2); }
   .caja-texto small { display: block; font-size: 12px; color: var(--texto-2); font-weight: 600; margin-bottom: 4px; }
   .dictamen { display: grid; gap: 8px; padding: 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1.5px var(--linea); }
   .dictamen h3 { font-size: 15px; }
@@ -1033,6 +1037,14 @@
   var LINEAS_POR_TREN = 12;
   var LINEAS_POR_CENTRO = 36;
   var DENSIDAD_ESTANDAR = 380;
+  // Alertas que calcula la app al registrar la muestra (AlertasMuestra.kt). El portal solo las muestra.
+  var ALERTAS = {
+    FUERA_DE_AREA: { t: 'Fuera del área', critica: 1 }, DENSIDAD_BAJA: { t: 'Densidad baja', critica: 1 },
+    SIN_UBICACION: { t: 'Sin ubicación' }, UBICACION_IMPRECISA: { t: 'Ubicación imprecisa' }, DESVIO_DENSIDAD: { t: 'Desvío de densidad' },
+    CHOLGAS_ALTAS: { t: 'Cholgas altas' }, TALLA_FUERA_DE_RANGO: { t: 'Talla fuera de rango' }, MAL_TIEMPO: { t: 'Mal tiempo al muestrear' }
+  };
+  // Radio del área de cada centro, igual que CentroCultivo.RADIO_AREA_M en la app
+  var RADIO_AREA_M = 1500;
   // Estratos de profundidad de la app (ComponentesMuestra.kt): Superficie 1 m, Media 3 m, Fondo 5 m
   var PROFUNDIDADES = [1, 3, 5];
   function estrato(p) { return p <= 2 ? 'Superficie (0-2 m)' : p <= 4 ? 'Media (2-4 m)' : 'Fondo (4-6 m)'; }
@@ -1128,6 +1140,7 @@
   // ── Utilidades ────────────────────────────────────────────────────────
   function normalizarRut(r) { return String(r || '').toUpperCase().replace(/[^0-9K]/g, ''); }
   function num(v, def) { v = Number(v); return isFinite(v) ? v : def; }
+  function numN(v) { return v == null || v === '' ? null : num(v, null); }
   function normalizar(id, d) {
     var estado = ETIQUETA[d.estado] ? d.estado : 'PENDIENTE';
     return {
@@ -1152,11 +1165,43 @@
       revisadaPor: d.revisadaPor || '',
       revisadaEn: d.revisadaEn ? num(d.revisadaEn, 0) : 0,
       comentario: d.comentarioSupervisor || '',
+      // Posición del teléfono, clima y alertas al registrar (app v5); null o vacío en las muestras anteriores
+      lat: numN(d.lat), lon: numN(d.lon), precisionM: numN(d.precisionM), distanciaCentroM: numN(d.distanciaCentroM),
+      clima: d.clima && typeof d.clima === 'object' ? { tempAireC: numN(d.clima.tempAireC), vientoKn: numN(d.clima.vientoKn), rachaKn: numN(d.clima.rachaKn), vientoDir: numN(d.clima.vientoDir),
+        descripcion: d.clima.descripcion ? String(d.clima.descripcion) : '', olaM: numN(d.clima.olaM), tempAguaC: numN(d.clima.tempAguaC), mareaM: numN(d.clima.mareaM) } : null,
+      alertas: Array.isArray(d.alertas) ? d.alertas.filter(function (a) { return ALERTAS[a]; }) : [],
       demo: d.demo === true,
       historico: d.historico === true,
       valoresOperario: d.valoresOperario && typeof d.valoresOperario === 'object' ? { conteoIndM: num(d.valoresOperario.conteoIndM, 0), tallaMm: num(d.valoresOperario.tallaMm, 0), cholgasIndM: d.valoresOperario.cholgasIndM == null ? null : num(d.valoresOperario.cholgasIndM, null) } : null
     };
   }
+  // Ubicación, clima y alertas de la muestra
+  function txtDistancia(mt) { return mt < 1000 ? n0(mt) + ' m' : n1(mt / 1000) + ' km'; }
+  function txtPosicion(m) { return m.lat == null || m.lon == null ? 'No registrada' : m.lat.toFixed(4) + ', ' + m.lon.toFixed(4) + (m.precisionM == null ? '' : ' (±' + n0(m.precisionM) + ' m)'); }
+  function txtDistanciaCentro(m) { return m.distanciaCentroM == null ? 'No registrada' : txtDistancia(m.distanciaCentroM) + (m.distanciaCentroM > RADIO_AREA_M ? ' (fuera del área)' : ' (dentro del área)'); }
+  function cardinal(g) { return g == null ? '' : ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'][Math.floor((((g % 360) + 360) % 360 + 22.5) / 45) % 8]; }
+  function txtTiempo(c) {
+    if (!c) return 'No registrado';
+    var p = [];
+    if (c.descripcion) p.push(c.descripcion);
+    if (c.tempAireC != null) p.push(n0(c.tempAireC) + ' °C');
+    if (c.vientoKn != null) p.push('viento ' + n0(c.vientoKn) + ' kn' + (c.vientoDir != null ? ' del ' + cardinal(c.vientoDir) : '') + (c.rachaKn != null ? ' (racha ' + n0(c.rachaKn) + ' kn)' : ''));
+    return p.join(' · ') || 'No registrado';
+  }
+  function txtMar(c) {
+    if (!c) return 'No registrado';
+    var p = [];
+    if (c.olaM != null) p.push('Ola ' + n1(c.olaM) + ' m');
+    if (c.tempAguaC != null) p.push('agua ' + n1(c.tempAguaC) + ' °C');
+    if (c.mareaM != null) p.push('marea ' + (c.mareaM < 0 ? '−' : '+') + Math.abs(c.mareaM).toFixed(2).replace('.', ',') + ' m');
+    return p.join(' · ') || 'No registrado';
+  }
+  function alertaCritica(m) { return m.alertas.some(function (a) { return ALERTAS[a].critica; }); }
+  function txtAlertas(m) { return m.alertas.map(function (a) { return ALERTAS[a].t; }).join(', '); }
+  function chipsAlertas(m) { return m.alertas.map(function (a) { return '<span class="chip ' + (ALERTAS[a].critica ? 'peligro' : 'aviso') + '">' + esc(ALERTAS[a].t) + '</span>'; }).join(' '); }
+  // Insignia para las listas: cuántas alertas trae la muestra (roja si alguna es crítica)
+  function insigniaAlertas(m) { return m.alertas.length ? '<span class="chip ' + (alertaCritica(m) ? 'peligro' : 'aviso') + '" title="' + esc(txtAlertas(m)) + '" aria-label="' + m.alertas.length + (m.alertas.length === 1 ? ' alerta: ' : ' alertas: ') + esc(txtAlertas(m)) + '">' + ico('alerta', 'ch') + m.alertas.length + '</span>' : ''; }
+
   function rendimiento(m) { return Math.max(0.1, Math.floor(m.conteoIndM * m.tallaMm * 0.00028 * 10) / 10); }
   function desvio(m) { return Math.trunc(((m.conteoIndM - DENSIDAD_ESTANDAR) / DENSIDAD_ESTANDAR) * 100); }
   function horasRevision(m) { return m.revisadaEn && m.registradaEn ? Math.max(0, (m.revisadaEn - m.registradaEn) / HORA) : null; }
@@ -1449,7 +1494,7 @@
     };
   }
   function generarEjemplo() {
-    var r = azar(20261114);
+    var r = azar(20261114), r2 = azar(20261115);
     var gauss = function () { var u = 1 - r(), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
     var elegir = function (l) { return l[Math.floor(r() * l.length)]; };
     var ahora = Date.now();
@@ -1487,6 +1532,23 @@
         d.comentarioSupervisor = d.estado === 'CORREGIDO' ? elegir(MAL) : elegir(OK);
       }
       d.fotoBase64 = 'pendiente';
+      // Posición, clima y alertas como los sube la app (otra semilla, para no alterar el resto del ejemplo)
+      var ic = INFO_CENTRO[c], lejos = r2() < .06, sinGps = r2() < .05, dist = lejos ? 2200 + r2() * 3000 : r2() * 1200, ang = r2() * 2 * Math.PI;
+      if (!sinGps) {
+        d.lat = ic.lat + dist * Math.cos(ang) / 111195; d.lon = ic.lon + dist * Math.sin(ang) / (111195 * Math.cos(ic.lat * Math.PI / 180));
+        d.precisionM = Math.round(4 + r2() * 14); d.distanciaCentroM = Math.round(dist);
+      }
+      var racha = 6 + r2() * 16 + (r2() < .06 ? 12 : 0), ola = Math.round((.1 + r2() * .5 + (racha > 25 ? .5 : 0)) * 100) / 100;
+      d.clima = { tempAireC: Math.round((9 + r2() * 9) * 10) / 10, vientoKn: Math.round(racha * 5.5) / 10, rachaKn: Math.round(racha * 10) / 10, vientoDir: Math.floor(r2() * 360),
+        descripcion: ['Despejado', 'Parcialmente nublado', 'Nublado', 'Llovizna', 'Lluvia'][Math.floor(r2() * 5)], olaM: ola, tempAguaC: Math.round((11.5 + r2() * 4) * 10) / 10, mareaM: Math.round((r2() * 2 - 1) * 100) / 100 };
+      d.alertas = [];
+      if (!sinGps && dist > RADIO_AREA_M) d.alertas.push('FUERA_DE_AREA');
+      if (d.conteoIndM < 350) d.alertas.push('DENSIDAD_BAJA');
+      if (sinGps) d.alertas.push('SIN_UBICACION');
+      if (d.conteoIndM > DENSIDAD_ESTANDAR * 1.2) d.alertas.push('DESVIO_DENSIDAD');
+      if (d.cholgasIndM * 10 > d.conteoIndM) d.alertas.push('CHOLGAS_ALTAS');
+      if (d.tallaMm < 30 || d.tallaMm > 90) d.alertas.push('TALLA_FUERA_DE_RANGO');
+      if (racha > 25 || ola > 1) d.alertas.push('MAL_TIEMPO');
       lista.push(d);
     }
     lista.sort(function (a, b) { return a.registradaEn - b.registradaEn; });
@@ -1731,10 +1793,34 @@
     $('drawer').classList.remove('abierto'); $('drawer').setAttribute('aria-hidden', 'true');
     $('modal-met').classList.remove('atras');
     if (!metricaAbierta) $('velo').classList.remove('visible');
-    setTimeout(function () { if (!detalleId) $('drawer').innerHTML = ''; }, 220);
+    setTimeout(function () { if (!detalleId) { quitarMiniMapa(); $('drawer').innerHTML = ''; } }, 220);
     if (focoPrevio && document.body.contains(focoPrevio)) { try { focoPrevio.focus(); } catch (e) { /* sin foco previo */ } }
     focoPrevio = null;
     if (montada) VISTAS[vista].actualizar();
+  }
+  // Mapa chico del detalle: punto de la muestra y círculo del área del centro
+  var miniMapa = null;
+  function quitarMiniMapa() { if (miniMapa) { try { miniMapa.remove(); } catch (e) { /* ya no existe */ } miniMapa = null; } }
+  function dibujarMiniMapa(m) {
+    var el = $('mini-mapa');
+    if (!el || m.lat == null || m.lon == null) return;
+    if (typeof L === 'undefined') { el.textContent = 'No se pudo cargar el mapa.'; return; }
+    var c = INFO_CENTRO[m.centroId], fuera = m.alertas.indexOf('FUERA_DE_AREA') >= 0;
+    miniMapa = L.map(el, { zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18,
+      attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(miniMapa);
+    miniMapa.setView([m.lat, m.lon], 12, { animate: false });
+    var capas = [];
+    if (c) {
+      capas.push(L.circle([c.lat, c.lon], { radius: RADIO_AREA_M, color: COLOR.acento, weight: 1.5, fillOpacity: .1 }).addTo(miniMapa));
+      capas.push(L.circleMarker([c.lat, c.lon], { radius: 4, color: COLOR.marino, fillColor: COLOR.marino, fillOpacity: 1, weight: 1 }).addTo(miniMapa).bindTooltip('Centro ' + esc(c.corto)));
+    }
+    capas.push(L.circleMarker([m.lat, m.lon], { radius: 7, color: '#fff', weight: 2, fillColor: fuera ? COLOR.peligro : COLOR.VALIDADO, fillOpacity: 1 }).addTo(miniMapa).bindTooltip(esc(m.codigo)));
+    // Encuadre calculado a mano: el círculo no conoce sus límites hasta que el mapa tiene una vista
+    var limites = L.latLngBounds([[m.lat, m.lon]]);
+    if (c) { var dLat = RADIO_AREA_M / 111195, dLon = dLat / Math.cos(c.lat * Math.PI / 180); limites.extend([c.lat - dLat, c.lon - dLon]); limites.extend([c.lat + dLat, c.lon + dLon]); }
+    miniMapa.fitBounds(limites.pad(.2), { maxZoom: 14, animate: false });
+    setTimeout(function () { if (miniMapa) miniMapa.invalidateSize(); }, 60);
   }
   function dibujarDetalle(nuevo) {
     var m = porId[detalleId];
@@ -1774,7 +1860,13 @@
           '<div><dt>Registrada</dt><dd>' + esc(fecha(m.registradaEn)) + '</dd></div><div><dt>Estrato</dt><dd>' + n0(m.profundidadM) + ' m · ' + esc(estrato(m.profundidadM)) + '</dd></div>' +
           '<div><dt>Tren</dt><dd>' + esc(m.tren) + (NOMBRE_TREN[m.tren] ? ' · ' + esc(NOMBRE_TREN[m.tren]) : '') + '</dd></div><div><dt>Línea</dt><dd>' + lineaTxt(m.linea) + '</dd></div>' +
         '</dl>' +
-        '<div class="caja-texto"><small>Observación del operario</small>' + esc(m.observacion || 'Sin observaciones de terreno.') + '</div>';
+        '<div class="caja-texto"><small>Observación del operario</small>' + esc(m.observacion || 'Sin observaciones de terreno.') + '</div>' +
+        (m.alertas.length ? '<div class="caja-texto"><small>Alertas al registrar</small><div class="fila-chips">' + chipsAlertas(m) + '</div></div>' : '') +
+        '<div class="caja-texto"><small>Condiciones al muestrear</small><dl class="ficha ficha-cond">' +
+          '<div><dt>Ubicación</dt><dd>' + esc(txtPosicion(m)) + '</dd></div><div><dt>Distancia al centro</dt><dd>' + esc(txtDistanciaCentro(m)) + '</dd></div>' +
+          '<div><dt>Tiempo</dt><dd>' + esc(txtTiempo(m.clima)) + '</dd></div><div><dt>Mar</dt><dd>' + esc(txtMar(m.clima)) + '</dd></div></dl>' +
+          (m.lat != null && m.lon != null ? '<div id="mini-mapa" role="img" aria-label="Mapa con la posición de la muestra y el área del centro"></div>' : '') +
+          (m.clima ? '<p class="fuente-clima">Clima: Open-Meteo (dato modelado).</p>' : '') + '</div>';
     var pie;
     if (m.estado === 'PENDIENTE') {
       var corr = previoModo === 'corregir';
@@ -1793,7 +1885,9 @@
         '<button class="btn btn-secundario" data-accion="ver-linea" data-id="' + esc(m.id) + '">' + ico('historial') + 'Historial de la línea</button></div>';
     }
     html += '</div></div><footer class="drawer-pie">' + pie + '</footer>';
+    quitarMiniMapa();
     dr.innerHTML = html;
+    dibujarMiniMapa(m);
     if ($('comentario')) $('comentario').value = previoComentario;
     if (dr.querySelector('.drawer-cuerpo')) dr.querySelector('.drawer-cuerpo').scrollTop = scroll;
     if (eraNueva && !$('panel-campana').classList.contains('oculto')) dibujarCampana();
@@ -2111,7 +2205,7 @@
           var pend = m.estado === 'PENDIENTE', dv = desvio(m), fuera = Math.abs(dv) > 20, tarde = pend && ahora - m.registradaEn > DIA, oc = ctl.ocupadas[m.id] || guardando;
           return '<div class="fila-ctl' + (idsNuevos[m.id] ? ' nueva' : '') + '" data-id="' + esc(m.id) + '">' +
             '<input type="checkbox" data-ctlsel="' + esc(m.id) + '" aria-label="Seleccionar ' + esc(m.codigo) + '"' + (ctl.sel[m.id] ? ' checked' : '') + '>' +
-            '<button class="fc-muestra" data-accion="abrir" data-id="' + esc(m.id) + '" aria-label="Abrir ' + esc(m.codigo) + ', ' + esc(ubicacion(m)) + '"><b>' + esc(m.codigo) + (idsNuevos[m.id] ? '<span class="chip ok">Nueva</span>' : '') + '</b><span>' + esc(centroCorto(m.centroId)) + ' · Tren ' + esc(m.tren) + ' · Línea ' + pad2(m.linea) + '</span></button>' +
+            '<button class="fc-muestra" data-accion="abrir" data-id="' + esc(m.id) + '" aria-label="Abrir ' + esc(m.codigo) + ', ' + esc(ubicacion(m)) + '"><b>' + esc(m.codigo) + (idsNuevos[m.id] ? '<span class="chip ok">Nueva</span>' : '') + insigniaAlertas(m) + '</b><span>' + esc(centroCorto(m.centroId)) + ' · Tren ' + esc(m.tren) + ' · Línea ' + pad2(m.linea) + '</span></button>' +
             '<span class="fc-oper">' + esc(m.operador) + '</span>' +
             '<span class="n fc-talla"><b>' + n0(m.tallaMm) + '</b> mm</span>' +
             '<span class="n fc-dens"><b>' + n0(m.conteoIndM) + '</b> ind/m<small' + (fuera ? ' class="fuera"' : '') + '>' + signo(dv) + ' % vs. estándar</small></span>' +
@@ -2172,7 +2266,7 @@
           tarjeta('s-4', 'Tiempo medio de revisión', 'Desde el registro hasta el dictamen.', '<div class="cifra-grande" id="d-tiempo"></div><div class="grafico bajo" style="height:160px;margin-top:8px"><canvas id="g-tiempo" role="img" aria-label="Gráfico de barras del tiempo medio de revisión por centro"></canvas></div>') +
           tarjeta('s-4', 'Cobertura de líneas', 'Líneas muestreadas de ' + LINEAS_POR_CENTRO + ' por centro.', '<div class="cobertura" id="d-cobertura"></div>') +
           tarjeta('s-7', 'Ranking de operarios', 'Muestras registradas y porcentaje validado a la primera.', '<div class="tabla-envoltura" id="d-ranking"></div>') +
-          tarjeta('s-5', 'Alertas', 'Líneas con desvío fuera de ±20 % y pendientes con más de 24 h.', '<div class="alertas" id="d-alertas"></div>') +
+          tarjeta('s-5', 'Alertas', 'Muestras fuera del área, líneas con desvío fuera de ±20 % y pendientes con más de 24 h.', '<div class="alertas" id="d-alertas"></div>') +
         '</div>';
     },
     actualizar: function () {
@@ -2258,13 +2352,20 @@
       var ultPorLinea = {};
       sub.forEach(function (m) { var k = claveLinea(m); if (!ultPorLinea[k] || ultPorLinea[k].registradaEn < m.registradaEn) ultPorLinea[k] = m; });
       var alertas = [];
+      // Primero las muestras por revisar que se tomaron fuera del área del centro
+      muestras.filter(function (m) { return enCentro(m) && m.estado === 'PENDIENTE' && m.alertas.indexOf('FUERA_DE_AREA') >= 0; }).sort(function (a, b) { return b.registradaEn - a.registradaEn; })
+        .forEach(function (m) { alertas.push({ tipo: 'fuera', m: m, t: m.codigo + ' tomada fuera del área' + (m.distanciaCentroM != null ? ' (a ' + txtDistancia(m.distanciaCentroM) + ' del centro)' : ''), s: ubicacion(m) + ' · ' + m.operador }); });
       muestras.filter(function (m) { return enCentro(m) && m.estado === 'PENDIENTE' && ahora - m.registradaEn > DIA; }).sort(function (a, b) { return a.registradaEn - b.registradaEn; })
         .forEach(function (m) { alertas.push({ tipo: 'pend', m: m, t: m.codigo + ' espera revisión ' + hace(m.registradaEn), s: ubicacion(m) + ' · ' + m.operador }); });
       Object.keys(ultPorLinea).map(function (k) { return ultPorLinea[k]; }).filter(function (m) { return Math.abs(desvio(m)) > 20; }).sort(function (a, b) { return Math.abs(desvio(b)) - Math.abs(desvio(a)); })
         .forEach(function (m) { alertas.push({ tipo: 'desv', m: m, t: ubicacion(m) + ': densidad ' + n0(m.conteoIndM) + ' ind/m (' + signo(desvio(m)) + ' %)', s: 'Última muestra ' + m.codigo + ' · ' + fecha(m.registradaEn) }); });
+      // Otros avisos de la app en muestras por revisar (la densidad ya se informa por línea más arriba)
+      var OTRAS = ['CHOLGAS_ALTAS', 'TALLA_FUERA_DE_RANGO', 'MAL_TIEMPO', 'UBICACION_IMPRECISA', 'SIN_UBICACION'];
+      muestras.filter(function (m) { return enCentro(m) && m.estado === 'PENDIENTE' && m.alertas.some(function (a) { return OTRAS.indexOf(a) >= 0; }); }).sort(function (a, b) { return b.registradaEn - a.registradaEn; })
+        .forEach(function (m) { alertas.push({ tipo: 'app', m: m, t: m.codigo + ': ' + m.alertas.filter(function (a) { return OTRAS.indexOf(a) >= 0; }).map(function (a) { return ALERTAS[a].t.toLowerCase(); }).join(', '), s: ubicacion(m) + ' · ' + m.operador }); });
       $('d-alertas').innerHTML = alertas.length ? alertas.slice(0, 30).map(function (a) {
-        return '<button class="alerta" data-accion="abrir" data-id="' + esc(a.m.id) + '"><span class="ico-circulo ' + (a.tipo === 'pend' ? 'tinte-pend' : 'tinte-peligro') + '">' + ico(a.tipo === 'pend' ? 'reloj' : 'alerta') + '</span><div><b>' + esc(a.t) + '</b><span>' + esc(a.s) + '</span></div>' + ico('derecha', 'ch') + '</button>';
-      }).join('') + (alertas.length > 30 ? '<p class="sub" style="padding:6px 4px;color:var(--texto-2);font-size:12px">y ' + (alertas.length - 30) + ' alertas más.</p>' : '') : vacio('check', 'Sin alertas', 'Todas las líneas están dentro de ±20 % y no hay pendientes atrasadas.');
+        return '<button class="alerta" data-accion="abrir" data-id="' + esc(a.m.id) + '"><span class="ico-circulo ' + (a.tipo === 'pend' || a.tipo === 'app' ? 'tinte-pend' : 'tinte-peligro') + '">' + ico(a.tipo === 'pend' ? 'reloj' : a.tipo === 'fuera' ? 'pin' : 'alerta') + '</span><div><b>' + esc(a.t) + '</b><span>' + esc(a.s) + '</span></div>' + ico('derecha', 'ch') + '</button>';
+      }).join('') + (alertas.length > 30 ? '<p class="sub" style="padding:6px 4px;color:var(--texto-2);font-size:12px">y ' + (alertas.length - 30) + ' alertas más.</p>' : '') : vacio('check', 'Sin alertas', 'Todas las líneas están dentro de ±20 %, y no hay muestras fuera del área ni pendientes atrasadas.');
     }
   };
 
@@ -2282,6 +2383,16 @@
     { id: 'cholgasIndM', titulo: 'Cholgas (ind/m)', valor: function (m) { return m.cholgasIndM; }, num: 1, base: 1 },
     { id: 'rendimiento', titulo: 'Rend. (kg/m)', valor: rendimiento, num: 1, dec: 1, derivado: 1, base: 1 },
     { id: 'desvio', titulo: 'Desvío (%)', valor: desvio, num: 1, derivado: 1, html: function (m) { var d = desvio(m); return '<span class="' + (Math.abs(d) > 20 ? 'chip peligro' : '') + '">' + signo(d) + ' %</span>'; }, base: 1 },
+    { id: 'alertas', titulo: 'Alertas', valor: txtAlertas, html: function (m) { return chipsAlertas(m) || '—'; }, largo: 1 },
+    { id: 'lat', titulo: 'Latitud', valor: function (m) { return m.lat == null ? '' : m.lat.toFixed(5); } },
+    { id: 'lon', titulo: 'Longitud', valor: function (m) { return m.lon == null ? '' : m.lon.toFixed(5); } },
+    { id: 'distanciaCentroM', titulo: 'Dist. al centro (m)', valor: function (m) { return m.distanciaCentroM; }, num: 1 },
+    { id: 'tiempo', titulo: 'Tiempo', valor: function (m) { return m.clima ? m.clima.descripcion : ''; } },
+    { id: 'tempAireC', titulo: 'T° aire (°C)', valor: function (m) { return m.clima ? m.clima.tempAireC : null; }, num: 1, dec: 1 },
+    { id: 'vientoKn', titulo: 'Viento (kn)', valor: function (m) { return m.clima ? m.clima.vientoKn : null; }, num: 1, dec: 1 },
+    { id: 'rachaKn', titulo: 'Racha (kn)', valor: function (m) { return m.clima ? m.clima.rachaKn : null; }, num: 1, dec: 1 },
+    { id: 'olaM', titulo: 'Ola (m)', valor: function (m) { return m.clima ? m.clima.olaM : null; }, num: 1, dec: 1 },
+    { id: 'tempAguaC', titulo: 'T° agua (°C)', valor: function (m) { return m.clima ? m.clima.tempAguaC : null; }, num: 1, dec: 1 },
     { id: 'estado', titulo: 'Estado', valor: function (m) { return ETIQUETA[m.estado]; }, html: function (m) { return etiqueta(m.estado); }, base: 1 },
     { id: 'operador', titulo: 'Operario', valor: function (m) { return m.operador; }, base: 1 },
     { id: 'operadorRut', titulo: 'RUT operario', valor: function (m) { return m.operadorRut; } },
