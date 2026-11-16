@@ -71,6 +71,38 @@ class MuestraViewModelTest {
         assertEquals(3, p.profundidadM)
     }
 
+    // Las dos siguientes fijan qué acepta el formulario: solo trenes y líneas que existen en el centro
+
+    @Test
+    fun trenQueNoExiste_marcaErrorSoloEnElTren() {
+        val vm = MuestraViewModel()
+        completarFormulario(vm)
+        vm.cambiarTren("Z")
+        vm.guardar()
+        val s = vm.uiState.value
+        assertNotNull(s.errorTren)
+        assertNull(s.errorCentro)
+        assertNull(s.errorLinea)
+        assertNull(s.errorEstrato)
+        assertNull(s.parametrosValidos)
+    }
+
+    @Test
+    fun lineaQueNoExiste_marcaErrorSoloEnLaLinea() {
+        val vm = MuestraViewModel()
+        completarFormulario(vm)
+        vm.cambiarLinea(13)
+        vm.guardar()
+        val s = vm.uiState.value
+        assertNotNull(s.errorLinea)
+        assertNull(s.errorTren)
+        assertNull(s.parametrosValidos)
+
+        vm.cambiarLinea(12)
+        vm.guardar()
+        assertEquals(12, vm.uiState.value.parametrosValidos?.linea)
+    }
+
     @Test
     fun limpiar_borraValoresErroresYMensajes() {
         val vm = MuestraViewModel()
