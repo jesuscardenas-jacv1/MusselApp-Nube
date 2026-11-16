@@ -1,0 +1,83 @@
+# Compila la app y corre las pruebas en los servidores de GitHub.
+# - build-y-unitarias: assembleDebug + pruebas unitarias (JVM)
+# - instrumentadas: pruebas con Room real en un emulador (incluye migraciones y sincronización con la nube falsa)
+name: Android CI
+
+on:
+  push:
+    branches: [main, "mejoras/**", "feature/**", "fix/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-y-unitarias:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # gradle/gradle-daemon-jvm.properties pide JDK 25 para el daemon
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar y correr pruebas unitarias
+        run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
+
+      - name: Guardar informe de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-unitarias
+          path: app/build/reports/tests/
+          if-no-files-found: ignore
+
+  instrumentadas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: build-y-unitarias
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Habilitar KVM para el emulador
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Pruebas instrumentadas en emulador (API 34)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: ./gradlew connectedDebugAndroidTest --stacktrace
+
+      - name: Guardar informe de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-instrumentadas
+          path: app/build/reports/androidTests/
+          if-no-files-found: ignore
