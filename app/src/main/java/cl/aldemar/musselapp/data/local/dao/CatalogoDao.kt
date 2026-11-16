@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import cl.aldemar.musselapp.data.local.entidad.CentroEntity
+import cl.aldemar.musselapp.data.local.entidad.LineaDeTren
 import cl.aldemar.musselapp.data.local.entidad.LineaEntity
 import cl.aldemar.musselapp.data.local.entidad.TrenEntity
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,17 @@ interface CatalogoDao {
 
     @Query("SELECT * FROM lineas WHERE tren_id = :trenId ORDER BY numero")
     fun observarLineas(trenId: Long): Flow<List<LineaEntity>>
+
+    /** Todas las líneas de un centro con el código de su tren: con esto se arman las listas del formulario. */
+    @Query(
+        """
+        SELECT t.codigo AS tren, l.numero AS linea FROM lineas l
+        JOIN trenes t ON t.id = l.tren_id
+        WHERE t.centro_id = :centroId
+        ORDER BY t.codigo, l.numero
+        """,
+    )
+    fun observarLineasDeCentro(centroId: String): Flow<List<LineaDeTren>>
 
     /** Busca la línea a partir de lo que elige el operario en el formulario. */
     @Query(

@@ -10,6 +10,7 @@ import cl.aldemar.musselapp.data.nube.Notificador
 import cl.aldemar.musselapp.data.nube.NubeSync
 import cl.aldemar.musselapp.data.repository.AuthRepository
 import cl.aldemar.musselapp.data.repository.BloqueoLogin
+import cl.aldemar.musselapp.data.repository.CatalogoRepository
 import cl.aldemar.musselapp.data.repository.PreferenciasIntentos
 import cl.aldemar.musselapp.data.repository.MuestraRepository
 import cl.aldemar.musselapp.data.repository.RoomAuthRepository
@@ -52,6 +53,9 @@ class AppContainer(context: Context) {
                 notificador.avisarEliminacion(muestra)
                 AlmacenFotos.borrar(appContext, muestra.fotoRuta)
             }) }
+
+    /** Trenes y líneas de cada centro para el formulario de Nueva muestra. */
+    val catalogoRepository: CatalogoRepository by lazy { CatalogoRepository(database.catalogoDao()) }
 
     /** Posición del teléfono al registrar una muestra (los ViewModels no tienen Context). */
     val ubicador: UbicadorGps by lazy { UbicadorGps(appContext) }
