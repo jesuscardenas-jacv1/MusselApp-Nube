@@ -1,5 +1,6 @@
 package cl.aldemar.musselapp.ui.navegacion
 
+import cl.aldemar.musselapp.ui.splash.SplashScreen
 import android.app.Activity
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
@@ -79,7 +80,7 @@ fun MusselNavHost(
             navController.navigate(Rutas.PRINCIPAL) {
                 popUpTo(Rutas.LOGIN) { inclusive = true }
             }
-        } else if (usuario == null && rutaActual != null && rutaActual != Rutas.LOGIN) {
+        } else if (usuario == null && rutaActual != null && rutaActual != Rutas.LOGIN && rutaActual != Rutas.SPLASH) {
             // Una muestra a medio registrar no pasa al siguiente usuario (ni su foto queda guardada)
             borradorViewModel.descartar()
             navController.navigate(Rutas.LOGIN) {
@@ -136,7 +137,18 @@ fun MusselNavHost(
         }
     }
 
-    NavHost(navController = navController, startDestination = Rutas.LOGIN) {
+    NavHost(navController = navController, startDestination = Rutas.SPLASH) {
+
+        composable(Rutas.SPLASH, exitTransition = { fadeOut(tween(300)) }) {
+            SplashScreen(
+                alTerminar = {
+                    // Sin volver a la animación con el botón Atrás
+                    navController.navigate(Rutas.LOGIN) {
+                        popUpTo(Rutas.SPLASH) { inclusive = true }
+                    }
+                },
+            )
+        }
 
         composable(Rutas.LOGIN) {
             LoginRoute(viewModel = loginViewModel)
