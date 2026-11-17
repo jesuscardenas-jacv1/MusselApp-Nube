@@ -155,6 +155,7 @@ fun SplashScreen(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val ancho = size.width
             val alto = size.height
+            val densidad = density
             // El protagonista se dibuja al final para quedar encima del montón
             choritos.sortedBy { it.protagonista }.forEach { c ->
                 if (p < c.sueltaEn) return@forEach
@@ -164,7 +165,8 @@ fun SplashScreen(
                 withTransform({
                     translate(left = cuadro.x, top = cuadro.y)
                     rotate(degrees = cuadro.rotacion, pivot = Offset.Zero)
-                    scale(scaleX = cuadro.escala, scaleY = cuadro.escala, pivot = Offset.Zero)
+                    // El chorito está dibujado en dp: se multiplica por la densidad de la pantalla
+                    scale(scaleX = cuadro.escala * densidad, scaleY = cuadro.escala * densidad, pivot = Offset.Zero)
                 }) {
                     dibujarChorito(
                         colorConcha = if (modoOscuro) TextoSobreOscuro else Texto,
