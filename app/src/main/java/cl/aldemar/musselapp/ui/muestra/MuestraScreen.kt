@@ -63,8 +63,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /** Datos del paso 1 del formulario, que se pasan a las siguientes pantallas. */
 data class ParametrosMuestra(
@@ -83,6 +86,8 @@ fun MuestraScreen(
     // Reconteo: ubicación de la muestra original y su código para el rótulo
     reconteo: ParametrosMuestra? = null,
     codigoReconteo: String? = null,
+    // Trenes y líneas de un centro, leídos de la base. Por defecto (vistas previas) son los de siempre
+    catalogoDe: (String) -> Flow<CatalogoCultivo> = { flowOf(CatalogoCultivo.porDefecto) },
     vm: MuestraViewModel = viewModel()
 ) {
     // Observamos el estado del ViewModel
@@ -97,6 +102,11 @@ fun MuestraScreen(
         val r = reconteo ?: return@LaunchedEffect
         val centro = CentroCultivo.disponibles.find { it.id == r.centroId } ?: return@LaunchedEffect
         vm.prefijar(centro, r.tren, r.linea, r.profundidadM)
+    }
+    // Las listas de trenes y líneas siguen al centro elegido
+    val centroId = state.centro?.id
+    LaunchedEffect(centroId) {
+        if (centroId != null) catalogoDe(centroId).collect { vm.usarCatalogo(it) }
     }
 
     // Permiso de ubicación: se pide una vez al entrar. Si se niega, la muestra se guarda igual
@@ -170,23 +180,25 @@ fun MuestraScreen(
                         color = Paleta.Error
                     )
                 }
+                val trenes = state.catalogo.trenes
+                val lineas = state.catalogo.lineasDe(state.tren)
                 Selector(
                     etiqueta = "Tren de cultivo (longline)",
                     valor = state.tren?.let { nombreTren(it) },
                     vacio = "Selecciona un tren",
                     icono = Icons.Filled.DirectionsBoat,
-                    opciones = Trenes.map { it.second },
+                    opciones = trenes.map { nombreTren(it) },
                     error = state.errorTren,
-                    onElegir = { i -> vm.cambiarTren(Trenes[i].first) }
+                    onElegir = { i -> vm.cambiarTren(trenes[i]) }
                 )
                 Selector(
                     etiqueta = "Línea de siembra",
                     valor = state.linea?.let { etiquetaLinea(it) },
                     vacio = "Selecciona una línea",
                     icono = Icons.Filled.Anchor,
-                    opciones = Lineas.map { etiquetaLinea(it) },
+                    opciones = lineas.map { etiquetaLinea(it) },
                     error = state.errorLinea,
-                    onElegir = { i -> vm.cambiarLinea(Lineas[i]) }
+                    onElegir = { i -> vm.cambiarLinea(lineas[i]) }
                 )
             }
 

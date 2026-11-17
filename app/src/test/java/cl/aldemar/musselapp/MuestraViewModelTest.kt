@@ -1,5 +1,6 @@
 package cl.aldemar.musselapp
 
+import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.ui.muestra.MuestraViewModel
 import org.junit.Assert.assertEquals
@@ -69,6 +70,94 @@ class MuestraViewModelTest {
         assertEquals("B", p.tren)
         assertEquals(4, p.linea)
         assertEquals(3, p.profundidadM)
+    }
+
+    // Las dos siguientes fijan qué acepta el formulario: solo trenes y líneas que existen en el centro
+
+    @Test
+    fun trenQueNoExiste_marcaErrorSoloEnElTren() {
+        val vm = MuestraViewModel()
+        completarFormulario(vm)
+        vm.cambiarTren("Z")
+        vm.guardar()
+        val s = vm.uiState.value
+        assertNotNull(s.errorTren)
+        assertNull(s.errorCentro)
+        assertNull(s.errorLinea)
+        assertNull(s.errorEstrato)
+        assertNull(s.parametrosValidos)
+    }
+
+    @Test
+    fun lineaQueNoExiste_marcaErrorSoloEnLaLinea() {
+        val vm = MuestraViewModel()
+        completarFormulario(vm)
+        vm.cambiarLinea(13)
+        vm.guardar()
+        val s = vm.uiState.value
+        assertNotNull(s.errorLinea)
+        assertNull(s.errorTren)
+        assertNull(s.parametrosValidos)
+
+        vm.cambiarLinea(12)
+        vm.guardar()
+        assertEquals(12, vm.uiState.value.parametrosValidos?.linea)
+    }
+
+    // N8: las listas vienen de la base (CatalogoCultivo)
+
+    @Test
+    fun conCatalogoDeLaBase_validaContraSusTrenesYLineas() {
+        val vm = MuestraViewModel()
+        vm.usarCatalogo(CatalogoCultivo(mapOf("A" to listOf(1, 2), "D" to listOf(20))))
+        vm.cambiarCentro(CentroCultivo.disponibles.first())
+        vm.cambiarEstrato(3)
+
+        // El tren D y su línea 20 no existían en la lista fija; ahora valen porque están en la base
+        vm.cambiarTren("D")
+        vm.cambiarLinea(20)
+        vm.guardar()
+        assertEquals(20, vm.uiState.value.parametrosValidos?.linea)
+
+        // El tren B ya no es de este centro
+        vm.cambiarTren("B")
+        vm.guardar()
+        assertNotNull(vm.uiState.value.errorTren)
+        assertNull(vm.uiState.value.parametrosValidos)
+
+        // La línea 20 es del tren D, no del A
+        vm.cambiarTren("A")
+        vm.guardar()
+        assertNotNull(vm.uiState.value.errorLinea)
+        assertNull(vm.uiState.value.errorTren)
+    }
+
+    @Test
+    fun usarCatalogo_noCambiaLoQueYaEligioElOperario() {
+        val vm = MuestraViewModel()
+        completarFormulario(vm)
+        vm.usarCatalogo(CatalogoCultivo(mapOf("A" to listOf(1))))
+        val s = vm.uiState.value
+        assertEquals("B", s.tren)
+        assertEquals(4, s.linea)
+        assertNull(s.errorTren)
+    }
+
+    @Test
+    fun limpiar_conservaElCatalogoSiSigueEnElMismoCentro() {
+        val vm = MuestraViewModel()
+        val sesion = CentroCultivo.disponibles.first()
+        val catalogo = CatalogoCultivo(mapOf("A" to listOf(1, 2)))
+        vm.iniciar(sesion)
+        vm.usarCatalogo(catalogo)
+        vm.limpiar()
+        assertEquals(catalogo, vm.uiState.value.catalogo)
+
+        // Si limpiar devuelve el formulario a otro centro, el catálogo anterior ya no sirve
+        vm.cambiarCentro(CentroCultivo.disponibles[1])
+        vm.limpiar()
+        assertEquals(sesion, vm.uiState.value.centro)
+        assertEquals(CatalogoCultivo.porDefecto, vm.uiState.value.catalogo)
     }
 
     @Test

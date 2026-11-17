@@ -93,6 +93,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
@@ -140,6 +141,8 @@ fun VistaPreviaScreen(
     guardando: Boolean = false,
     // Posición del teléfono para esta muestra (se busca al entrar a esta pantalla)
     ubicacion: EstadoUbicacion = EstadoUbicacion(),
+    // Trenes y líneas del centro de la muestra, leídos de la base
+    catalogo: CatalogoCultivo = CatalogoCultivo.porDefecto,
     onConfirmar: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -299,21 +302,23 @@ fun VistaPreviaScreen(
                             onParametrosCambiados(parametros.copy(centroId = CentroCultivo.disponibles[i].id))
                         }
                     )
+                    val trenes = catalogo.trenes
+                    val lineas = catalogo.lineasDe(parametros.tren)
                     Selector(
                         etiqueta = "Tren de cultivo (longline)",
                         valor = nombreTren(parametros.tren),
                         vacio = "Selecciona un tren",
                         icono = Icons.Filled.DirectionsBoat,
-                        opciones = Trenes.map { it.second },
-                        onElegir = { i -> onParametrosCambiados(parametros.copy(tren = Trenes[i].first)) }
+                        opciones = trenes.map { nombreTren(it) },
+                        onElegir = { i -> onParametrosCambiados(parametros.copy(tren = trenes[i])) }
                     )
                     Selector(
                         etiqueta = "Línea de siembra",
                         valor = etiquetaLinea(parametros.linea),
                         vacio = "Selecciona una línea",
                         icono = Icons.Filled.Anchor,
-                        opciones = Lineas.map { etiquetaLinea(it) },
-                        onElegir = { i -> onParametrosCambiados(parametros.copy(linea = Lineas[i])) }
+                        opciones = lineas.map { etiquetaLinea(it) },
+                        onElegir = { i -> onParametrosCambiados(parametros.copy(linea = lineas[i])) }
                     )
                     TextoRotulo("Estrato de profundidad", modifier = Modifier.padding(top = 4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
