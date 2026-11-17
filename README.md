@@ -98,8 +98,8 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 98 pruebas unitarias (validaciones, regla del comentario al corregir, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
-./gradlew connectedDebugAndroidTest  # 25 pruebas instrumentadas con Room real, migraciones y sincronización con una nube falsa (requiere teléfono o emulador)
+./gradlew testDebugUnitTest          # 108 pruebas unitarias (validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew connectedDebugAndroidTest  # 31 pruebas instrumentadas con Room real, migraciones, catálogo de trenes y líneas y sincronización con una nube falsa (requiere teléfono o emulador)
 ```
 
 Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/android.yml`) en cada push a `main`, `feature/**`, `fix/**` o `mejoras/**` y en cada PR: compila, corre las unitarias y las instrumentadas en un emulador, y deja el APK de debug como artefacto descargable por 14 días.
