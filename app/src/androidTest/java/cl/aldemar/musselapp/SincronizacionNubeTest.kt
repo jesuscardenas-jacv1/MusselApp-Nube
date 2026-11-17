@@ -8,6 +8,8 @@ import cl.aldemar.musselapp.data.local.MusselDatabase
 import cl.aldemar.musselapp.data.local.aModelo
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
+import cl.aldemar.musselapp.data.model.Rol
+import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.data.nube.ServicioNube
 import cl.aldemar.musselapp.data.nube.VeredictoNube
 import cl.aldemar.musselapp.data.repository.RoomMuestraRepository
@@ -24,6 +26,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -41,6 +44,7 @@ class SincronizacionNubeTest {
     private lateinit var alcance: CoroutineScope
     private val alcancesExtra = mutableListOf<CoroutineScope>()
     private val revisadas = mutableListOf<Triple<Muestra, EstadoMuestra, String?>>()
+    private val supervisor = Usuario("22.222.222-2", "Diego Muñoz", Rol.SUPERVISOR)
     private val eliminadas = mutableListOf<Muestra>()
 
     @Before
@@ -168,11 +172,13 @@ class SincronizacionNubeTest {
     }
 
     @Test
-    fun veredicto_sobreMuestraYaRevisada_seIgnora() = runBlocking {
+    fun veredicto_sobreMuestraYaRevisadaYSincronizada_seIgnora() = runBlocking {
         val nube = FakeServicioNube()
         val repositorio = crearRepositorio(nube)
         esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
         val id = idSembrada(EstadoMuestra.VALIDADO)
+        // Su dictamen ya está en la nube: uno distinto que llegue después no lo cambia
+        db.muestraDao().marcarSincronizada(id)
         val revisionesAntes = cantidadRevisiones(id)
 
         nube.emitir(VeredictoNube(id, EstadoMuestra.CORREGIDO, "Segundo dictamen", System.currentTimeMillis()))
@@ -219,6 +225,136 @@ class SincronizacionNubeTest {
         }
         assertEquals("Llegó primero", muestra(id).comentarioSupervisor)
         esperar("se avisa al operario") { revisadasAhora().size == 1 }
+    }
+
+    // ── F3: dictamen hecho en el teléfono ──────────────────────────────────
+
+    @Test
+    fun revisarEnElTelefono_subeElDictamenDeInmediato() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+
+        repositorio.actualizarEstado(id, EstadoMuestra.VALIDADO, "Conforme", supervisor)
+
+        esperar("el dictamen del teléfono llega a la nube") { nube.dictamenEnLaNube(id) != null }
+        val enLaNube = nube.dictamenEnLaNube(id)!!
+        assertEquals(EstadoMuestra.VALIDADO, enLaNube.estado)
+        assertEquals("Conforme", enLaNube.comentario)
+        esperar("la muestra queda sincronizada") { muestra(id).sincronizada }
+        assertEquals(EstadoMuestra.VALIDADO, muestra(id).estado)
+        // El dictamen lo hizo este teléfono: no se avisa de vuelta
+        assertTrue(revisadasAhora().isEmpty())
+    }
+
+    @Test
+    fun revisarEnElTelefono_sinConexion_quedaPendienteYSincronizarLoSube() = runBlocking {
+        val nube = FakeServicioNube(subidaOk = false)
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val intentosAntes = nube.idsSubidos().count { it == id }
+
+        repositorio.actualizarEstado(id, EstadoMuestra.CORREGIDO, "Repetir conteo", supervisor)
+
+        esperar("se intenta subir el dictamen") { nube.idsSubidos().count { it == id } > intentosAntes }
+        assertFalse(muestra(id).sincronizada)
+        assertNull(nube.dictamenEnLaNube(id))
+
+        nube.subidaOk = true
+        assertTrue(repositorio.sincronizar() > 0)
+        assertTrue(muestra(id).sincronizada)
+        assertEquals(EstadoMuestra.CORREGIDO, nube.dictamenEnLaNube(id)?.estado)
+        assertEquals("Repetir conteo", nube.dictamenEnLaNube(id)?.comentario)
+    }
+
+    /**
+     * El supervisor revisó en el teléfono, pero la muestra ya tenía en la nube un dictamen distinto del
+     * portal que este teléfono no había recibido. Vale el de la nube (llegó primero): no se pisa, el
+     * teléfono lo adopta y avisa. El dictamen de la nube trae una fecha anterior a la del teléfono.
+     */
+    @Test
+    fun revisarEnElTelefono_conOtroDictamenYaEnLaNube_valeElDeLaNube() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val revisionesAntes = cantidadRevisiones(id)
+        nube.dictaminarEnPortal(VeredictoNube(id, EstadoMuestra.CORREGIDO, "Repetir conteo", FECHA_PORTAL))
+
+        repositorio.actualizarEstado(id, EstadoMuestra.VALIDADO, "Conforme", supervisor)
+
+        esperar("el teléfono adopta el dictamen de la nube") {
+            muestra(id).let { it.estado == EstadoMuestra.CORREGIDO && it.sincronizada }
+        }
+        val m = muestra(id)
+        assertEquals("Repetir conteo", m.comentarioSupervisor)
+        assertEquals(FECHA_PORTAL, m.revisadaEn)
+        // En la nube sigue el primer dictamen
+        assertEquals(EstadoMuestra.CORREGIDO, nube.dictamenEnLaNube(id)?.estado)
+        assertEquals("Repetir conteo", nube.dictamenEnLaNube(id)?.comentario)
+        // Quedan los dos en el historial: el del teléfono y el que terminó valiendo
+        assertEquals(revisionesAntes + 2, cantidadRevisiones(id))
+        esperar("se avisa una vez del dictamen que vale") { revisadasAhora().size == 1 }
+        assertEquals(EstadoMuestra.CORREGIDO, revisadasAhora().single().second)
+        assertEquals(0, db.muestraDao().pendientesDeSincronizar().count { it == id })
+    }
+
+    @Test
+    fun revisarEnElTelefono_conElMismoDictamenYaEnLaNube_quedaSincronizadaSinAvisar() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        nube.dictaminarEnPortal(VeredictoNube(id, EstadoMuestra.VALIDADO, "Conforme (portal)", FECHA_PORTAL))
+
+        repositorio.actualizarEstado(id, EstadoMuestra.VALIDADO, "Conforme", supervisor)
+
+        esperar("la muestra queda sincronizada") { muestra(id).sincronizada }
+        assertEquals(EstadoMuestra.VALIDADO, muestra(id).estado)
+        // No se pisa lo que ya estaba en la nube
+        assertEquals("Conforme (portal)", nube.dictamenEnLaNube(id)?.comentario)
+        delay(ESPERA_NEGATIVA_MS)
+        assertTrue(revisadasAhora().isEmpty())
+    }
+
+    /** Igual que el caso anterior al de arriba, pero el dictamen de la nube llega por el listener antes que la subida. */
+    @Test
+    fun veredictoDistinto_sobreDictamenDelTelefonoSinSubir_valeElDeLaNube() = runBlocking {
+        val nube = FakeServicioNube(subidaOk = false)
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val intentosAntes = nube.idsSubidos().count { it == id }
+        repositorio.actualizarEstado(id, EstadoMuestra.VALIDADO, "Conforme", supervisor)
+        esperar("se intenta subir el dictamen") { nube.idsSubidos().count { it == id } > intentosAntes }
+        assertFalse(muestra(id).sincronizada)
+
+        nube.emitir(VeredictoNube(id, EstadoMuestra.CORREGIDO, "Repetir conteo", FECHA_PORTAL))
+
+        esperar("el teléfono adopta el dictamen de la nube") {
+            muestra(id).let { it.estado == EstadoMuestra.CORREGIDO && it.sincronizada }
+        }
+        assertEquals("Repetir conteo", muestra(id).comentarioSupervisor)
+        esperar("se avisa una vez") { revisadasAhora().size == 1 }
+        assertEquals(EstadoMuestra.CORREGIDO, revisadasAhora().single().second)
+    }
+
+    @Test
+    fun sinNube_revisarEnElTelefono_funcionaComoAntes() = runBlocking {
+        val repositorio = crearRepositorio(nube = null)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val revisionesAntes = cantidadRevisiones(id)
+
+        repositorio.actualizarEstado(id, EstadoMuestra.VALIDADO, "Conforme", supervisor)
+
+        val m = muestra(id)
+        assertEquals(EstadoMuestra.VALIDADO, m.estado)
+        assertEquals("Conforme", m.comentarioSupervisor)
+        assertFalse(m.sincronizada)
+        assertEquals(revisionesAntes + 1, cantidadRevisiones(id))
     }
 
     // ── N9: muestra borrada en el portal ───────────────────────────────────
@@ -276,5 +412,7 @@ class SincronizacionNubeTest {
         const val ID_INEXISTENTE = 999_999L
         const val ESPERA_MS = 5_000L
         const val ESPERA_NEGATIVA_MS = 500L
+        /** Fecha del dictamen del portal, anterior a cualquier dictamen hecho durante la prueba. */
+        const val FECHA_PORTAL = 1_000L
     }
 }

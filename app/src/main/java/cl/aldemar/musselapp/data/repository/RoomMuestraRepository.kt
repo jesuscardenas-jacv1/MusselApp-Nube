@@ -8,6 +8,7 @@ import cl.aldemar.musselapp.data.local.conPosicion
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
+import cl.aldemar.musselapp.data.nube.ProteccionDictamen
 import cl.aldemar.musselapp.data.nube.ServicioNube
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Usuario
@@ -66,7 +67,9 @@ class RoomMuestraRepository(
                         // Se consulta Room y no la lista en memoria: al abrir la app, la nube puede entregar
                         // su snapshot antes de que Room emita la primera lista, y el dictamen se perdería
                         val local = muestraDao.observarPorId(v.muestraId).first()?.aModelo() ?: return@launch
-                        if (local.estado != EstadoMuestra.PENDIENTE) return@launch
+                        // Además de las pendientes, se acepta el dictamen de la nube sobre una muestra revisada
+                        // en este teléfono que aún no se subió: el de la nube llegó primero y es el que vale
+                        if (!ProteccionDictamen.debeAplicarRemoto(local.estado, local.sincronizada, v.estado)) return@launch
                         muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
                         muestraDao.marcarSincronizada(v.muestraId)
                         alRevisar(local, v.estado, v.comentario)
@@ -108,6 +111,9 @@ class RoomMuestraRepository(
         val supervisorRut = buscarRut(supervisor.rut)
             ?: error("Supervisor no registrado: ${supervisor.rut}")
         muestraDao.registrarRevision(id, nuevoEstado, comentario, supervisorRut, System.currentTimeMillis())
+        // El dictamen hecho en el teléfono se sube de inmediato para que el portal lo vea y no acepte otro.
+        // Igual que al guardar, no se espera a la red: si falla, la muestra queda pendiente para "Sincronizar"
+        if (nube != null) alcanceNube.launch { subirMuestra(id) }
     }
 
     /** El id de [muestra] se ignora: lo genera la base al insertar. */

@@ -13,6 +13,7 @@ import cl.aldemar.musselapp.util.AlertasMuestra
 import cl.aldemar.musselapp.util.CodigoTiempo
 import cl.aldemar.musselapp.util.Distancia
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -21,6 +22,7 @@ import kotlinx.coroutines.withTimeout
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 
 /** Revisión que el supervisor dejó en la nube para una muestra de este teléfono. */
@@ -60,7 +62,29 @@ class NubeSync(context: Context) : ServicioNube {
 
     private fun docId(muestraId: Long) = "${instalacion}_$muestraId"
 
-    /** Sube (o actualiza) la muestra. Devuelve true si el servidor la confirmó. */
+    /**
+     * Quien recibe los dictámenes de la nube. Se guarda para entregarle también el dictamen que una
+     * subida encuentre ya puesto en la nube, sin depender de que el listener lo vuelva a enviar.
+     */
+    @Volatile
+    private var alAplicarRemoto: ((VeredictoNube) -> Unit)? = null
+
+    /** Dictamen que tiene el documento de la nube, o null si sigue pendiente o no se entiende. */
+    private fun veredictoDe(muestraId: Long, doc: DocumentSnapshot): VeredictoNube? {
+        val estado = runCatching { EstadoMuestra.valueOf(doc.getString("estado") ?: "") }.getOrNull() ?: return null
+        if (estado == EstadoMuestra.PENDIENTE) return null
+        return VeredictoNube(
+            muestraId = muestraId,
+            estado = estado,
+            comentario = doc.getString("comentarioSupervisor"),
+            revisadaEn = doc.getLong("revisadaEn") ?: System.currentTimeMillis(),
+        )
+    }
+
+    /**
+     * Sube (o actualiza) la muestra. Devuelve true si el servidor la confirmó; false si no hubo
+     * conexión o si la nube ya tenía un dictamen distinto del local (ver [ServicioNube.subir]).
+     */
     override suspend fun subir(m: Muestra): Boolean {
         val db = firestore ?: run { Log.e(TAG, "subir: sin Firestore"); return false }
         return try {
@@ -108,17 +132,35 @@ class NubeSync(context: Context) : ServicioNube {
             withTimeout(TIMEOUT_MS) {
                 suspendCancellableCoroutine { cont ->
                     val refMuestra = db.collection(COLECCION).document(docId(m.id))
-                    // Transacción en vez de lote: se lee primero lo que hay en la nube para que un reintento
-                    // (por ejemplo, tras un corte de internet) no pise un dictamen que el supervisor ya dejó.
-                    // Sin conexión la transacción falla de inmediato y la muestra queda pendiente, igual que antes.
+                    // Dictamen que ya estaba en la nube y que vale por haber llegado primero (si lo hay)
+                    val dictamenPrevio = AtomicReference<VeredictoNube?>(null)
+                    // Transacción en vez de lote: se lee primero lo que hay en la nube para que ni un reintento
+                    // (por ejemplo, tras un corte de internet) ni un dictamen hecho en el teléfono pisen el
+                    // dictamen que ya esté en la nube. Sin conexión la transacción falla de inmediato y la
+                    // muestra queda pendiente, igual que antes.
                     db.runTransaction { tx ->
                         val remoto = tx.get(refMuestra)
                         val estadoRemoto = if (remoto.exists()) remoto.getString("estado") else null
-                        tx.set(refMuestra, ProteccionDictamen.filtrar(datos, m.estado, estadoRemoto), SetOptions.merge())
+                        // La transacción puede repetirse: se guarda lo que vio el último intento
+                        dictamenPrevio.set(
+                            if (ProteccionDictamen.prevaleceRemoto(m.estado, estadoRemoto)) veredictoDe(m.id, remoto) else null,
+                        )
+                        tx.set(refMuestra, ProteccionDictamen.filtrar(datos, estadoRemoto), SetOptions.merge())
                         if (foto != null) tx.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
                         null
                     }
-                        .addOnSuccessListener { Log.i(TAG, "Subida OK ${docId(m.id)}"); if (cont.isActive) cont.resume(true) }
+                        .addOnSuccessListener {
+                            val previo = dictamenPrevio.get()
+                            if (previo == null) {
+                                Log.i(TAG, "Subida OK ${docId(m.id)}")
+                            } else {
+                                // Gana el primero: el teléfono adopta el dictamen de la nube y la muestra
+                                // sigue pendiente hasta entonces
+                                Log.i(TAG, "La nube ya tenía otro dictamen para ${docId(m.id)}: ${previo.estado}")
+                                alAplicarRemoto?.invoke(previo)
+                            }
+                            if (cont.isActive) cont.resume(previo == null)
+                        }
                         .addOnFailureListener { Log.e(TAG, "Subida FALLÓ", it); if (cont.isActive) cont.resume(false) }
                 }
             }
@@ -130,6 +172,7 @@ class NubeSync(context: Context) : ServicioNube {
 
     /** Escucha en vivo los dictámenes y los borrados del supervisor para las muestras de este teléfono. */
     override fun escucharVeredictos(alEliminar: (Long) -> Unit, alAplicar: (VeredictoNube) -> Unit) {
+        alAplicarRemoto = alAplicar
         val db = firestore ?: return
         try {
             db.collection(COLECCION).addSnapshotListener { snap, error ->
@@ -148,17 +191,7 @@ class NubeSync(context: Context) : ServicioNube {
                         alEliminar(id)
                         continue
                     }
-                    val estado = runCatching { EstadoMuestra.valueOf(doc.getString("estado") ?: "") }
-                        .getOrNull() ?: continue
-                    if (estado == EstadoMuestra.PENDIENTE) continue
-                    alAplicar(
-                        VeredictoNube(
-                            muestraId = id,
-                            estado = estado,
-                            comentario = doc.getString("comentarioSupervisor"),
-                            revisadaEn = doc.getLong("revisadaEn") ?: System.currentTimeMillis(),
-                        ),
-                    )
+                    alAplicar(veredictoDe(id, doc) ?: continue)
                 }
             }
         } catch (e: Exception) {

@@ -10,7 +10,11 @@ import cl.aldemar.musselapp.data.local.entidad.RevisionEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import kotlinx.coroutines.flow.Flow
 
-/** Une la muestra con línea, tren, operador y su revisión más reciente. */
+/**
+ * Une la muestra con línea, tren, operador y su revisión vigente: la última que se registró en este
+ * teléfono, que es la que fijó el estado. No se ordena por fecha porque un dictamen adoptado de la nube
+ * puede traer una fecha anterior a la del dictamen local que reemplaza.
+ */
 private const val SELECT_COMPLETA = """
     SELECT m.*,
            t.centro_id AS centro_id,
@@ -27,7 +31,7 @@ private const val SELECT_COMPLETA = """
     LEFT JOIN revisiones r ON r.id = (
         SELECT r2.id FROM revisiones r2
         WHERE r2.muestra_id = m.id
-        ORDER BY r2.revisada_en DESC, r2.id DESC
+        ORDER BY r2.id DESC
         LIMIT 1
     )
     LEFT JOIN usuarios sup ON sup.rut = r.supervisor_rut
