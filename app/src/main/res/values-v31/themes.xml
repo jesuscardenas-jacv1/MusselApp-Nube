@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Android 12+ muestra una pantalla de inicio propia con el ícono de la app antes de abrirla.
+      Se deja sin ícono y del color de la animación, para que la app parta directo con ella.
+    -->
+    <style name="Theme.MusselApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fondo_inicio</item>
+        <item name="android:windowSplashScreenBackground">@color/fondo_inicio</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_sin_icono</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
+</resources>
