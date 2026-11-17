@@ -41,7 +41,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Clima y estado del mar al muestrear (viento, racha, ola, temperatura del agua, marea) | Detalle, ficha PDF | API REST de [Open-Meteo](https://open-meteo.com) con Retrofit (`ClimaRepository`); guardar nunca espera a la red |
 | Alertas automáticas para el supervisor (fuera del área, densidad, cholgas, talla, mal tiempo) | Supervisión, Detalle, portal web | `AlertasMuestra.evaluar()`, reglas puras con los límites en `Umbrales` |
 | Métricas de la jornada y muestras recientes | Principal | `PrincipalViewModel` + `ResumenJornada` |
-| Sincronización con la nube y dictamen desde el computador | Todas, portal web | `NubeSync` (Firestore) detrás de la interfaz `ServicioNube`; Room sigue siendo la fuente de verdad, se guarda sin red y se sube después. `ProteccionDictamen` evita que un reintento pise un dictamen del supervisor |
+| Sincronización con la nube y dictamen desde el computador | Todas, portal web | `NubeSync` (Firestore) detrás de la interfaz `ServicioNube`; Room sigue siendo la fuente de verdad, se guarda sin red y se sube después. El supervisor puede dictaminar en el portal o en el teléfono: el dictamen del teléfono se sube de inmediato y, si los dos dictaminan la misma muestra, vale el primero que llegó a la nube (`ProteccionDictamen`) |
 | Muestra borrada en el portal | Notificación, Historial | Al eliminar una muestra en el portal, el teléfono que la registró la borra (con sus revisiones y su foto) y avisa con una notificación |
 | Seguridad local | Login | PIN guardado con hash PBKDF2, bloqueo tras 5 intentos fallidos y base excluida del respaldo |
 

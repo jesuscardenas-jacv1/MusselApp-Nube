@@ -8,7 +8,12 @@ import cl.aldemar.musselapp.data.model.Muestra
  */
 interface ServicioNube {
 
-    /** Sube (o actualiza) la muestra. Devuelve true si el servidor la confirmó. */
+    /**
+     * Sube (o actualiza) la muestra, con su dictamen si se revisó en el teléfono.
+     * Devuelve true si el servidor la confirmó. Devuelve false si no hubo conexión, y también si la
+     * nube ya tenía un dictamen distinto: ese dictamen se entrega por [escucharVeredictos] y la muestra
+     * queda pendiente hasta que el teléfono lo adopte.
+     */
     suspend fun subir(m: Muestra): Boolean
 
     /**
