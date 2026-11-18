@@ -4,6 +4,8 @@ import cl.aldemar.musselapp.ui.principal.Destino
 
 /** Rutas de navegación de MusselApp (inventario de pantallas 3.1). */
 object Rutas {
+    /** Animación de inicio: se muestra al abrir la app y da paso al Login. */
+    const val SPLASH = "splash"
     const val LOGIN = "login"
     const val PRINCIPAL = "principal"
     const val ARG_RECONTAR = "recontar"

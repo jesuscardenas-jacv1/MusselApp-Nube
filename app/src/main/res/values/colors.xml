@@ -7,4 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- Fondo de la animación de inicio (SuperficieCampo): la ventana arranca del mismo color -->
+    <color name="fondo_inicio">#FFF4F6F9</color>
 </resources>

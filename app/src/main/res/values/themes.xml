@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MusselApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MusselApp" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Mismo color que la animación de inicio: no hay destello blanco al abrir -->
+        <item name="android:windowBackground">@color/fondo_inicio</item>
+    </style>
 </resources>
