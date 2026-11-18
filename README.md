@@ -106,7 +106,7 @@ Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/androi
 
 ### Portal web del supervisor
 
-El supervisor revisa y dictamina las muestras desde el computador abriendo [`web-supervisor/index.html`](web-supervisor/index.html) con doble clic en Chrome (sin servidor ni instalación). Se conecta al proyecto Firebase `musselapp-demo` y se actualiza en vivo. Entra con el supervisor de prueba (`22.222.222-2` / `1234`) o con **Ver con datos de ejemplo** para probar sin nube. Detalle de pantallas y funcionamiento en [`web-supervisor/README.md`](web-supervisor/README.md).
+El supervisor revisa y dictamina las muestras desde el computador abriendo [`web-supervisor/index.html`](web-supervisor/index.html) con doble clic en Chrome (sin servidor ni instalación). Se conecta al proyecto Firebase `musselapp-demo` y se actualiza en vivo. Entra con el correo y la contraseña de la cuenta de supervisor creada en Firebase, o con **Ver con datos de ejemplo** para probar sin nube. Detalle de pantallas y funcionamiento en [`web-supervisor/README.md`](web-supervisor/README.md).
 
 ## 5. Arquitectura
 

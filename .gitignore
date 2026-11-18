@@ -19,3 +19,8 @@ captures/
 
 # Caché local del compilador de Kotlin
 .kotlin/
+
+# Pruebas de las reglas de Firestore
+firestore-tests/node_modules/
+firebase-debug.log
+firestore-debug.log

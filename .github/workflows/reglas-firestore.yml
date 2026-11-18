@@ -1,0 +1,42 @@
+# Prueba firestore.rules con el emulador de Firestore (no toca el proyecto real musselapp-demo).
+name: Reglas de Firestore
+
+on:
+  push:
+    branches: [main, "mejoras/**", "feature/**", "fix/**"]
+    paths: ["firestore.rules", "firebase.json", "firestore-tests/**", ".github/workflows/reglas-firestore.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["firestore.rules", "firebase.json", "firestore-tests/**", ".github/workflows/reglas-firestore.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: reglas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reglas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: firestore-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      # El emulador de Firestore es un programa Java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firestore-tests/package-lock.json
+
+      - run: npm ci
+
+      - name: Probar las reglas en el emulador
+        run: npm test

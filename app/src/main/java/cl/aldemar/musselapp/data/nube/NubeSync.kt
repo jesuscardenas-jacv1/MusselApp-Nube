@@ -12,10 +12,15 @@ import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.util.AlertasMuestra
 import cl.aldemar.musselapp.util.CodigoTiempo
 import cl.aldemar.musselapp.util.Distancia
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.AuthResult
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
@@ -56,6 +61,26 @@ class NubeSync(context: Context) : ServicioNube {
             }
         } else null
 
+    /**
+     * Sesión anónima de Firebase: identifica a este teléfono ante las reglas de Firestore, sin pedirle
+     * nada al usuario (el RUT y el PIN de la app siguen siendo locales).
+     */
+    private val auth: FirebaseAuth? =
+        if (firestore != null) {
+            try {
+                FirebaseAuth.getInstance()
+            } catch (e: Exception) {
+                Log.e(TAG, "Firebase Auth NO inicializado", e)
+                null
+            }
+        } else null
+
+    /** Pedido de sesión en curso o ya resuelto (ver [pedirSesion]). */
+    private var tareaSesion: Task<AuthResult>? = null
+
+    /** Escucha activa de las muestras de este teléfono; null mientras no hay sesión. */
+    private var escucha: ListenerRegistration? = null
+
     init {
         Log.i(TAG, "Nube lista=${firestore != null}, instalacion=$instalacion")
     }
@@ -68,6 +93,9 @@ class NubeSync(context: Context) : ServicioNube {
      */
     @Volatile
     private var alAplicarRemoto: ((VeredictoNube) -> Unit)? = null
+
+    @Volatile
+    private var alEliminarRemoto: ((Long) -> Unit)? = null
 
     /** Dictamen que tiene el documento de la nube, o null si sigue pendiente o no se entiende. */
     private fun veredictoDe(muestraId: Long, doc: DocumentSnapshot): VeredictoNube? {
@@ -87,6 +115,9 @@ class NubeSync(context: Context) : ServicioNube {
      */
     override suspend fun subir(m: Muestra): Boolean {
         val db = firestore ?: run { Log.e(TAG, "subir: sin Firestore"); return false }
+        // Sin sesión no se puede escribir en la nube: la muestra queda pendiente, igual que sin internet
+        val uid = asegurarSesion() ?: run { Log.w(TAG, "subir: sin sesión de Firebase"); return false }
+        conectarEscucha()
         return try {
             Log.i(TAG, "Subiendo ${docId(m.id)}")
             val datos = hashMapOf<String, Any?>(
@@ -116,6 +147,9 @@ class NubeSync(context: Context) : ServicioNube {
                     )
                 },
                 "alertas" to AlertasMuestra.evaluar(m).map { it.name },
+                // De quién es la muestra: las reglas de Firestore dejan que cada teléfono lea y escriba solo las suyas
+                CAMPO_DUENO to uid,
+                "instalacion" to instalacion,
             )
             // La foto va en su propio documento (fotos/{id}): así quien escucha la colección de muestras
             // (el portal y los teléfonos) no descarga todas las fotos; el portal la pide al abrir la muestra
@@ -146,7 +180,9 @@ class NubeSync(context: Context) : ServicioNube {
                             if (ProteccionDictamen.prevaleceRemoto(m.estado, estadoRemoto)) veredictoDe(m.id, remoto) else null,
                         )
                         tx.set(refMuestra, ProteccionDictamen.filtrar(datos, estadoRemoto), SetOptions.merge())
-                        if (foto != null) tx.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto))
+                        if (foto != null) {
+                            tx.set(db.collection(COLECCION_FOTOS).document(docId(m.id)), mapOf("fotoBase64" to foto, CAMPO_DUENO to uid))
+                        }
                         null
                     }
                         .addOnSuccessListener {
@@ -173,11 +209,36 @@ class NubeSync(context: Context) : ServicioNube {
     /** Escucha en vivo los dictámenes y los borrados del supervisor para las muestras de este teléfono. */
     override fun escucharVeredictos(alEliminar: (Long) -> Unit, alAplicar: (VeredictoNube) -> Unit) {
         alAplicarRemoto = alAplicar
+        alEliminarRemoto = alEliminar
+        conectarEscucha()
+    }
+
+    /**
+     * Conecta la escucha de las muestras de este teléfono. Necesita la sesión: si todavía no existe
+     * (primera vez o sin internet), la pide y se conecta cuando llegue; si falla, [subir] lo reintenta.
+     */
+    @Synchronized
+    private fun conectarEscucha() {
         val db = firestore ?: return
+        val a = auth ?: return
+        val alAplicar = alAplicarRemoto ?: return
+        val alEliminar = alEliminarRemoto ?: return
+        if (escucha != null) return
+        val uid = a.currentUser?.uid
+        if (uid == null) {
+            pedirSesion(a)
+                .addOnSuccessListener { conectarEscucha() }
+                .addOnFailureListener { Log.w(TAG, "Sin sesión todavía: la escucha se conecta más tarde", it) }
+            return
+        }
         try {
-            db.collection(COLECCION).addSnapshotListener { snap, error ->
+            // Solo las muestras de este teléfono: así no descarga las de los demás y las reglas de
+            // Firestore pueden exigir que cada teléfono lea únicamente lo suyo
+            escucha = db.collection(COLECCION).whereEqualTo(CAMPO_DUENO, uid).addSnapshotListener { snap, error ->
                 if (error != null || snap == null) {
                     error?.let { Log.w(TAG, "Escucha de la nube falló", it) }
+                    // Una escucha con error queda cortada: se suelta para volver a conectarla en la próxima subida
+                    if (error != null) soltarEscucha()
                     return@addSnapshotListener
                 }
                 for (cambio in snap.documentChanges) {
@@ -194,8 +255,87 @@ class NubeSync(context: Context) : ServicioNube {
                     alAplicar(veredictoDe(id, doc) ?: continue)
                 }
             }
+            reclamarDocumentosAnteriores(db, uid)
         } catch (e: Exception) {
             Log.w(TAG, "No se pudo iniciar la escucha", e)
+        }
+    }
+
+    @Synchronized
+    private fun soltarEscucha() {
+        escucha?.remove()
+        escucha = null
+    }
+
+    /**
+     * Pide la sesión anónima una sola vez aunque la necesiten a la vez la escucha y una subida:
+     * dos pedidos simultáneos podrían crear dos usuarios distintos. Si el pedido anterior falló, se repite.
+     */
+    @Synchronized
+    private fun pedirSesion(a: FirebaseAuth): Task<AuthResult> {
+        val anterior = tareaSesion
+        if (anterior != null && (!anterior.isComplete || anterior.isSuccessful)) return anterior
+        return a.signInAnonymously().also { tareaSesion = it }
+    }
+
+    /**
+     * uid de la sesión anónima de este teléfono. La primera vez necesita internet; después Firebase la
+     * guarda y sirve sin conexión. null si todavía no se pudo crear: la subida queda pendiente.
+     */
+    private suspend fun asegurarSesion(): String? {
+        val a = auth ?: return null
+        a.currentUser?.let { return it.uid }
+        return try {
+            withTimeout(TIMEOUT_MS) {
+                suspendCancellableCoroutine { cont ->
+                    pedirSesion(a)
+                        .addOnSuccessListener { resultado -> if (cont.isActive) cont.resume(resultado.user?.uid) }
+                        .addOnFailureListener { e ->
+                            Log.w(TAG, "No se pudo iniciar la sesión anónima", e)
+                            if (cont.isActive) cont.resume(null)
+                        }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "No se pudo iniciar la sesión anónima", e)
+            null
+        }
+    }
+
+    /**
+     * Los documentos subidos antes de que existiera la sesión no tienen dueño y la escucha, que filtra
+     * por dueño, no los ve. Se marcan una sola vez como de este teléfono (se reconocen por el prefijo
+     * de la instalación en el id). Si las reglas de Firestore ya no permiten esta consulta no se
+     * insiste: esos documentos se reclaman cuando la muestra se vuelve a subir.
+     */
+    private fun reclamarDocumentosAnteriores(db: FirebaseFirestore, uid: String) {
+        val prefijo = "${instalacion}_"
+        for (nombre in listOf(COLECCION, COLECCION_FOTOS)) {
+            val hecho = "reclamados_$nombre"
+            if (prefs.getBoolean(hecho, false)) continue
+            db.collection(nombre)
+                .whereGreaterThanOrEqualTo(FieldPath.documentId(), prefijo)
+                .whereLessThan(FieldPath.documentId(), prefijo + "\uf8ff")
+                .get()
+                .addOnSuccessListener { snap ->
+                    val sinDueno = snap.documents.filter { it.getString(CAMPO_DUENO) == null }
+                    if (sinDueno.isEmpty()) {
+                        prefs.edit().putBoolean(hecho, true).apply()
+                        return@addOnSuccessListener
+                    }
+                    // Un lote de Firestore admite 500 operaciones; si hay más, el resto queda para el próximo inicio
+                    val lote = db.batch()
+                    sinDueno.take(MAX_LOTE).forEach { doc ->
+                        lote.set(doc.reference, mapOf(CAMPO_DUENO to uid, "instalacion" to instalacion), SetOptions.merge())
+                    }
+                    lote.commit()
+                        .addOnSuccessListener {
+                            Log.i(TAG, "Reclamados ${minOf(sinDueno.size, MAX_LOTE)} documentos de $nombre")
+                            if (sinDueno.size <= MAX_LOTE) prefs.edit().putBoolean(hecho, true).apply()
+                        }
+                        .addOnFailureListener { Log.w(TAG, "No se pudieron reclamar los documentos de $nombre", it) }
+                }
+                .addOnFailureListener { Log.w(TAG, "No se pudieron buscar los documentos anteriores de $nombre", it) }
         }
     }
 
@@ -242,6 +382,9 @@ class NubeSync(context: Context) : ServicioNube {
         private const val COLECCION = "muestras"
         /** Fotos de las muestras, una por documento con el mismo id que la muestra. */
         private const val COLECCION_FOTOS = "fotos"
+        /** Campo con el uid de la sesión anónima del teléfono que subió el documento. */
+        private const val CAMPO_DUENO = "ownerUid"
+        private const val MAX_LOTE = 450
         private const val TAG = "NubeSync"
         private const val TIMEOUT_MS = 10_000L
         private const val LADO_MAX = 800
