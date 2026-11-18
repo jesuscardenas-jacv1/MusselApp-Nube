@@ -24,8 +24,9 @@ android {
 
     buildTypes {
         release {
+            // R8: reduce el APK y ofusca el código (reglas propias en src/main/keepRules/rules.keep)
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
