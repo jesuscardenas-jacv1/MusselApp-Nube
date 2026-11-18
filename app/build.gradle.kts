@@ -24,8 +24,9 @@ android {
 
     buildTypes {
         release {
+            // R8: reduce el APK y ofusca el código (reglas propias en src/main/keepRules/rules.keep)
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
@@ -69,6 +70,9 @@ dependencies {
     implementation(libs.play.services.location)
     // Orientación EXIF de las fotos (reemplaza a android.media.ExifInterface, obsoleta)
     implementation(libs.androidx.exifinterface)
+    // Play Services trae androidx.fragment 1.1.0 y el lint del release exige 1.3.0 o más para
+    // registerForActivityResult (permiso de notificaciones en MainActivity)
+    implementation(libs.androidx.fragment)
     // room-testing (MigrationTestHelper) necesita kotlinx-serialization 1.8.1; la app traía 1.7.3 y la
     // prueba de migración fallaba con AbstractMethodError. Se fija la versión para que coincidan.
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")

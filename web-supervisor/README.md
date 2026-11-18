@@ -62,6 +62,8 @@ No disparan avisos de muestra nueva ni llegan a los teléfonos. **Borrar histori
 ## Portal anterior
 `web-supervisor/anterior/index.html` es el portal de antes del rediseño, sin cambios. Se abre igual (doble clic) y usa la misma
 base de Firestore, por si hay que volver a él.
+**Ojo:** el portal anterior no inicia sesión en Firebase (el RUT y el PIN de prueba están escritos en su código). Cuando se publiquen
+las reglas de `firestore.rules` deja de leer y escribir datos: solo sirve mientras siguen activas las reglas de prueba.
 
 ## Librerías (por CDN, sin instalación)
 Firebase compat 10.14.1, Chart.js 4.4.6, Leaflet 1.9.4 (teselas de CARTO con datos de OpenStreetMap y clave gratuita no comercial en `CLAVE_CARTO`; se usan porque los servidores de OpenStreetMap rechazan el portal abierto como archivo), SheetJS 0.20.3 y las tipografías Inter y Plus Jakarta Sans.

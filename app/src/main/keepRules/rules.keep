@@ -10,3 +10,20 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# Respuestas de Open-Meteo: Gson llena estos campos por reflexión usando su nombre
+# (RespuestaTiempo.current y RespuestaMar.current no tienen @SerializedName). Si R8 los
+# renombra o los elimina, el clima queda en null sin ningún error.
+-keep class cl.aldemar.musselapp.data.clima.RespuestaTiempo { *; }
+-keep class cl.aldemar.musselapp.data.clima.TiempoActual { *; }
+-keep class cl.aldemar.musselapp.data.clima.RespuestaMar { *; }
+-keep class cl.aldemar.musselapp.data.clima.MarActual { *; }
+
+# Logs de depuración: en release R8 elimina las llamadas a Log.v/d/i (NubeSync escribe en
+# Logcat los ids de las muestras y de la instalación). Log.w y Log.e se mantienen para
+# poder diagnosticar fallos.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
