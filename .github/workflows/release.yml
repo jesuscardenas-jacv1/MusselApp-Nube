@@ -1,0 +1,55 @@
+# Publica el APK como GitHub Release al subir un tag que empiece con v (por ejemplo v1.0.0).
+# Es independiente de android.yml: si falla, no afecta al CI de cada push.
+#
+# Publicar una versión:
+#   git checkout main && git pull
+#   git tag v1.0.0
+#   git push origin v1.0.0
+# Un tag con guion (v1.1.0-rc.1) se publica como pre-release.
+name: Publicar APK
+
+on:
+  push:
+    tags: ["v*"]
+
+# Necesario para que el workflow pueda crear el Release y adjuntar el APK
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # gradle/gradle-daemon-jvm.properties pide JDK 25 para el daemon
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # En el repo gradlew no está marcado como ejecutable (se subió desde Windows)
+      - run: chmod +x ./gradlew
+
+      # Las pruebas unitarias corren antes de publicar: un build roto no llega a Releases
+      - name: Compilar y correr pruebas unitarias
+        run: ./gradlew assembleDebug testDebugUnitTest --stacktrace
+
+      - name: Nombrar el APK con la versión
+        run: mv app/build/outputs/apk/debug/app-debug.apk "MusselApp-${{ github.ref_name }}.apk"
+
+      - name: Crear el Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MusselApp-${{ github.ref_name }}.apk
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
