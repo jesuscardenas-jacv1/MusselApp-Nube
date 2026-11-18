@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +7,15 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.google.services)
 }
+
+// Firma del APK release. Los datos van en keystore.properties (en la raíz, fuera de git: ver
+// .gitignore y keystore.properties.ejemplo). Si el archivo no existe, el release se genera sin
+// firmar, como antes, y el resto del build no cambia.
+val propiedadesFirma = Properties().apply {
+    val archivo = rootProject.file("keystore.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+val hayFirma = !propiedadesFirma.isEmpty
 
 android {
     namespace = "cl.aldemar.musselapp"
@@ -22,8 +33,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hayFirma) {
+            create("release") {
+                storeFile = rootProject.file(propiedadesFirma.getProperty("storeFile"))
+                storePassword = propiedadesFirma.getProperty("storePassword")
+                keyAlias = propiedadesFirma.getProperty("keyAlias")
+                keyPassword = propiedadesFirma.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hayFirma) signingConfig = signingConfigs.getByName("release")
             // R8: reduce el APK y ofusca el código (reglas propias en src/main/keepRules/rules.keep)
             optimization {
                 enable = true

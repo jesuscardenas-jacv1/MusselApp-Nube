@@ -17,6 +17,11 @@ captures/
 *.apk
 *.aab
 
+# Firma del APK release: la llave y sus contraseñas nunca se suben
+*.jks
+*.keystore
+keystore.properties
+
 # Caché local del compilador de Kotlin
 .kotlin/
 
