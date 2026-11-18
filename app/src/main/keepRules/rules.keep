@@ -18,3 +18,12 @@
 -keep class cl.aldemar.musselapp.data.clima.TiempoActual { *; }
 -keep class cl.aldemar.musselapp.data.clima.RespuestaMar { *; }
 -keep class cl.aldemar.musselapp.data.clima.MarActual { *; }
+
+# Logs de depuración: en release R8 elimina las llamadas a Log.v/d/i (NubeSync escribe en
+# Logcat los ids de las muestras y de la instalación). Log.w y Log.e se mantienen para
+# poder diagnosticar fallos.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
