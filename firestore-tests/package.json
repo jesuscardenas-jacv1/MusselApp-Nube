@@ -1,0 +1,14 @@
+{
+  "name": "musselapp-reglas-firestore",
+  "private": true,
+  "description": "Pruebas de firestore.rules con el emulador de Firestore",
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-musselapp --config ../firebase.json \"node --test\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.0.0",
+    "firebase-tools": "^15.0.0"
+  }
+}

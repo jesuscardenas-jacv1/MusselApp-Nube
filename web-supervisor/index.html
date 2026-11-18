@@ -916,16 +916,16 @@
       <h1 id="titulo-login">Iniciar sesión</h1>
       <p>Acceso web para el supervisor de calidad.</p>
       <div class="grupo-campo">
-        <label class="etq" for="rut">RUT</label>
-        <input class="campo" id="rut" inputmode="text" placeholder="22.222.222-2" required autocomplete="off">
+        <label class="etq" for="correo">Correo</label>
+        <input class="campo" id="correo" type="email" inputmode="email" placeholder="supervisor@ejemplo.cl" required autocomplete="username">
       </div>
       <div class="grupo-campo">
-        <label class="etq" for="pin">PIN</label>
-        <input class="campo" id="pin" type="password" inputmode="numeric" placeholder="••••" required autocomplete="off">
+        <label class="etq" for="clave">Contraseña</label>
+        <input class="campo" id="clave" type="password" placeholder="••••••" required autocomplete="current-password">
       </div>
       <div class="error" id="error-login" role="alert"></div>
       <button class="btn btn-primario" type="submit">Ingresar <i data-ico="flecha"></i></button>
-      <div class="nota-login"><i data-ico="info"></i><span>Proyecto académico con datos ficticios. Credenciales de prueba del supervisor: <b>22.222.222-2</b> · PIN <b>1234</b>.</span></div>
+      <div class="nota-login"><i data-ico="info"></i><span>Proyecto académico con datos ficticios. Entra con la cuenta de supervisor creada en Firebase.</span></div>
       <a class="enlace-ejemplo" href="?ejemplo=1"><i data-ico="tubo"></i>Ver con datos de ejemplo (sin conexión a la nube)</a>
     </form>
   </div>
@@ -995,6 +995,7 @@
 <!-- Firebase (versión compat: funciona abriendo el archivo directamente, sin servidor) -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <!-- Gráficos, mapa y Excel (UMD clásicos, sin módulos) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -1013,8 +1014,9 @@
     appId: "1:140215930381:web:6e92440f91da504fc90f44"
   };
 
-  // Solo para la demo académica: el supervisor de prueba (igual que en la app)
-  var SUPERVISOR = { rut: '222222222', nombre: 'Diego Muñoz', pin: '1234' };
+  // Quién dictamina. En el modo ejemplo es el supervisor de prueba; con la nube se reemplaza al iniciar
+  // sesión por el nombre guardado en supervisores/{uid}
+  var SUPERVISOR = { nombre: 'Diego Muñoz' };
 
   var CENTROS = {
     dalcahue: 'Centro Canal Dalcahue - Mód. A (Chiloé Central)',
@@ -1382,6 +1384,18 @@
     if (detalleId) dibujarDetalle();
   }
 
+  // Inicia Firebase una sola vez: lo necesitan el inicio de sesión y la conexión con Firestore
+  function iniciarFirebase() {
+    if (typeof firebase === 'undefined') return false;
+    if (!db) {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      coleccion = db.collection('muestras');
+      colFotos = db.collection('fotos');
+    }
+    return true;
+  }
+
   // ── Conexión con Firestore ────────────────────────────────────────────
   function fuenteFirestore() {
     // Borra referencias en lotes de 450 (Firestore admite 500 operaciones por lote)
@@ -1401,12 +1415,7 @@
           $('contenido').innerHTML = '<div class="tarjeta">' + vacio('sinred', 'No se pudo cargar Firebase.', 'Revisa que el computador tenga internet y recarga la página.') + '</div>';
           return;
         }
-        if (!db) {
-          firebase.initializeApp(firebaseConfig);
-          db = firebase.firestore();
-          coleccion = db.collection('muestras');
-          colFotos = db.collection('fotos');
-        }
+        iniciarFirebase();
         coleccion.onSnapshot({ includeMetadataChanges: true }, function (snap) {
           var enLinea = !snap.metadata.fromCache;
           estadoRed(enLinea, enLinea ? 'En vivo' : 'Sin conexión');
@@ -2998,7 +3007,7 @@
     else if (t.id === 'cerrar-visor') cerrarVisor();
     else if (t.id === 'btn-campana') alternarDesplegable('btn-campana', 'panel-campana', dibujarCampana);
     else if (t.id === 'btn-avatar') alternarDesplegable('btn-avatar', 'menu-avatar', dibujarMenuAvatar);
-    else if (t.id === 'salir') { try { sessionStorage.removeItem('sup'); } catch (er) { /* sin sessionStorage */ } location.href = location.pathname; }
+    else if (t.id === 'salir') cerrarSesion();
     else if (t.dataset.fila && !e.target.closest('input,button,a')) abrirDetalle(t.dataset.fila);
     else if (t.classList.contains('fila-ctl') && !e.target.closest('input,button,a')) abrirDetalle(t.dataset.id);
   });
@@ -3091,17 +3100,58 @@
     var l = document.createElement('link'); l.rel = 'icon'; l.type = 'image/png'; l.href = u[1]; document.head.appendChild(l);
   })();
 
-  $('rut').addEventListener('input', function () {
-    var l = normalizarRut(this.value); if (l.length < 2) { this.value = l; return; }
-    this.value = l.slice(0, -1).split('').reverse().join('').replace(/(\d{3})(?=\d)/g, '$1.').split('').reverse().join('') + '-' + l.slice(-1);
-  });
+  // ── Inicio de sesión del supervisor (Firebase Authentication, correo y contraseña) ──
+  var dentro = false, ingresando = false;
+  var MENSAJES_LOGIN = {
+    'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+    'auth/wrong-password': 'Correo o contraseña incorrectos.',
+    'auth/user-not-found': 'Correo o contraseña incorrectos.',
+    'auth/invalid-email': 'El correo no es válido.',
+    'auth/user-disabled': 'Esta cuenta está desactivada.',
+    'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos y vuelve a probar.',
+    'auth/network-request-failed': 'No hay conexión con Firebase. Revisa el internet.',
+    'auth/operation-not-allowed': 'El inicio de sesión con correo no está activado en Firebase.',
+    'no-supervisor': 'Esta cuenta no tiene permiso de supervisor.'
+  };
+
+  // La cuenta es de un supervisor si existe el documento supervisores/{uid} (se crea en la consola de Firebase)
+  function comprobarSupervisor(usuario) {
+    return db.collection('supervisores').doc(usuario.uid).get().then(function (s) {
+      if (!s.exists) { var e = new Error('no-supervisor'); e.code = 'no-supervisor'; throw e; }
+      SUPERVISOR = { nombre: (s.data() && s.data().nombre) || usuario.email || 'Supervisor' };
+    });
+  }
+
+  function cerrarSesion() {
+    var volver = function () { location.href = location.pathname; };
+    if (MODO_EJEMPLO || !db) { volver(); return; }
+    firebase.auth().signOut().then(volver, volver);
+  }
+
   $('form-login').addEventListener('submit', function (e) {
     e.preventDefault();
-    if (normalizarRut($('rut').value) === SUPERVISOR.rut && $('pin').value === SUPERVISOR.pin) { try { sessionStorage.setItem('sup', '1'); } catch (er) { /* sin sessionStorage */ } entrar(); }
-    else { $('error-login').textContent = 'RUT o PIN incorrecto, o el usuario no es supervisor.'; $('pin').value = ''; }
+    var correo = $('correo').value.trim(), clave = $('clave').value, boton = this.querySelector('button[type="submit"]');
+    if (!correo || !clave) { $('error-login').textContent = 'Escribe el correo y la contraseña.'; return; }
+    if (!iniciarFirebase()) { $('error-login').textContent = 'No se pudo cargar Firebase. Revisa el internet y recarga la página.'; return; }
+    $('error-login').textContent = ''; boton.disabled = true; ingresando = true;
+    var auth = firebase.auth();
+    // La sesión dura lo que dura la pestaña, como antes; si el navegador no lo permite se usa la que haya
+    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(function () { /* se sigue igual */ })
+      .then(function () { return auth.signInWithEmailAndPassword(correo, clave); })
+      .then(function (cred) { return comprobarSupervisor(cred.user); })
+      .then(function () { entrar(); })
+      .catch(function (err) {
+        var codigo = err && err.code || 'desconocido';
+        $('error-login').textContent = MENSAJES_LOGIN[codigo] || 'No se pudo iniciar sesión (' + codigo + ').';
+        $('clave').value = '';
+        if (auth.currentUser) auth.signOut();
+      })
+      .then(function () { boton.disabled = false; ingresando = false; });
   });
 
   function entrar() {
+    if (dentro) return;
+    dentro = true;
     $('login').classList.add('oculto'); $('app').classList.remove('oculto');
     $('nombre-usuario').textContent = SUPERVISOR.nombre;
     $('iniciales').textContent = iniciales(SUPERVISOR.nombre);
@@ -3115,7 +3165,14 @@
 
   ponerIconos();
   if (MODO_EJEMPLO) entrar();   // el modo ejemplo entra sin credenciales y nunca se conecta a Firestore
-  else { try { if (sessionStorage.getItem('sup') === '1') entrar(); } catch (e) { /* sin sessionStorage: se pide login */ } }
+  else if (iniciarFirebase()) {
+    // Si la sesión sigue abierta (por ejemplo, al recargar la página), entra sin volver a pedir la contraseña
+    var dejarDeMirar = firebase.auth().onAuthStateChanged(function (usuario) {
+      dejarDeMirar();
+      if (!usuario || ingresando || dentro) return;
+      comprobarSupervisor(usuario).then(entrar).catch(function () { firebase.auth().signOut(); });
+    });
+  }
 })();
 </script>
 </body>

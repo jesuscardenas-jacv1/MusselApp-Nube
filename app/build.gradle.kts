@@ -60,6 +60,8 @@ dependencies {
     // Firebase: sincronización en la nube (demo en tiempo real)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.firestore)
+    // Sesión anónima: identifica a cada teléfono ante las reglas de Firestore (misma BOM)
+    implementation(libs.firebase.auth)
     // Clima y estado del mar de cada muestra (API REST de Open-Meteo)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)

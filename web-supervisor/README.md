@@ -6,7 +6,7 @@ Es un solo archivo (`index.html`) que funciona con doble clic: no necesita servi
 
 ## Cómo abrirla
 1. Abrir `web-supervisor/index.html` con Chrome (doble clic). Necesita internet (Firebase, tipografías, gráficos y mapa se cargan por CDN).
-2. Ingresar con el supervisor de prueba: RUT `22.222.222-2`, PIN `1234`.
+2. Ingresar con el correo y la contraseña de la cuenta de supervisor creada en Firebase Authentication (ver "Cuentas y seguridad" más abajo).
 
 ### Modo ejemplo (sin nube)
 Agregando `?ejemplo=1` a la dirección (o con el enlace **Ver con datos de ejemplo** del inicio de sesión) la página
@@ -91,6 +91,8 @@ Documento en `muestras/{id}` (id único por muestra, por ejemplo un UUID):
 | `distanciaCentroM` | número o null | `180` (metros al punto de referencia del centro) |
 | `clima` | mapa o null | `tempAireC`, `vientoKn`, `rachaKn`, `vientoDir`, `codigo`, `descripcion`, `olaM`, `tempAguaC`, `mareaM`, `obtenidoEn` (Open-Meteo) |
 | `alertas` | lista de strings | `["FUERA_DE_AREA", "MAL_TIEMPO"]` |
+| `ownerUid` | string | uid de la sesión anónima del teléfono que subió la muestra (las reglas lo usan) |
+| `instalacion` | string | `"a1b2c3d4"` (prefijo del id del documento; identifica al teléfono) |
 
 Las alertas las calcula **solo la app** al registrar (`AlertasMuestra.kt`); el portal las muestra tal como llegaron. Valores posibles:
 `FUERA_DE_AREA`, `DENSIDAD_BAJA` (críticas), `SIN_UBICACION`, `UBICACION_IMPRECISA`, `DESVIO_DENSIDAD`, `CHOLGAS_ALTAS`, `TALLA_FUERA_DE_RANGO` y `MAL_TIEMPO`.
@@ -99,13 +101,30 @@ Se ven en la bandeja (insignia junto al código), en el detalle (con un mapa chi
 "Alertas" del Dashboard y como columnas en Datos y en las exportaciones. Las muestras anteriores a la v5 de la app no traen estos campos.
 
 La foto **no** va en la muestra: va en la colección `fotos`, un documento por muestra con el mismo id y el campo
-`fotoBase64` (`"data:image/jpeg;base64,..."`, máx. 800 px, menos de 500 KB). Así el portal y los teléfonos, que escuchan
-toda la colección `muestras`, no descargan todas las fotos; el portal pide la foto solo al abrir una muestra.
+`fotoBase64` (`"data:image/jpeg;base64,..."`, máx. 800 px, menos de 500 KB). Así el portal, que escucha
+toda la colección `muestras`, y los teléfonos, que escuchan sus muestras, no descargan todas las fotos; el portal pide la foto solo al abrir una muestra.
 Las muestras antiguas con `fotoBase64` dentro del documento se siguen mostrando (ya se migraron las de Firestore).
 
 Cuando el supervisor dictamina, la página actualiza: `estado` (`VALIDADO` o `CORREGIDO`), `revisadaPor`, `revisadaEn` (ms) y `comentarioSupervisor`.
 La app del operario debe escuchar esos cambios para actualizar la muestra en su teléfono.
 
-## Seguridad
-Solo datos ficticios. Firestore está en modo de prueba (reglas abiertas) y la `apiKey` y el login de prueba están en el HTML:
-cualquiera con el archivo puede leer y borrar. Antes de publicar la web hay que cerrar las reglas.
+## Cuentas y seguridad
+
+- **Supervisor (portal):** entra con correo y contraseña de **Firebase Authentication**. Para que una cuenta sea supervisor
+  hay que crear, en la consola de Firebase, el documento `supervisores/{uid}` con el campo `nombre` (es el nombre que
+  queda en `revisadaPor`). Una cuenta que no está en esa colección no puede entrar al portal.
+- **Teléfono (app):** inicia una **sesión anónima** de Firebase sin pedirle nada al operario (el RUT y el PIN de la app
+  siguen siendo locales). Cada muestra y foto que sube lleva el uid de esa sesión en `ownerUid`, y el teléfono solo
+  escucha sus propias muestras. Las muestras subidas antes de la sesión se marcan como suyas la primera vez que la
+  app se conecta.
+- **Reglas:** están en [`firestore.rules`](../firestore.rules) y se prueban con el emulador de Firestore en GitHub Actions
+  (`firestore-tests/`, `npm test`). En resumen: sin sesión no se lee nada; cada teléfono lee, crea y actualiza solo lo
+  suyo, no puede eliminar ni cambiar un dictamen que ya está en la nube; el supervisor lee, dictamina y elimina todo.
+- La `apiKey` del HTML no es secreta: identifica al proyecto, y lo que protege los datos son las reglas.
+
+Orden para activar la seguridad en el proyecto (hecho una vez):
+1. En **Authentication → Método de acceso**, activar **Anónimo** y **Correo electrónico/contraseña**.
+2. Crear la cuenta del supervisor en **Authentication → Usuarios** y el documento `supervisores/{uid}` en Firestore.
+3. Instalar la versión nueva de la app en los teléfonos y abrirla una vez con internet.
+4. Publicar `firestore.rules` (consola → Firestore → Reglas, o `firebase deploy --only firestore:rules`).
+   Si algo falla, volver a pegar las reglas anteriores.
