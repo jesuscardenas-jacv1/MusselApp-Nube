@@ -107,11 +107,29 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 114 pruebas unitarias (validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
-./gradlew connectedDebugAndroidTest  # 31 pruebas instrumentadas con Room real, migraciones, catálogo de trenes y líneas y sincronización con una nube falsa (requiere teléfono o emulador)
+./gradlew testDebugUnitTest          # 166 pruebas unitarias (los 7 ViewModels, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew connectedDebugAndroidTest  # 40 pruebas instrumentadas: Room real, migraciones, catálogo, sincronización con una nube falsa y el Compose UI Test del formulario (requiere teléfono o emulador)
+./gradlew reporteCobertura           # cobertura de ViewModels y Repositories en app/build/reports/jacoco/reporteCobertura/html/index.html
 ```
 
-Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/android.yml`) en cada push a `main`, `feature/**`, `fix/**` o `mejoras/**` y en cada PR: compila, corre las unitarias y las instrumentadas en un emulador, y deja el APK de debug como artefacto descargable por 14 días.
+> `connectedDebugAndroidTest` desinstala la app al terminar: no correrlo en un teléfono con muestras que se quieran conservar.
+
+**Cobertura (JaCoCo, pruebas unitarias, 18-11-2026):** 72,5 % de las líneas de ViewModels y Repositories. Por clase:
+
+| Clase | Líneas cubiertas |
+|---|---|
+| `LoginViewModel` | 100 % |
+| `BorradorMuestraViewModel` (`BorradorMuestra.kt`) | 98,8 % |
+| `RevisionViewModel` | 97,1 % |
+| `MuestraViewModel` | 96,6 % |
+| `HistorialViewModel` | 95,5 % |
+| `PrincipalViewModel` | 94,4 % |
+| `DetalleViewModel` | 93,3 % |
+| `RoomMuestraRepository`, `RoomAuthRepository` | 0 % en unitarias: usan Room real y se prueban en las instrumentadas (`RepositoriosRoomTest`), que todavía no suman al reporte |
+
+Los ViewModels, donde está la lógica de cada pantalla, superan el 90 %. Para llegar a más del 90 % en el total falta sumar la cobertura de las pruebas instrumentadas (`enableAndroidTestCoverage`).
+
+Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/android.yml`) en cada push a `main`, `feature/**`, `fix/**` o `mejoras/**` y en cada PR: compila, corre las unitarias y las instrumentadas en un emulador, y deja como artefactos descargables por 14 días el APK de debug y el reporte de cobertura (`reporte-cobertura`).
 
 ### Publicar una versión
 
@@ -128,6 +146,23 @@ En unos minutos aparece el Release `v1.1.0` con `MusselApp-v1.1.0.apk` adjunto y
 
 - Antes de cada versión conviene subir `versionCode` (entero, siempre creciente) y `versionName` en `app/build.gradle.kts`, por ejemplo `2` / `"1.1.0"` para `v1.1.0`.
 - **Plan B sin workflow:** en **Actions**, abrir el último run exitoso de *Android CI*, descargar el artefacto `MusselApp-debug-apk` y crear el Release a mano en **Releases → Draft a new release**.
+
+### Firmar el APK release
+
+`app/build.gradle.kts` firma el release con los datos de `keystore.properties`, en la raíz del proyecto. Ese archivo, la llave (`*.jks`) y sus contraseñas están en `.gitignore` y **nunca se suben**. Sin el archivo, el release se genera sin firmar.
+
+1. Crear la llave una sola vez y guardarla fuera del repositorio (pide las contraseñas por consola):
+   ```bash
+   keytool -genkeypair -v -keystore ../musselapp-release.jks -alias musselapp -keyalg RSA -keysize 2048 -validity 10000
+   ```
+2. Copiar `keystore.properties.ejemplo` como `keystore.properties` y completar la ruta, el alias y las contraseñas.
+3. Subir `versionCode` y `versionName` en `app/build.gradle.kts` (hoy `2` / `"1.1.0"`).
+4. Generar el APK firmado:
+   ```bash
+   ./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
+   ```
+
+**Si se pierde la llave, no se puede publicar una actualización encima de la app instalada.** Hay que guardar una copia del `.jks` y de sus contraseñas en un lugar seguro del equipo. El APK release usa R8 y FLAG_SECURE (ver Seguridad).
 
 ### Portal web del supervisor
 
@@ -228,6 +263,28 @@ El modelo de datos (diagrama entidad-relación y tablas) está documentado en [`
 - **Gradle** (Kotlin DSL), Android Studio, **GitHub Actions** (CI)
 - Portal web: HTML y JavaScript sin framework, Firebase (SDK compat), Chart.js, Leaflet con teselas de CARTO
 - Diseño: **Google Stitch**, Mermaid para UML
+
+### Equivalencias tecnológicas
+
+Las pautas EA4 y EA5 nombran algunas librerías como recomendadas. Donde el proyecto cumple la misma función con otra herramienta, se usa esa:
+
+| Pedido en la pauta | Lo que usa MusselApp | Por qué |
+|---|---|---|
+| Coil (cargar imágenes) | `BitmapFactory` con muestreo (`util/Fotos.kt`, `FotoMuestra.kt`) | Las fotos son archivos locales; se decodifican reducidas y no necesitan la caché de red de Coil |
+| Telephoto (ampliar la foto) | `ui/componentes/VisorFoto.kt`: zoom de 1 a 5×, desplazamiento y doble toque | Misma función que el visor de Telephoto |
+| MockK (dobles de prueba) | Dobles propios: `FakeMuestraRepository`, `FakeAuthRepository`, `FakeServicioNube`, `MuestrasEnMemoria` y funciones inyectables | Aíslan ViewModels y Repositories de Room, la red y los archivos, y permiten forzar errores |
+| DataStore (preferencias) | `SharedPreferences` (`BloqueoLogin.kt`, instalación en `NubeSync.kt`) | Mismo almacenamiento clave-valor; los datos de negocio están en Room |
+| WorkManager (sincronización) | `Conectividad.kt` + `sincronizar()` en `AppContainer.kt` | Al volver la red se reenvía solo lo pendiente. Diferencia: funciona con la app abierta |
+| Filtros por fechas y comparación por línea | App: búsqueda por tren y línea y períodos. Portal: filtros por tren, línea, estado, operario y fechas, y evolución por línea | El análisis se hace en el portal, junto al dashboard |
+| Exportar validadas a PDF o .xlsx | Portal: XLSX, PDF, CSV y JSON con filtro por estado. App: ficha PDF por muestra | El informe se genera donde están los datos de todos los teléfonos |
+
+### Decisiones del equipo
+
+- **Dashboard con gráficos en el portal web, no en la app:** el supervisor analiza en el computador, con pantalla grande y los datos de todos los teléfonos; la app se enfoca en el trabajo en terreno.
+- **Sin rol analista:** el supervisor cumple sus funciones (filtra el historial, revisa el dashboard y exporta), así que un tercer rol solo duplicaría permisos.
+- **Sin estado "Observado":** los estados son Pendiente, Corregido y Validado. "Observar" es revisar la muestra antes de dictaminar, y Corregir incluye las observaciones al operario.
+- **Backend propio (Spring Boot + Swagger):** lo desarrollan otros integrantes. Para conectarlo basta una clase que implemente `ServicioNube` (`data/nube/ServicioNube.kt`) elegida en `AppContainer.kt`; las pantallas, el Repository y el reenvío automático ya trabajan contra esa interfaz.
+- **Modificación en vivo:** el procedimiento para ensayar la parte app está en [`docs/ensayo-modificacion-en-vivo.md`](docs/ensayo-modificacion-en-vivo.md).
 
 ## 9. Identidad visual
 
