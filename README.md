@@ -98,7 +98,7 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 108 pruebas unitarias (validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew testDebugUnitTest          # 114 pruebas unitarias (validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, ViewModels, hash del PIN, alertas, distancia, clima, protección del dictamen)
 ./gradlew connectedDebugAndroidTest  # 31 pruebas instrumentadas con Room real, migraciones, catálogo de trenes y líneas y sincronización con una nube falsa (requiere teléfono o emulador)
 ```
 
@@ -107,6 +107,36 @@ Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/androi
 ### Portal web del supervisor
 
 El supervisor revisa y dictamina las muestras desde el computador abriendo [`web-supervisor/index.html`](web-supervisor/index.html) con doble clic en Chrome (sin servidor ni instalación). Se conecta al proyecto Firebase `musselapp-demo` y se actualiza en vivo. Entra con el correo y la contraseña de la cuenta de supervisor creada en Firebase, o con **Ver con datos de ejemplo** para probar sin nube. Detalle de pantallas y funcionamiento en [`web-supervisor/README.md`](web-supervisor/README.md).
+
+### Seguridad
+
+Defensa en capas, según la guía de seguridad del equipo (18-11-2026):
+
+| Capa | Medida | Dónde |
+|---|---|---|
+| Teléfono | PIN guardado con hash PBKDF2 (sal aleatoria, 10.000 iteraciones, comparación en tiempo constante) | `util/HashPin.kt` |
+| Teléfono | Bloqueo tras 5 intentos fallidos (1, 2, 4, 8 y hasta 15 min), que no se salta cerrando la app | `BloqueoLogin.kt` |
+| Teléfono | El mismo mensaje si el RUT no existe o si el PIN es incorrecto | `RoomAuthRepository.kt` |
+| Teléfono | Sin respaldos de la base, las fotos ni las preferencias | `allowBackup="false"`, `data_extraction_rules.xml` |
+| Teléfono | Solo se comparte la carpeta de las fichas PDF | `rutas_archivos.xml` (FileProvider) |
+| Teléfono (release) | R8 reduce y ofusca el código y elimina los `Log.v/d/i` (ids de muestras e instalación) | `app/build.gradle.kts`, `keepRules/rules.keep` |
+| Teléfono (release) | `FLAG_SECURE`: la app no aparece en apps recientes ni en capturas (el debug sí las permite) | `MainActivity.kt` |
+| Nube | Sesión de Firebase obligatoria: el teléfono usa una sesión anónima y cada documento lleva su `ownerUid` | `NubeSync.kt` |
+| Nube | Reglas por rol: sin sesión no se lee nada; el teléfono lee, crea y actualiza solo lo suyo, no puede cambiar un dictamen que ya está en la nube ni borrar; el supervisor del portal lee, dictamina y elimina todo | `firestore.rules`, probadas en `firestore-tests/` |
+| Portal | Login real con Firebase Authentication; solo entran las cuentas con documento en `supervisores/{uid}` | `web-supervisor/index.html` |
+| Portal | Escape de HTML (`esc()`) para que una observación no ejecute código en el navegador | `web-supervisor/index.html` |
+
+**Límite conocido:** como el teléfono usa una sesión anónima, cualquiera que instale la app puede *crear* muestras a su nombre, pero no puede leer, cambiar ni borrar las de otros. Para la demo es aceptable.
+
+**Pasos que se hacen en la consola de Firebase** (detalle en [`web-supervisor/README.md`](web-supervisor/README.md#cuentas-y-seguridad)):
+
+- [ ] Authentication: activar **Anónimo** y **Correo electrónico/contraseña**
+- [ ] Crear la cuenta del supervisor y su documento `supervisores/{uid}`
+- [ ] Instalar la app nueva y abrirla una vez con internet
+- [ ] Probar `firestore.rules` en la Zona de pruebas (sin sesión → denegado; teléfono que cambia un dictamen ya puesto o que borra → denegado)
+- [ ] Publicar las reglas (la consola guarda el historial para volver atrás en un clic)
+
+**APK release:** `./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release-unsigned.apk`. Para instalarlo hay que firmarlo (por ejemplo con `apksigner`). Después de instalarlo conviene probar el login, el registro con foto, el clima, la ficha PDF y la sincronización: si R8 rompe algo, el error en Logcat indica qué clase hay que mantener con `-keep`.
 
 ## 5. Arquitectura
 
