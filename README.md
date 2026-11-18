@@ -61,6 +61,15 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 
 ## 4. Instrucciones de ejecución
 
+### Descargar APK
+
+La última versión está en **Releases**: https://github.com/jesuscardenas-jacv1/MusselApp-Nube/releases/latest
+
+1. Descargar `MusselApp-vX.Y.Z.apk` en el teléfono (Android 7.0 o superior).
+2. Abrirlo y permitir la instalación de apps de origen desconocido.
+
+Es el APK **debug** compilado en GitHub Actions. Si el teléfono ya tiene MusselApp instalada desde Android Studio o desde otra compilación, Android puede rechazar la instalación por tener otra firma: en ese caso hay que desinstalar primero, y eso **borra las muestras guardadas en el teléfono** (las que ya se subieron siguen en la nube).
+
 ### Requisitos
 
 - **Android Studio** reciente (con soporte para AGP 9.3) y su JDK incluido.
@@ -103,6 +112,22 @@ En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de 
 ```
 
 Las mismas pruebas corren solas en **GitHub Actions** (`.github/workflows/android.yml`) en cada push a `main`, `feature/**`, `fix/**` o `mejoras/**` y en cada PR: compila, corre las unitarias y las instrumentadas en un emulador, y deja el APK de debug como artefacto descargable por 14 días.
+
+### Publicar una versión
+
+El workflow `.github/workflows/release.yml` publica el APK como Release al subir un tag que empiece con `v`. Es independiente de `android.yml`:
+
+```bash
+git checkout main
+git pull
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+En unos minutos aparece el Release `v1.1.0` con `MusselApp-v1.1.0.apk` adjunto y notas generadas a partir de los PR. Antes de publicar corre las pruebas unitarias: si fallan, no se publica nada. Un tag con guion (`v1.1.0-rc.1`) se publica como pre-release.
+
+- Antes de cada versión conviene subir `versionCode` (entero, siempre creciente) y `versionName` en `app/build.gradle.kts`, por ejemplo `2` / `"1.1.0"` para `v1.1.0`.
+- **Plan B sin workflow:** en **Actions**, abrir el último run exitoso de *Android CI*, descargar el artefacto `MusselApp-debug-apk` y crear el Release a mano en **Releases → Draft a new release**.
 
 ### Portal web del supervisor
 
@@ -280,7 +305,7 @@ Diseños base generados con **Google Stitch** (Material Design 3), guardados en 
 ## 12. Estructura del repositorio
 
 ```
-.github/workflows/           # CI: build + pruebas unitarias e instrumentadas
+.github/workflows/           # CI (build + pruebas), reglas de Firestore y publicación del APK en Releases
 app/                         # código fuente de la app Android
 ├── schemas/                 # esquemas exportados de Room (uno por versión)
 └── src/
