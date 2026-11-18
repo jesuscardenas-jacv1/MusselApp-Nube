@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.google.services)
+    jacoco
 }
 
 // Firma del APK release. Los datos van en keystore.properties (en la raíz, fuera de git: ver
@@ -46,6 +47,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Cobertura de las pruebas unitarias con JaCoCo (no cambia el APK). Reporte filtrado a la
+            // lógica: ./gradlew reporteCobertura (ver la tarea al final de este archivo)
+            enableUnitTestCoverage = true
+        }
         release {
             if (hayFirma) signingConfig = signingConfigs.getByName("release")
             // R8: reduce el APK y ofusca el código (reglas propias en src/main/keepRules/rules.keep)
@@ -114,4 +120,27 @@ dependencies {
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
+}
+
+// Cobertura de la lógica que piden las pautas: ViewModels y Repositories. Usa los datos que deja
+// testDebugUnitTest con enableUnitTestCoverage. Reporte en app/build/reports/jacoco/reporteCobertura/
+tasks.register<JacocoReport>("reporteCobertura") {
+    group = "verification"
+    description = "Reporte de cobertura de las pruebas unitarias en ViewModels y Repositories."
+    dependsOn("testDebugUnitTest")
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
+            include(
+                "cl/aldemar/musselapp/ui/**/*ViewModel*.class",
+                "cl/aldemar/musselapp/data/repository/**/*.class",
+            )
+        },
+    )
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+        csv.required.set(false)
+    }
 }
