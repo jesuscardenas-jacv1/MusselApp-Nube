@@ -28,7 +28,8 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 
 | Funcionalidad | Dónde se ve | Implementación |
 |---|---|---|
-| Inicio de sesión por rol (operario / supervisor) | Login | `LoginViewModel` + `RoomAuthRepository`; RUT con dígito verificador (módulo 11) y formato en vivo |
+| Inicio de sesión por rol (operario / supervisor), sin elegir perfil: la app lo toma del usuario | Login | `LoginViewModel` + `RoomAuthRepository`; RUT con dígito verificador (módulo 11) y formato en vivo |
+| Animación de inicio y de bienvenida con el nombre del usuario y su centro | Inicio, Login | `SplashScreen` y `AnimacionBienvenida` (Compose `Canvas`, sin librerías); tocar la pantalla las salta |
 | Formulario de muestra con campos obligatorios y mensajes de error | Nueva muestra | `MuestraViewModel.guardar()` valida centro, tren, línea y estrato |
 | Fotografía de evidencia con cámara o galería | Captura | CameraX con permiso `CAMERA` en tiempo de ejecución; galería con Photo Picker (`PickVisualMedia`) |
 | Conteo, talla y observación con validación de rangos | Vista previa | `validarBorrador()` en `BorradorMuestra.kt`; confirmación antes de guardar |
@@ -102,7 +103,7 @@ La base se llena con datos ficticios la primera vez que se abre la app.
 | Operario (Carla Vera) | `11.111.111-1` | `1234` | Registrar muestras, ver historial y detalle |
 | Supervisor (Diego Muñoz) | `22.222.222-2` | `1234` | Revisar, validar o corregir muestras |
 
-En el Login se elige el perfil, se ingresa RUT y PIN, y el centro de cultivo de la jornada.
+Al abrir la app se muestra la animación de inicio. En el Login se ingresa RUT, PIN y el centro de cultivo de la jornada; el perfil (operario o supervisor) sale del usuario. Tras ingresar, una animación de bienvenida saluda por su nombre y da paso a la pantalla principal.
 
 ### Pruebas automatizadas
 

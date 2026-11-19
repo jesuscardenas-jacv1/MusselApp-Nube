@@ -23,14 +23,14 @@ class FakeAuthRepository(
         "222222222" to Credencial("1234", Usuario("22.222.222-2", "Diego Muñoz", Rol.SUPERVISOR)),
     )
 
-    override suspend fun login(rut: String, password: String, rol: Rol): Result<Usuario> {
+    override suspend fun login(rut: String, password: String, rol: Rol?): Result<Usuario> {
         delay(latenciaMs) // Simula la verificación de la credencial
         val credencial = credenciales[RutValidator.normalizar(rut)]
             ?: return Result.failure(AuthException("Usuario no registrado"))
         if (credencial.password != password) {
             return Result.failure(AuthException("Contraseña incorrecta"))
         }
-        if (credencial.usuario.rol != rol) {
+        if (rol != null && credencial.usuario.rol != rol) {
             return Result.failure(AuthException("El usuario no tiene el perfil ${rol.etiqueta}"))
         }
         return Result.success(credencial.usuario)

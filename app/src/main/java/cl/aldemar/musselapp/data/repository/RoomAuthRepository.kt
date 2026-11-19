@@ -22,7 +22,7 @@ class RoomAuthRepository(
     private val esperarDatos: suspend () -> Unit = {},
 ) : AuthRepository {
 
-    override suspend fun login(rut: String, password: String, rol: Rol): Result<Usuario> {
+    override suspend fun login(rut: String, password: String, rol: Rol?): Result<Usuario> {
         val rutNormalizado = RutValidator.normalizar(rut)
         bloqueo.msRestantes(rutNormalizado).takeIf { it > 0 }?.let { espera ->
             return Result.failure(AuthException(mensajeBloqueo(espera)))
@@ -48,7 +48,7 @@ class RoomAuthRepository(
             return Result.failure(AuthException(mensaje))
         }
         bloqueo.registrarExito(rutNormalizado)
-        if (usuario.rol != rol) {
+        if (rol != null && usuario.rol != rol) {
             return Result.failure(AuthException("El usuario no tiene el perfil ${rol.etiqueta}"))
         }
         return Result.success(usuario.aModelo())
