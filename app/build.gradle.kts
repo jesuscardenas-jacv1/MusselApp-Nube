@@ -1,10 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.google.services)
+    jacoco
 }
+
+// Firma del APK release. Los datos van en keystore.properties (en la raíz, fuera de git: ver
+// .gitignore y keystore.properties.ejemplo). Si el archivo no existe, el release se genera sin
+// firmar, como antes, y el resto del build no cambia.
+val propiedadesFirma = Properties().apply {
+    val archivo = rootProject.file("keystore.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+val hayFirma = !propiedadesFirma.isEmpty
 
 android {
     namespace = "cl.aldemar.musselapp"
@@ -16,14 +28,32 @@ android {
         applicationId = "cl.aldemar.musselapp"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        // Subir ambos antes de cada versión publicada (tag v1.1.0 → versionCode 2, "1.1.0")
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hayFirma) {
+            create("release") {
+                storeFile = rootProject.file(propiedadesFirma.getProperty("storeFile"))
+                storePassword = propiedadesFirma.getProperty("storePassword")
+                keyAlias = propiedadesFirma.getProperty("keyAlias")
+                keyPassword = propiedadesFirma.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Cobertura de las pruebas unitarias con JaCoCo (no cambia el APK). Reporte filtrado a la
+            // lógica: ./gradlew reporteCobertura (ver la tarea al final de este archivo)
+            enableUnitTestCoverage = true
+        }
         release {
+            if (hayFirma) signingConfig = signingConfigs.getByName("release")
             // R8: reduce el APK y ofusca el código (reglas propias en src/main/keepRules/rules.keep)
             optimization {
                 enable = true
@@ -79,6 +109,8 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     androidTestImplementation(libs.androidx.room.testing)
     testImplementation(libs.junit)
+    // Dispatcher de prueba para los ViewModels (viewModelScope usa Dispatchers.Main)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -90,4 +122,27 @@ dependencies {
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
+}
+
+// Cobertura de la lógica que piden las pautas: ViewModels y Repositories. Usa los datos que deja
+// testDebugUnitTest con enableUnitTestCoverage. Reporte en app/build/reports/jacoco/reporteCobertura/
+tasks.register<JacocoReport>("reporteCobertura") {
+    group = "verification"
+    description = "Reporte de cobertura de las pruebas unitarias en ViewModels y Repositories."
+    dependsOn("testDebugUnitTest")
+    classDirectories.setFrom(
+        fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
+            include(
+                "cl/aldemar/musselapp/ui/**/*ViewModel*.class",
+                "cl/aldemar/musselapp/data/repository/**/*.class",
+            )
+        },
+    )
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+        csv.required.set(false)
+    }
 }

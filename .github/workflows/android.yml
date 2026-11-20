@@ -52,6 +52,21 @@ jobs:
           path: app/build/reports/tests/
           if-no-files-found: ignore
 
+      # Cobertura de ViewModels y Repositories (JaCoCo). No bloquea el CI si falla el reporte
+      - name: Reporte de cobertura
+        id: cobertura
+        continue-on-error: true
+        run: ./gradlew reporteCobertura --stacktrace
+
+      - name: Guardar reporte de cobertura
+        if: always() && steps.cobertura.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura
+          path: app/build/reports/jacoco/reporteCobertura/
+          if-no-files-found: ignore
+          retention-days: 14
+
   instrumentadas:
     runs-on: ubuntu-latest
     timeout-minutes: 45
