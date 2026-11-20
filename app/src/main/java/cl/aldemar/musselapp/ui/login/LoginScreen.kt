@@ -103,6 +103,10 @@ import cl.aldemar.musselapp.R
 import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+
+/** Lo que tarda la animación de bienvenida en cubrir del todo el formulario (entra en 220 ms). */
+private const val OCULTAR_FORMULARIO_MS = 260L
 
 /** Punto de entrada con estado: conecta el ViewModel con la UI. */
 @Composable
@@ -111,7 +115,21 @@ fun LoginRoute(viewModel: LoginViewModel = viewModel()) {
 
     // Con la sesión iniciada se muestra la animación de bienvenida encima del formulario
     val usuario = uiState.usuario
+    // Cuando la animación ya tapa el formulario, este se quita: así no reaparece mientras la
+    // animación se desvanece ni durante el paso a la pantalla principal
+    var formularioOculto by remember { mutableStateOf(false) }
+    LaunchedEffect(usuario != null) {
+        if (usuario != null) {
+            delay(OCULTAR_FORMULARIO_MS)
+            formularioOculto = true
+        } else {
+            formularioOculto = false
+        }
+    }
     Box(modifier = Modifier.fillMaxSize()) {
+    if (formularioOculto) {
+        Box(modifier = Modifier.fillMaxSize().background(SuperficieCampo))
+    } else {
     LoginScreen(
         uiState = uiState,
         onRutChange = viewModel::onRutChange,
@@ -121,6 +139,7 @@ fun LoginRoute(viewModel: LoginViewModel = viewModel()) {
         onIngresar = viewModel::ingresar,
         onMensajeMostrado = viewModel::onMensajeMostrado,
     )
+    }
         if (usuario != null && !uiState.transicionTerminada) {
             AnimacionBienvenida(
                 nombre = usuario.nombre.substringBefore(' '),
