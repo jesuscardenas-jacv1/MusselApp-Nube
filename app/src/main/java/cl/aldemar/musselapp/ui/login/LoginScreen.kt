@@ -1,12 +1,5 @@
 package cl.aldemar.musselapp.ui.login
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,14 +24,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Anchor
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Sailing
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -81,7 +71,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -112,21 +101,19 @@ import cl.aldemar.musselapp.ui.theme.SuperficieCampo
 import cl.aldemar.musselapp.ui.theme.TextoSobreOscuro
 import cl.aldemar.musselapp.R
 import cl.aldemar.musselapp.data.model.CentroCultivo
-import cl.aldemar.musselapp.data.model.Rol
 import cl.aldemar.musselapp.ui.theme.MusselAppTheme
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 
 /** Punto de entrada con estado: conecta el ViewModel con la UI. */
 @Composable
 fun LoginRoute(viewModel: LoginViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // Con la sesión iniciada se muestra la animación de bienvenida encima del formulario
+    val usuario = uiState.usuario
+    Box(modifier = Modifier.fillMaxSize()) {
     LoginScreen(
         uiState = uiState,
-        onRolChange = viewModel::onRolChange,
-        onCambiarPerfil = viewModel::onCambiarPerfil,
         onRutChange = viewModel::onRutChange,
         onPasswordChange = viewModel::onPasswordChange,
         onTogglePasswordVisible = viewModel::onTogglePasswordVisible,
@@ -134,17 +121,23 @@ fun LoginRoute(viewModel: LoginViewModel = viewModel()) {
         onIngresar = viewModel::ingresar,
         onMensajeMostrado = viewModel::onMensajeMostrado,
     )
+        if (usuario != null && !uiState.transicionTerminada) {
+            AnimacionBienvenida(
+                nombre = usuario.nombre.substringBefore(' '),
+                subtitulo = uiState.centro.nombre.substringBefore(" - "),
+                alTerminar = viewModel::onTransicionTerminada,
+            )
+        }
+    }
 }
 
 /**
- * UI sin estado del Login (diseño "1. Login - MusselApp" de Stitch) en dos pasos:
- * 1) selección de perfil operativo, 2) ingreso de credenciales.
+ * UI sin estado del Login (diseño "1. Login - MusselApp" de Stitch): RUT, PIN y centro.
+ * El perfil no se elige: la app lo toma del usuario que ingresa.
  */
 @Composable
 fun LoginScreen(
     uiState: LoginUiState,
-    onRolChange: (Rol) -> Unit,
-    onCambiarPerfil: () -> Unit,
     onRutChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onTogglePasswordVisible: () -> Unit,
@@ -154,11 +147,6 @@ fun LoginScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    // Perfil recién tocado cuya animación se está mostrando
-    var rolEnAnimacion by remember { mutableStateOf<Rol?>(null) }
-    val paso = uiState.rol?.let { PasoLogin.Credenciales(it) }
-        ?: rolEnAnimacion?.let { PasoLogin.Animacion(it) }
-        ?: PasoLogin.Perfil
 
     LaunchedEffect(uiState.mensajeError) {
         uiState.mensajeError?.let {
@@ -189,125 +177,28 @@ fun LoginScreen(
                 modifier = Modifier.widthIn(max = 480.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
-                AnimatedContent(
-                    targetState = paso,
-                    transitionSpec = {
-                        (fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 12 }) togetherWith fadeOut(tween(150))
-                    },
-                    label = "pasoLogin",
-                ) { p ->
-                    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                        when (p) {
-                            PasoLogin.Perfil -> PasoSeleccionPerfil(onRolChange = { rolEnAnimacion = it })
-                            is PasoLogin.Animacion -> AnimacionPerfil(
-                                rol = p.rol,
-                                onTerminada = {
-                                    onRolChange(p.rol)
-                                    rolEnAnimacion = null
-                                },
-                            )
-                            is PasoLogin.Credenciales -> {
-                                // El botón Atrás del teléfono vuelve a la selección de perfil
-                                BackHandler(enabled = !uiState.cargando, onBack = onCambiarPerfil)
-                                PasoCredenciales(
-                                    rol = p.rol,
-                                    uiState = uiState,
-                                    onCambiarPerfil = onCambiarPerfil,
-                                    onRutChange = onRutChange,
-                                    onPasswordChange = onPasswordChange,
-                                    onTogglePasswordVisible = onTogglePasswordVisible,
-                                    onCentroChange = onCentroChange,
-                                    onIngresar = onIngresar,
-                                    onOlvidoPin = {
-                                        scope.launch { snackbarHostState.showSnackbar("Solicite el restablecimiento del PIN a su supervisor") }
-                                    },
-                                )
-                            }
-                        }
-                    }
+                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    PasoCredenciales(
+                        uiState = uiState,
+                        onRutChange = onRutChange,
+                        onPasswordChange = onPasswordChange,
+                        onTogglePasswordVisible = onTogglePasswordVisible,
+                        onCentroChange = onCentroChange,
+                        onIngresar = onIngresar,
+                        onOlvidoPin = {
+                            scope.launch { snackbarHostState.showSnackbar("Solicite el restablecimiento del PIN a su supervisor") }
+                        },
+                    )
                 }
             }
         }
     }
 }
 
-/** Pasos visibles del Login. */
-private sealed interface PasoLogin {
-    data object Perfil : PasoLogin
-    data class Animacion(val rol: Rol) : PasoLogin
-    data class Credenciales(val rol: Rol) : PasoLogin
-}
-
-/** Paso 1: el usuario elige con qué perfil operativo ingresa. */
-@Composable
-private fun PasoSeleccionPerfil(onRolChange: (Rol) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Perfil operativo", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Seleccione con qué perfil desea ingresar",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-            )
-        }
-        Column(
-            modifier = Modifier.selectableGroup(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Rol.entries.forEach { rol ->
-                TarjetaPerfil(rol = rol, onClick = { onRolChange(rol) })
-            }
-        }
-    }
-}
-
-@Composable
-private fun TarjetaPerfil(rol: Rol, onClick: () -> Unit) {
-    Surface(
-        shape = FormaTarjeta,
-        color = MaterialTheme.colorScheme.surface,
-        border = BordeDeTarjeta,
-        shadowElevation = ElevacionTarjeta,
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(selected = false, role = Role.Button, onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(AcentoSuave),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(iconoRol(rol), contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(28.dp))
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(rol.etiqueta, style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(2.dp))
-                Text(rol.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
-            }
-            Spacer(Modifier.width(8.dp))
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-        }
-    }
-}
-
-private fun iconoRol(rol: Rol): ImageVector = when (rol) {
-    Rol.OPERARIO -> Icons.Filled.Sailing
-    Rol.SUPERVISOR -> Icons.AutoMirrored.Filled.FactCheck
-}
-
-/** Paso 2: credenciales del perfil elegido. */
+/** Credenciales y centro de la jornada. */
 @Composable
 private fun PasoCredenciales(
-    rol: Rol,
     uiState: LoginUiState,
-    onCambiarPerfil: () -> Unit,
     onRutChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onTogglePasswordVisible: () -> Unit,
@@ -317,8 +208,6 @@ private fun PasoCredenciales(
 ) {
     val focusManager = LocalFocusManager.current
     val pinFocus = remember { FocusRequester() }
-
-    PerfilSeleccionado(rol = rol, habilitado = !uiState.cargando, onCambiar = onCambiarPerfil)
 
     Card(
         shape = FormaTarjeta,
@@ -391,32 +280,6 @@ private fun PasoCredenciales(
             BotonIngresar(cargando = uiState.cargando) {
                 focusManager.clearFocus()
                 onIngresar()
-            }
-        }
-    }
-}
-
-/** Resumen del perfil elegido en el paso 1, con opción de volver a elegir. */
-@Composable
-private fun PerfilSeleccionado(rol: Rol, habilitado: Boolean, onCambiar: () -> Unit) {
-    Surface(
-        shape = FormaTarjetaChica,
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(iconoRol(rol), contentDescription = null, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("PERFIL OPERATIVO", style = Rotulo, color = TextoSobreOscuro)
-                Text(rol.etiqueta, style = MaterialTheme.typography.titleMedium)
-            }
-            TextButton(onClick = onCambiar, enabled = habilitado) {
-                Text("Cambiar", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -598,26 +461,12 @@ private fun BotonIngresar(cargando: Boolean, onClick: () -> Unit) {
 
 @Preview(showBackground = true, heightDp = 900)
 @Composable
-private fun PasoPerfilPreview() {
+private fun LoginPreview() {
     MusselAppTheme {
         LoginScreen(
-            uiState = LoginUiState(),
-            onRolChange = {}, onCambiarPerfil = {}, onRutChange = {},
-            onPasswordChange = {}, onTogglePasswordVisible = {}, onCentroChange = {},
-            onIngresar = {}, onMensajeMostrado = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, heightDp = 1000)
-@Composable
-private fun PasoCredencialesPreview() {
-    MusselAppTheme {
-        LoginScreen(
-            uiState = LoginUiState(rol = Rol.OPERARIO, rut = "11.111.111-1", password = "1234"),
-            onRolChange = {}, onCambiarPerfil = {}, onRutChange = {},
-            onPasswordChange = {}, onTogglePasswordVisible = {}, onCentroChange = {},
-            onIngresar = {}, onMensajeMostrado = {},
+            uiState = LoginUiState(rut = "11.111.111-1", password = "1234"),
+            onRutChange = {}, onPasswordChange = {}, onTogglePasswordVisible = {},
+            onCentroChange = {}, onIngresar = {}, onMensajeMostrado = {},
         )
     }
 }

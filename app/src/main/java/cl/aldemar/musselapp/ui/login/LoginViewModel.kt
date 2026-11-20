@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.aldemar.musselapp.MusselApplication
 import cl.aldemar.musselapp.data.model.CentroCultivo
-import cl.aldemar.musselapp.data.model.Rol
 import cl.aldemar.musselapp.data.repository.AuthRepository
 import cl.aldemar.musselapp.util.RutValidator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,14 +18,6 @@ class LoginViewModel(
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
-
-    /** Paso 1: elige el perfil y avanza al ingreso de credenciales. */
-    fun onRolChange(rol: Rol) = _uiState.update { it.copy(rol = rol, mensajeError = null) }
-
-    /** Vuelve al paso 1 descartando el PIN y los errores. */
-    fun onCambiarPerfil() = _uiState.update {
-        it.copy(rol = null, password = "", passwordVisible = false, rutError = null, passwordError = null, mensajeError = null)
-    }
 
     /**
      * Guarda solo dígitos y K (la pantalla agrega puntos y guion al mostrarlo).
@@ -50,11 +41,13 @@ class LoginViewModel(
 
     fun onMensajeMostrado() = _uiState.update { it.copy(mensajeError = null) }
 
+    /** La animación de bienvenida terminó: la navegación pasa a la pantalla principal. */
+    fun onTransicionTerminada() = _uiState.update { it.copy(transicionTerminada = true) }
+
     fun onCerrarSesion() = _uiState.update { LoginUiState(centro = it.centro) }
 
     fun ingresar() {
         val estado = _uiState.value
-        val rol = estado.rol ?: return
         if (estado.cargando) return
 
         val rutError = when {
@@ -70,7 +63,7 @@ class LoginViewModel(
 
         _uiState.update { it.copy(cargando = true, mensajeError = null) }
         viewModelScope.launch {
-            authRepository.login(estado.rut, estado.password, rol)
+            authRepository.login(estado.rut, estado.password)
                 .onSuccess { usuario ->
                     _uiState.update { it.copy(cargando = false, usuario = usuario, password = "") }
                 }

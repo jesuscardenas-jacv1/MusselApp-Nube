@@ -74,9 +74,9 @@ fun MusselNavHost(
     val guardandoMuestra by borradorViewModel.guardando.collectAsStateWithLifecycle()
 
     // La sesión decide entre Login y el resto de la app
-    LaunchedEffect(usuario != null) {
+    LaunchedEffect(usuario != null, loginState.transicionTerminada) {
         val rutaActual = navController.currentDestination?.route
-        if (usuario != null && rutaActual == Rutas.LOGIN) {
+        if (usuario != null && loginState.transicionTerminada && rutaActual == Rutas.LOGIN) {
             navController.navigate(Rutas.PRINCIPAL) {
                 popUpTo(Rutas.LOGIN) { inclusive = true }
             }
