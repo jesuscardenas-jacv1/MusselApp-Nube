@@ -144,6 +144,21 @@
   .login-marca { position: relative; overflow: hidden; margin: 16px; border-radius: var(--r-xl); background: radial-gradient(120% 90% at 0% 0%, #17406A 0%, var(--marino) 55%), var(--marino); color: var(--texto-inv); padding: 48px; display: flex; flex-direction: column; justify-content: flex-start; min-height: calc(100vh - 32px); }
   .login-marca .ilustracion { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 48%; pointer-events: none; }
   .login-marca > * { position: relative; }
+  /* Foto de fondo del panel de marca */
+  .login-marca .foto-fondo { position: absolute; inset: 0; overflow: hidden; pointer-events: none; display: none; }
+  .login-marca.con-foto .foto-fondo { display: block; }
+  .login-marca.con-foto .ilustracion { display: none; }
+  .login-marca.con-foto { background: #051629; }
+  .foto-fondo img { width: 100%; height: 100%; object-fit: cover; object-position: center 56%; transform: scale(1.03); opacity: .82; filter: blur(.6px) saturate(.9) contrast(1.08);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.32) 0%, rgba(0,0,0,.62) 36%, #000 64%, rgba(0,0,0,.85) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,.32) 0%, rgba(0,0,0,.62) 36%, #000 64%, rgba(0,0,0,.85) 100%); }
+  .foto-fondo > div { position: absolute; inset: 0; }
+  .foto-fondo .velo-desenfoque { background: rgba(5,21,38,.28); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.92) 38%, rgba(0,0,0,.35) 58%, transparent 74%);
+            mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.92) 38%, rgba(0,0,0,.35) 58%, transparent 74%); }
+  .foto-fondo .velo-vertical { background: linear-gradient(180deg, rgba(4,18,35,.93) 0%, rgba(5,22,42,.78) 38%, rgba(6,28,52,.28) 68%, rgba(4,18,34,.8) 100%); }
+  .foto-fondo .velo-horizontal { background: linear-gradient(95deg, rgba(4,18,35,.62) 0%, rgba(5,22,42,.22) 52%, rgba(5,22,42,.04) 100%); }
+  .foto-fondo .velo-marino { background: radial-gradient(ellipse 95% 52% at 54% 78%, rgba(16,148,134,.22) 0%, rgba(12,84,108,.08) 48%, transparent 78%); }
   .login-marca .lema { max-width: 460px; margin-top: 48px; }
   .login-marca h2 { font-size: clamp(28px, 3.2vw, 40px); line-height: 1.12; font-weight: 800; color: #fff; letter-spacing: -.02em; }
   .login-marca h2 span { background: var(--grad-brillo); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -881,7 +896,15 @@
 
 <!-- ═══════════════ Inicio de sesión ═══════════════ -->
 <section id="login" class="login" aria-labelledby="titulo-login">
-  <div class="login-marca">
+  <div class="login-marca con-foto">
+    <!-- Foto de líneas de cultivo con velos para que el texto se lea. Si no carga, queda la ilustración -->
+    <div class="foto-fondo" aria-hidden="true">
+      <img src="img/lineas-cultivo.jpg" alt="" onerror="this.closest('.login-marca').classList.remove('con-foto')">
+      <div class="velo-desenfoque"></div>
+      <div class="velo-vertical"></div>
+      <div class="velo-horizontal"></div>
+      <div class="velo-marino"></div>
+    </div>
     <svg class="ilustracion" viewBox="0 0 800 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <defs>
         <linearGradient id="lg-ola1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0FB5A6" stop-opacity=".55"/><stop offset="1" stop-color="#0FB5A6" stop-opacity="0"/></linearGradient>
