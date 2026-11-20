@@ -72,10 +72,11 @@ class BorradorConfirmarTest {
         val vm = vm(gps)
         vm.completar()
         vm.buscarUbicacion()
-        var guardada = false
-        vm.confirmar(operario, alGuardar = { guardada = true }, alFallar = { error(it) })
-        assertTrue(guardada)
+        var codigo: String? = null
+        vm.confirmar(operario, alGuardar = { codigo = it }, alFallar = { error(it) })
         val m = repo.muestras.value.single()
+        // La animación de envío muestra el código de la muestra guardada
+        assertEquals(m.codigo, codigo)
         assertEquals(EstadoMuestra.PENDIENTE, m.estado)
         assertFalse(m.sincronizada)
         assertEquals("Buena fijación", m.observacion)

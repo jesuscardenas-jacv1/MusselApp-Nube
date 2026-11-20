@@ -31,6 +31,10 @@ import androidx.navigation.navArgument
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
+import cl.aldemar.musselapp.ui.muestra.AnimacionMuestraEnviada
 import cl.aldemar.musselapp.MusselApplication
 import cl.aldemar.musselapp.data.model.CatalogoCultivo
 import cl.aldemar.musselapp.data.model.CentroCultivo
@@ -235,6 +239,10 @@ fun MusselNavHost(
                     MusselApplication.contenedor.catalogoRepository.observar(centroBorrador).collect { value = it }
                 }
             }
+            // Código de la muestra recién guardada: mientras no sea null se ve la animación de envío
+            var codigoEnviado by remember { mutableStateOf<String?>(null) }
+            var avisoEnviado by remember { mutableStateOf<String?>(null) }
+            Box {
             VistaPreviaScreen(
                 borrador = borrador,
                 guardando = guardandoMuestra,
@@ -254,17 +262,18 @@ fun MusselNavHost(
                     // Si se guarda en otro centro, se dice dónde: no aparecerá en el resumen de la sesión
                     // (se calcula antes de guardar, porque al guardar el borrador se limpia)
                     val centroGuardado = borrador.parametros?.centroId
+                    // (con la animación basta en el caso normal; el aviso queda solo para otro centro)
                     val mensaje = if (centroGuardado != null && centroGuardado != loginState.centro.id) {
                         val nombre = CentroCultivo.disponibles.find { it.id == centroGuardado }?.nombre ?: centroGuardado
                         "Muestra guardada en $nombre"
                     } else {
-                        "Muestra guardada"
+                        null
                     }
                     borradorViewModel.confirmar(
                         operador = operador,
-                        alGuardar = {
-                            Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
-                            navController.popBackStack(Rutas.PRINCIPAL, inclusive = false)
+                        alGuardar = { codigo ->
+                            avisoEnviado = mensaje
+                            codigoEnviado = codigo
                         },
                         alFallar = { motivo ->
                             Toast.makeText(context, motivo, Toast.LENGTH_LONG).show()
@@ -272,6 +281,16 @@ fun MusselNavHost(
                     )
                 },
             )
+            codigoEnviado?.let { codigo ->
+                AnimacionMuestraEnviada(
+                    codigo = codigo,
+                    alTerminar = {
+                        avisoEnviado?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                        navController.popBackStack(Rutas.PRINCIPAL, inclusive = false)
+                    },
+                )
+            }
+            }
         }
 
         // ── Consulta (Ramón Osorio) ───────────────────────────────────────

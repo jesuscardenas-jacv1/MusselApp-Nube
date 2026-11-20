@@ -132,12 +132,12 @@ class BorradorMuestraViewModel(
 
     /**
      * Guarda la muestra en la base local a nombre de [operador].
-     * Si se guarda, limpia el borrador y llama a [alGuardar];
+     * Si se guarda, limpia el borrador y llama a [alGuardar] con el código de la muestra (ej. "Muestra 012");
      * si falta un dato o la base lo rechaza, llama a [alFallar] con el motivo.
      */
     fun confirmar(
         operador: Usuario,
-        alGuardar: () -> Unit,
+        alGuardar: (codigo: String) -> Unit,
         alFallar: (String) -> Unit,
     ) {
         if (_guardando.value) return
@@ -171,9 +171,9 @@ class BorradorMuestraViewModel(
             try {
                 // La muestra se guarda con o sin posición: se espera un poco a la lectura en curso, no más
                 withTimeoutOrNull(ESPERA_UBICACION_MS) { busquedaUbicacion?.join() }
-                repository.agregarMuestra(nueva.copy(posicion = _ubicacion.value.posicion))
+                val id = repository.agregarMuestra(nueva.copy(posicion = _ubicacion.value.posicion))
                 limpiar()
-                alGuardar()
+                alGuardar(nueva.copy(id = id).codigo)
             } catch (e: Exception) {
                 // Antes un error aquí cerraba la app; ahora se avisa y el borrador se conserva
                 alFallar("No se pudo guardar la muestra: ${e.message ?: "error de la base de datos"}")

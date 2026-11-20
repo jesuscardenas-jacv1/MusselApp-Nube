@@ -117,7 +117,7 @@ class RoomMuestraRepository(
     }
 
     /** El id de [muestra] se ignora: lo genera la base al insertar. */
-    override suspend fun agregarMuestra(muestra: Muestra) {
+    override suspend fun agregarMuestra(muestra: Muestra): Long {
         val lineaId = db.catalogoDao().buscarLineaId(muestra.centroId, muestra.tren, muestra.linea)
             ?: error("No existe la línea ${muestra.linea} del tren ${muestra.tren} en ${muestra.centroId}")
         val operadorRut = buscarRut(muestra.operadorRut)
@@ -140,6 +140,7 @@ class RoomMuestraRepository(
         // Guardar nunca espera a la red: el clima y el envío van en segundo plano.
         // Si fallan, la muestra queda pendiente para "Sincronizar"
         if (nube != null || clima != null) alcanceNube.launch { subirMuestra(nuevoId) }
+        return nuevoId
     }
 
     /**

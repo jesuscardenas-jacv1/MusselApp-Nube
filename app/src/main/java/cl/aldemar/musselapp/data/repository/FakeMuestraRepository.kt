@@ -51,8 +51,9 @@ class FakeMuestraRepository(
         }
     }
 
-    override suspend fun agregarMuestra(muestra: Muestra) {
+    override suspend fun agregarMuestra(muestra: Muestra): Long {
         _muestras.update { listOf(muestra) + it }
+        return muestra.id
     }
 
     override suspend fun sincronizar(): Int {
