@@ -60,6 +60,7 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RotateLeft
 import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -159,10 +160,13 @@ fun VistaPreviaScreen(
     var confirmando by remember { mutableStateOf(false) }
     var eliminando by remember { mutableStateOf(false) }
     var verFoto by remember { mutableStateOf(false) }
+    var contando by remember { mutableStateOf(false) }
     var editando by remember { mutableStateOf(false) }
 
     val parametros = borrador.parametros
     val rutaFoto = borrador.fotoRuta
+    // Marcas del conteo sobre la foto: se conservan al cerrar el conteo y se borran si cambia la foto
+    var marcas by remember(rutaFoto) { mutableStateOf(ConteoMarcas()) }
     // Se puede guardar con parámetros, foto, conteo y talla válidos (reglas en validarBorrador)
     val faltante = validarBorrador(borrador)
     val listo = faltante == null && !guardando
@@ -291,6 +295,14 @@ fun VistaPreviaScreen(
                     color = Paleta.TextoSuave,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(2f).padding(horizontal = 2.dp)
+                )
+            }
+            // Conteo asistido: marcar cada individuo sobre la foto y pasar el total a ind/m con el tramo
+            if (rutaFoto != null) {
+                PildoraAccion(
+                    texto = if (marcas.total > 0) "Contar sobre la foto (${marcas.total} marcas)" else "Contar sobre la foto",
+                    icono = Icons.Filled.TouchApp,
+                    onClick = { contando = true }
                 )
             }
 
@@ -435,6 +447,20 @@ fun VistaPreviaScreen(
                 )
             }
         }
+    }
+
+    if (contando && rutaFoto != null) {
+        ConteoSobreFoto(
+            ruta = rutaFoto,
+            tramoCm = borrador.tramoCm,
+            conteo = marcas,
+            onCambiar = { marcas = it },
+            onUsar = { indPorMetro ->
+                onConteoCambiado(indPorMetro)
+                contando = false
+            },
+            onCerrar = { contando = false },
+        )
     }
 
     if (verFoto && rutaFoto != null) {
