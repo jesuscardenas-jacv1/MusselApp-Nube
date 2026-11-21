@@ -35,6 +35,7 @@ object FichaMuestra {
         "Profundidad" to "${muestra.profundidadM} m",
         "Conteo" to "${muestra.conteoIndM} ind/m",
         "Cholgas" to (muestra.cholgasIndM?.let { "$it ind/m" } ?: "No registrado"),
+        "Tramo muestreado" to (muestra.tramoCm?.let { "$it cm" } ?: "No registrado"),
         "Talla media" to "${muestra.tallaMm} mm",
         "Rendimiento estimado" to "${muestra.rendimientoKgM} kg/m",
         "Ubicación" to CodigoTiempo.posicion(muestra.posicion),

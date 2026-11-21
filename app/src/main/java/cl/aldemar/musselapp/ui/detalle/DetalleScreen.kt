@@ -712,6 +712,11 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 6.dp),
                     )
+                    Text(
+                        "Tramo muestreado: " + (muestra.tramoCm?.let { "$it cm" } ?: "no registrado"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                 }
             }
 
