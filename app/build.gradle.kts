@@ -51,6 +51,9 @@ android {
             // Cobertura de las pruebas unitarias con JaCoCo (no cambia el APK). Reporte filtrado a la
             // lógica: ./gradlew reporteCobertura (ver la tarea al final de este archivo)
             enableUnitTestCoverage = true
+            // Cobertura de las pruebas instrumentadas: solo con -PcoberturaInstrumentada (lo usa el job
+            // "instrumentadas" del CI). Así el APK debug que se instala o se publica no cambia
+            enableAndroidTestCoverage = providers.gradleProperty("coberturaInstrumentada").isPresent
         }
         release {
             if (hayFirma) signingConfig = signingConfigs.getByName("release")
@@ -125,7 +128,8 @@ dependencies {
 }
 
 // Cobertura de la lógica que piden las pautas: ViewModels y Repositories. Usa los datos que deja
-// testDebugUnitTest con enableUnitTestCoverage. Reporte en app/build/reports/jacoco/reporteCobertura/
+// testDebugUnitTest con enableUnitTestCoverage y, si existen, los de connectedDebugAndroidTest
+// corrido con -PcoberturaInstrumentada (Room real). Reporte en app/build/reports/jacoco/reporteCobertura/
 tasks.register<JacocoReport>("reporteCobertura") {
     group = "verification"
     description = "Reporte de cobertura de las pruebas unitarias en ViewModels y Repositories."
@@ -139,7 +143,10 @@ tasks.register<JacocoReport>("reporteCobertura") {
         },
     )
     sourceDirectories.setFrom(files("src/main/java"))
-    executionData.setFrom(layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"))
+    executionData.setFrom(
+        layout.buildDirectory.file("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"),
+        fileTree(layout.buildDirectory.dir("outputs/code_coverage")) { include("**/*.ec") },
+    )
     reports {
         html.required.set(true)
         xml.required.set(true)

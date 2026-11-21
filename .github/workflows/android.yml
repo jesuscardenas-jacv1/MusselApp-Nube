@@ -86,6 +86,15 @@ jobs:
       # En el repo gradlew no está marcado como ejecutable (se subió desde Windows)
       - run: chmod +x ./gradlew
 
+      # El emulador necesita ~7,4 GB libres para su partición de datos y el runner a veces llega con
+      # menos ("Not enough space to create userdata partition"). Se borran herramientas preinstaladas
+      # que este proyecto no usa (.NET, Haskell, Boost, CodeQL); el SDK de Android y Java no se tocan.
+      - name: Liberar espacio en disco para el emulador
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost "$AGENT_TOOLSDIRECTORY/CodeQL"
+          df -h /
+
       - name: Habilitar KVM para el emulador
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -100,7 +109,8 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew connectedDebugAndroidTest --stacktrace
+          # -PcoberturaInstrumentada: mide la cobertura con Room real (solo en este job)
+          script: ./gradlew connectedDebugAndroidTest -PcoberturaInstrumentada --stacktrace
 
       - name: Guardar informe de pruebas
         if: always()
@@ -109,3 +119,18 @@ jobs:
           name: informe-instrumentadas
           path: app/build/reports/androidTests/
           if-no-files-found: ignore
+
+      # Reporte completo: unitarias + instrumentadas (Room real). No bloquea el CI si falla
+      - name: Reporte de cobertura completo
+        id: cobertura-completa
+        continue-on-error: true
+        run: ./gradlew reporteCobertura -PcoberturaInstrumentada --stacktrace
+
+      - name: Guardar reporte de cobertura completo
+        if: always() && steps.cobertura-completa.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura-completo
+          path: app/build/reports/jacoco/reporteCobertura/
+          if-no-files-found: ignore
+          retention-days: 14
