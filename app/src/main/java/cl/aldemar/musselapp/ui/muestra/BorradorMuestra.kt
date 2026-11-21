@@ -29,6 +29,8 @@ data class BorradorMuestra(
     val tallaMm: Int? = null,
     // Cholgas: otra especie de la misma familia; se anotan aparte (0 si no hay)
     val cholgasIndM: Int? = null,
+    // Largo del tramo de cuerda muestreado, en cm
+    val tramoCm: Int? = null,
     val observacion: String = "",
 )
 
@@ -41,6 +43,7 @@ data class EstadoUbicacion(
 /** Rangos aceptados al ingresar las mediciones (evitan errores de tipeo, no son límites biológicos). */
 const val CONTEO_MAXIMO_IND_M = 5000
 const val TALLA_MAXIMA_MM = 200
+const val TRAMO_MAXIMO_CM = 500
 
 /**
  * Revisa que el borrador tenga todo lo obligatorio para guardarse.
@@ -55,6 +58,8 @@ fun validarBorrador(borrador: BorradorMuestra): String? = when {
     borrador.tallaMm !in 1..TALLA_MAXIMA_MM -> "La talla debe estar entre 1 y $TALLA_MAXIMA_MM mm"
     borrador.cholgasIndM == null -> "Ingresa el conteo de cholgas (0 si no hay)"
     borrador.cholgasIndM !in 0..CONTEO_MAXIMO_IND_M -> "Las cholgas deben estar entre 0 y $CONTEO_MAXIMO_IND_M ind/m"
+    borrador.tramoCm == null -> "Ingresa el largo del tramo muestreado en cm"
+    borrador.tramoCm !in 1..TRAMO_MAXIMO_CM -> "El tramo debe estar entre 1 y $TRAMO_MAXIMO_CM cm"
     else -> null
 }
 
@@ -130,6 +135,11 @@ class BorradorMuestraViewModel(
         _borrador.update { it.copy(cholgasIndM = cholgasIndM) }
     }
 
+    /** null significa que el operario borró el valor. */
+    fun actualizarTramo(tramoCm: Int?) {
+        _borrador.update { it.copy(tramoCm = tramoCm) }
+    }
+
     /**
      * Guarda la muestra en la base local a nombre de [operador].
      * Si se guarda, limpia el borrador y llama a [alGuardar] con el código de la muestra (ej. "Muestra 012");
@@ -157,6 +167,7 @@ class BorradorMuestraViewModel(
             tallaMm = actual.tallaMm!!,
             conteoIndM = actual.conteoIndM!!,
             cholgasIndM = actual.cholgasIndM!!,
+            tramoCm = actual.tramoCm!!,
             observacion = actual.observacion.trim(),
             estado = EstadoMuestra.PENDIENTE,
             registradaEn = System.currentTimeMillis(),

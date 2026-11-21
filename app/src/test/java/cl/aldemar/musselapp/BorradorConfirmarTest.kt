@@ -43,18 +43,20 @@ class BorradorConfirmarTest {
         actualizarConteo(420)
         actualizarTalla(65)
         actualizarCholgas(0)
+        actualizarTramo(100)
         actualizarObservacion("  Buena fijación  ")
     }
 
     @Test
     fun validarBorrador_revisaCadaCampoEnOrden() {
-        val completo = BorradorMuestra(ParametrosMuestra("dalcahue", "B", 4, 3), "/f.jpg", 420, 65, 0)
+        val completo = BorradorMuestra(ParametrosMuestra("dalcahue", "B", 4, 3), "/f.jpg", 420, 65, 0, tramoCm = 100)
         assertNull(validarBorrador(completo))
         assertEquals("El conteo debe estar entre 1 y 5000 ind/m", validarBorrador(completo.copy(conteoIndM = 0)))
         assertEquals("Ingresa la talla media en mm", validarBorrador(completo.copy(tallaMm = null)))
         assertEquals("La talla debe estar entre 1 y 200 mm", validarBorrador(completo.copy(tallaMm = 201)))
         assertEquals("Ingresa el conteo de cholgas (0 si no hay)", validarBorrador(completo.copy(cholgasIndM = null)))
         assertEquals("Las cholgas deben estar entre 0 y 5000 ind/m", validarBorrador(completo.copy(cholgasIndM = -1)))
+        assertEquals("Ingresa el largo del tramo muestreado en cm", validarBorrador(completo.copy(tramoCm = null)))
     }
 
     @Test
@@ -84,6 +86,7 @@ class BorradorConfirmarTest {
         assertEquals("111111111", m.operadorRut)
         assertEquals(gps, m.posicion)
         assertEquals("/fotos/muestra.jpg", m.fotoRuta)
+        assertEquals(100, m.tramoCm)
         // El borrador queda vacío y la foto se conserva (ahora es de la muestra)
         assertEquals(BorradorMuestra(), vm.borrador.value)
         assertTrue(borradas.isEmpty())
