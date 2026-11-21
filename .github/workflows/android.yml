@@ -100,7 +100,8 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew connectedDebugAndroidTest --stacktrace
+          # -PcoberturaInstrumentada: mide la cobertura con Room real (solo en este job)
+          script: ./gradlew connectedDebugAndroidTest -PcoberturaInstrumentada --stacktrace
 
       - name: Guardar informe de pruebas
         if: always()
@@ -109,3 +110,18 @@ jobs:
           name: informe-instrumentadas
           path: app/build/reports/androidTests/
           if-no-files-found: ignore
+
+      # Reporte completo: unitarias + instrumentadas (Room real). No bloquea el CI si falla
+      - name: Reporte de cobertura completo
+        id: cobertura-completa
+        continue-on-error: true
+        run: ./gradlew reporteCobertura -PcoberturaInstrumentada --stacktrace
+
+      - name: Guardar reporte de cobertura completo
+        if: always() && steps.cobertura-completa.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura-completo
+          path: app/build/reports/jacoco/reporteCobertura/
+          if-no-files-found: ignore
+          retention-days: 14
