@@ -82,6 +82,7 @@ Documento en `muestras/{id}` (id único por muestra, por ejemplo un UUID):
 | `tallaMm` | número | `54` |
 | `conteoIndM` | número | `412` |
 | `cholgasIndM` | número o null | `10` (cholgas por metro; null en muestras anteriores a la v4 de la app) |
+| `tramoCm` | número o null | `100` (largo del tramo de cuerda muestreado en cm, la "longitud" del informe; null en muestras anteriores a la v6 de la base) |
 | `observacion` | string | `"Buena fijación"` |
 | `estado` | string | `"PENDIENTE"` |
 | `registradaEn` | número (ms) | `1792900000000` |

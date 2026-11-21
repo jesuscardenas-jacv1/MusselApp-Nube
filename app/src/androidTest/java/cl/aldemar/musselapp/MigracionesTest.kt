@@ -155,4 +155,34 @@ class MigracionesTest {
             assertEquals(-43.905, c.getDouble(0), 0.0001)
         }
     }
+
+    @Test
+    fun de5a6_seAgregaElTramoYLasMuestrasAntiguasSeConservan() {
+        // Base en versión 5 con una muestra guardada antes de que existiera el tramo
+        helper.createDatabase(nombre, 5).apply {
+            execSQL("INSERT INTO centros (id, nombre, lat, lon, radio_m) VALUES ('dalcahue', 'Centro Dalcahue', -42.374, -73.622, 1500)")
+            execSQL("INSERT INTO trenes (id, centro_id, codigo) VALUES (1, 'dalcahue', 'A')")
+            execSQL("INSERT INTO lineas (id, tren_id, numero) VALUES (1, 1, 4)")
+            execSQL("INSERT INTO usuarios (rut, nombre, rol, pin) VALUES ('111111111', 'Carla Vera', 'OPERARIO', 'x')")
+            execSQL(
+                "INSERT INTO muestras (id, linea_id, operador_rut, profundidad_m, talla_mm, conteo_ind_m, " +
+                    "observacion, estado, registrada_en, sincronizada, foto_ruta, cholgas_ind_m, lat, lon) " +
+                    "VALUES (1, 1, '111111111', 5, 35, 282, 'Antigua', 'VALIDADO', 0, 1, NULL, 12, -42.37, -73.62)",
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(nombre, 6, true, Migraciones.DE_5_A_6)
+
+        // La muestra antigua conserva sus datos y queda sin tramo registrado (null, no 0)
+        db.query("SELECT conteo_ind_m, cholgas_ind_m, estado, lat, tramo_cm FROM muestras").use { c ->
+            assertEquals(1, c.count)
+            c.moveToNext()
+            assertEquals(282, c.getInt(0))
+            assertEquals(12, c.getInt(1))
+            assertEquals("VALIDADO", c.getString(2))
+            assertEquals(-42.37, c.getDouble(3), 0.0001)
+            assertTrue(c.isNull(4))
+        }
+    }
 }

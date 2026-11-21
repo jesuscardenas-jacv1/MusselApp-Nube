@@ -1156,6 +1156,8 @@
       conteoIndM: num(d.conteoIndM, 0),
       // Cholgas por metro: otra especie de la misma familia, contada aparte. null = no se registró (muestras antiguas)
       cholgasIndM: d.cholgasIndM == null || d.cholgasIndM === '' ? null : num(d.cholgasIndM, null),
+      // Largo del tramo de cuerda muestreado, en cm (la "longitud" del informe). null = muestras anteriores a la v6 de la app
+      tramoCm: d.tramoCm == null || d.tramoCm === '' ? null : num(d.tramoCm, null),
       observacion: d.observacion || '',
       estado: estado,
       registradaEn: num(d.registradaEn, 0),
@@ -1528,7 +1530,7 @@
       var conteo = Math.round(DENS[c] * (1 + gauss() * .09) * (r() < .07 ? (r() < .5 ? 1.32 : .7) : 1));
       var d = {
         centroId: c, tren: elegir(TRENES), linea: 1 + Math.floor(r() * LINEAS_POR_TREN), profundidadM: elegir(PROFUNDIDADES),
-        tallaMm: Math.max(20, talla), conteoIndM: Math.max(120, conteo), cholgasIndM: r() < .2 ? 0 : Math.round(Math.max(0, conteo * (.02 + r() * .05))), observacion: elegir(OBS),
+        tallaMm: Math.max(20, talla), conteoIndM: Math.max(120, conteo), cholgasIndM: r() < .2 ? 0 : Math.round(Math.max(0, conteo * (.02 + r() * .05))), tramoCm: r() < .5 ? 50 : 100, observacion: elegir(OBS),
         estado: 'PENDIENTE', registradaEn: Math.round(t), operador: op.n, operadorRut: op.rut
       };
       var edadReal = (ahora - t) / DIA;
@@ -1878,6 +1880,7 @@
         '<dl class="ficha">' +
           '<div><dt>Centro</dt><dd>' + esc(centro(m)) + '</dd></div><div><dt>Operario</dt><dd>' + esc(m.operador) + '</dd></div>' +
           '<div><dt>Registrada</dt><dd>' + esc(fecha(m.registradaEn)) + '</dd></div><div><dt>Estrato</dt><dd>' + n0(m.profundidadM) + ' m · ' + esc(estrato(m.profundidadM)) + '</dd></div>' +
+          '<div><dt>Tramo</dt><dd>' + (m.tramoCm == null ? 'No registrado' : n0(m.tramoCm) + ' cm') + '</dd></div>' +
           '<div><dt>Tren</dt><dd>' + esc(m.tren) + (NOMBRE_TREN[m.tren] ? ' · ' + esc(NOMBRE_TREN[m.tren]) : '') + '</dd></div><div><dt>Línea</dt><dd>' + lineaTxt(m.linea) + '</dd></div>' +
         '</dl>' +
         '<div class="caja-texto"><small>Observación del operario</small>' + esc(m.observacion || 'Sin observaciones de terreno.') + '</div>' +
@@ -1999,7 +2002,7 @@
     var n = muestras.length + 1;
     fuente.crearDemo({
       codigo: 'Muestra ' + String(100 + r(0, 899)), centroId: ids[r(0, 3)], tren: TRENES[r(0, 2)], linea: r(1, LINEAS_POR_TREN),
-      profundidadM: PROFUNDIDADES[r(0, 2)], tallaMm: r(45, 75), conteoIndM: r(300, 520), cholgasIndM: r(0, 20), observacion: 'Muestra simulada para la demostración.',
+      profundidadM: PROFUNDIDADES[r(0, 2)], tallaMm: r(45, 75), conteoIndM: r(300, 520), cholgasIndM: r(0, 20), tramoCm: 100, observacion: 'Muestra simulada para la demostración.',
       estado: 'PENDIENTE', registradaEn: Date.now(), operador: NOMBRES[0], operadorRut: '111111111', fotoBase64: fotoDemo(n), demo: true
     }).catch(function () { toast('No se creó', 'No se pudo simular la muestra. Revisa la conexión.', 'mal'); });
   }
@@ -2401,6 +2404,7 @@
     { id: 'tallaMm', titulo: 'Talla (mm)', valor: function (m) { return m.tallaMm; }, num: 1, base: 1 },
     { id: 'conteoIndM', titulo: 'Densidad (ind/m)', valor: function (m) { return m.conteoIndM; }, num: 1, base: 1 },
     { id: 'cholgasIndM', titulo: 'Cholgas (ind/m)', valor: function (m) { return m.cholgasIndM; }, num: 1, base: 1 },
+    { id: 'tramoCm', titulo: 'Tramo (cm)', valor: function (m) { return m.tramoCm; }, num: 1, base: 1 },
     { id: 'rendimiento', titulo: 'Rend. (kg/m)', valor: rendimiento, num: 1, dec: 1, derivado: 1, base: 1 },
     { id: 'desvio', titulo: 'Desvío (%)', valor: desvio, num: 1, derivado: 1, html: function (m) { var d = desvio(m); return '<span class="' + (Math.abs(d) > 20 ? 'chip peligro' : '') + '">' + signo(d) + ' %</span>'; }, base: 1 },
     { id: 'alertas', titulo: 'Alertas', valor: txtAlertas, html: function (m) { return chipsAlertas(m) || '—'; }, largo: 1 },

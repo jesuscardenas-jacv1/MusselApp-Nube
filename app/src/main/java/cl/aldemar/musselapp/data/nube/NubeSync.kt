@@ -129,6 +129,7 @@ class NubeSync(context: Context) : ServicioNube {
                 "tallaMm" to m.tallaMm,
                 "conteoIndM" to m.conteoIndM,
                 "cholgasIndM" to m.cholgasIndM,
+                "tramoCm" to m.tramoCm,
                 "observacion" to m.observacion,
                 "estado" to m.estado.name,
                 "registradaEn" to m.registradaEn,
