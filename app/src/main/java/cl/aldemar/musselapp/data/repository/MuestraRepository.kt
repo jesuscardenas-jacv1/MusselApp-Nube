@@ -24,8 +24,8 @@ interface MuestraRepository {
         supervisor: Usuario,
     )
 
-    /** Agrega una nueva muestra al repositorio. */
-    suspend fun agregarMuestra(muestra: Muestra)
+    /** Agrega una nueva muestra al repositorio y devuelve su id. */
+    suspend fun agregarMuestra(muestra: Muestra): Long
 
     /** Envía al servidor las muestras guardadas localmente y devuelve cuántas se enviaron. */
     suspend fun sincronizar(): Int

@@ -65,7 +65,10 @@ class MuestrasEnMemoria(iniciales: List<Muestra> = emptyList()) : MuestraReposit
         }
     }
 
-    override suspend fun agregarMuestra(muestra: Muestra) = _muestras.update { listOf(muestra) + it }
+    override suspend fun agregarMuestra(muestra: Muestra): Long {
+        _muestras.update { listOf(muestra) + it }
+        return muestra.id
+    }
 
     override suspend fun sincronizar(): Int {
         llamadasSincronizar++
