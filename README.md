@@ -44,6 +44,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Métricas de la jornada y muestras recientes | Principal | `PrincipalViewModel` + `ResumenJornada` |
 | Sincronización con la nube y dictamen desde el computador | Todas, portal web | `NubeSync` (Firestore) detrás de la interfaz `ServicioNube`; Room sigue siendo la fuente de verdad, se guarda sin red y se sube después. El supervisor puede dictaminar en el portal o en el teléfono: el dictamen del teléfono se sube de inmediato y, si los dos dictaminan la misma muestra, vale el primero que llegó a la nube (`ProteccionDictamen`) |
 | Muestra borrada en el portal | Notificación, Historial | Al eliminar una muestra en el portal, el teléfono que la registró la borra (con sus revisiones y su foto) y avisa con una notificación |
+| Conteo asistido con marcas sobre la foto | Vista previa | `ConteoSobreFoto`: se toca cada individuo para marcarlo (o quitarlo), con zoom, Deshacer y Limpiar; el total se convierte a ind/m con el tramo muestreado y completa el campo Conteo (`ConteoMarcas.indPorMetro`) |
 | Seguridad local | Login | PIN guardado con hash PBKDF2, bloqueo tras 5 intentos fallidos y base excluida del respaldo |
 
 **Recursos del dispositivo integrados al flujo:** cámara, galería (Photo Picker), ubicación (GPS), documentos (ficha PDF para imprimir o compartir) y fecha/hora del registro.
@@ -108,8 +109,8 @@ Al abrir la app se muestra la animación de inicio. En el Login se ingresa RUT, 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 166 pruebas unitarias (los 7 ViewModels, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
-./gradlew connectedDebugAndroidTest  # 40 pruebas instrumentadas: Room real, migraciones, catálogo, sincronización con una nube falsa y el Compose UI Test del formulario (requiere teléfono o emulador)
+./gradlew testDebugUnitTest          # 174 pruebas unitarias (los 7 ViewModels, conteo con marcas, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew connectedDebugAndroidTest  # 45 pruebas instrumentadas: Room real, migraciones, catálogo, sincronización con una nube falsa y los Compose UI Test del formulario y del conteo (requiere teléfono o emulador)
 ./gradlew reporteCobertura           # cobertura de ViewModels y Repositories en app/build/reports/jacoco/reporteCobertura/html/index.html
 ```
 

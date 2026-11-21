@@ -1,0 +1,97 @@
+package cl.aldemar.musselapp
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.percentOffset
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import cl.aldemar.musselapp.ui.muestra.ConteoMarcas
+import cl.aldemar.musselapp.ui.muestra.ConteoSobreImagen
+import cl.aldemar.musselapp.ui.muestra.ETIQUETA_LIENZO
+import cl.aldemar.musselapp.ui.theme.MusselAppTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/** Prueba de interfaz del conteo con marcas sobre la foto (B6), con una imagen en blanco. */
+@RunWith(AndroidJUnit4::class)
+class ConteoSobreFotoUiTest {
+
+    @get:Rule
+    val compose = createComposeRule()
+
+    private var conteo by mutableStateOf(ConteoMarcas())
+    private var usado: Int? = null
+
+    private fun abrir(tramoCm: Int?) {
+        compose.setContent {
+            MusselAppTheme {
+                ConteoSobreImagen(
+                    imagen = ImageBitmap(300, 200),
+                    tramoCm = tramoCm,
+                    conteo = conteo,
+                    onCambiar = { conteo = it },
+                    onUsar = { usado = it },
+                    onCerrar = {},
+                )
+            }
+        }
+    }
+
+    private fun tocar(x: Float, y: Float) =
+        compose.onNodeWithTag(ETIQUETA_LIENZO).performTouchInput { click(percentOffset(x, y)) }
+
+    @Test
+    fun tocar_agregaYQuitaMarcas() {
+        abrir(tramoCm = 10)
+        tocar(0.2f, 0.5f)
+        tocar(0.8f, 0.5f)
+        compose.onNodeWithText("Marcas: 2").assertExists()
+
+        tocar(0.2f, 0.5f) // sobre la primera: se quita
+        compose.onNodeWithText("Marcas: 1").assertExists()
+    }
+
+    @Test
+    fun deshacer_recuperaLaUltimaAccion() {
+        abrir(tramoCm = 10)
+        tocar(0.3f, 0.3f)
+        tocar(0.7f, 0.7f)
+        compose.onNodeWithText("Deshacer").performClick()
+        compose.onNodeWithText("Marcas: 1").assertExists()
+        compose.onNodeWithText("Limpiar").performClick()
+        compose.onNodeWithText("Marcas: 0").assertExists()
+    }
+
+    @Test
+    fun conTramo_usaLosIndividuosPorMetro() {
+        abrir(tramoCm = 10)
+        tocar(0.25f, 0.5f)
+        tocar(0.75f, 0.5f)
+        compose.onNodeWithText("Tramo de 10 cm → 20 ind/m").assertExists()
+
+        compose.onNodeWithText("Usar 20 ind/m").assertIsEnabled().performClick()
+
+        compose.runOnIdle { assertEquals(20, usado) }
+    }
+
+    @Test
+    fun sinTramo_noSePuedeUsarElConteo() {
+        abrir(tramoCm = null)
+        tocar(0.5f, 0.5f)
+        compose.onNodeWithText("Ingresa el tramo (cm) en la Vista previa para convertir las marcas a ind/m").assertExists()
+        compose.onNodeWithText("Usar el conteo").assertIsNotEnabled().performClick()
+        compose.runOnIdle { assertNull(usado) }
+    }
+}
