@@ -30,6 +30,7 @@ fun MuestraCompleta.aModelo() = Muestra(
     comentarioSupervisor = comentarioSupervisor,
     fotoRuta = muestra.fotoRuta,
     cholgasIndM = muestra.cholgasIndM,
+    tramoCm = muestra.tramoCm,
     posicion = if (muestra.lat != null && muestra.lon != null) {
         Posicion(muestra.lat, muestra.lon, muestra.precisionM)
     } else null,

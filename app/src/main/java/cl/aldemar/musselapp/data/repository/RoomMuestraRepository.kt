@@ -130,6 +130,7 @@ class RoomMuestraRepository(
                 tallaMm = muestra.tallaMm,
                 conteoIndM = muestra.conteoIndM,
                 cholgasIndM = muestra.cholgasIndM,
+                tramoCm = muestra.tramoCm,
                 observacion = muestra.observacion,
                 estado = muestra.estado,
                 registradaEn = muestra.registradaEn,

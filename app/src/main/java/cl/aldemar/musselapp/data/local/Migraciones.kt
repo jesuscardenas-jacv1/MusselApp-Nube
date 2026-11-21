@@ -79,5 +79,15 @@ object Migraciones {
         }
     }
 
-    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5)
+    /**
+     * v5 → v6: largo del tramo de cuerda muestreado, en cm. Las muestras que ya estaban guardadas
+     * quedan con null (no se registró).
+     */
+    val DE_5_A_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE muestras ADD COLUMN tramo_cm INTEGER")
+        }
+    }
+
+    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5, DE_5_A_6)
 }

@@ -28,6 +28,8 @@ data class Muestra(
      * de la misma familia que el chorito y se anotan aparte. null en las muestras anteriores a v4.
      */
     val cholgasIndM: Int? = null,
+    /** Largo del tramo de cuerda que se muestreó, en cm. null en las muestras anteriores a la v6 de la base. */
+    val tramoCm: Int? = null,
     /** Posición del teléfono al guardar; null sin permiso, sin señal o en muestras anteriores a v5. */
     val posicion: Posicion? = null,
     /** Tiempo y estado del mar al muestrear; null si no hubo internet. */

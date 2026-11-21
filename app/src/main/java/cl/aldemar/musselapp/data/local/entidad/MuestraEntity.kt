@@ -44,6 +44,8 @@ data class MuestraEntity(
     @ColumnInfo(name = "foto_ruta") val fotoRuta: String?,
     /** Cholgas por metro (desde la versión 4 de la base); null en las muestras antiguas. */
     @ColumnInfo(name = "cholgas_ind_m") val cholgasIndM: Int? = null,
+    /** Largo del tramo de cuerda muestreado, en cm (desde la versión 6); null en las muestras antiguas. */
+    @ColumnInfo(name = "tramo_cm") val tramoCm: Int? = null,
     // Desde la versión 5: posición del teléfono al guardar y condiciones del momento.
     // Todo es opcional: sin GPS o sin internet la muestra se guarda igual.
     val lat: Double? = null,
