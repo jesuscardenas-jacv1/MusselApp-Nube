@@ -29,6 +29,7 @@ class FichaMuestraTest {
         assertEquals("No registrada", filas["Distancia al centro"])
         assertEquals("No registrado", filas["Tiempo"])
         assertEquals("No registrado", filas["Mar"])
+        assertEquals("No registrado", filas["Clima consultado"])
         assertEquals("Sin ubicación", filas["Alertas al registrar"])
     }
 
@@ -47,7 +48,11 @@ class FichaMuestraTest {
         assertEquals("3,0 km (fuera del área)", filas["Distancia al centro"])
         assertEquals("Nublado · 17 °C · viento 2 kn del N (racha 5 kn)", filas["Tiempo"])
         assertEquals("Ola 0,1 m · agua 16,3 °C · marea +0,28 m", filas["Mar"])
+        assertEquals("01/01/1970 00:00", filas["Clima consultado"])
         assertEquals("Fuera del área", filas["Alertas al registrar"])
+        // La sección del PDF también muestra cuándo se consultó el clima
+        val condiciones = FichaMuestra.secciones(completa, utc).first { it.titulo == "Condiciones al muestrear" }
+        assertEquals("01/01/1970 00:00", condiciones.filas.toMap()["Clima consultado"])
     }
 
     @Test

@@ -9,6 +9,7 @@ import cl.aldemar.musselapp.util.CodigoTiempo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.util.TimeZone
 
 /** Textos del clima en la ficha y unión de las dos respuestas de Open-Meteo. */
 class CodigoTiempoTest {
@@ -52,6 +53,19 @@ class CodigoTiempoTest {
         assertEquals("No registrado", CodigoTiempo.mar(null))
         // Llegó el tiempo pero no el mar
         assertEquals("No registrado", CodigoTiempo.mar(Clima(tempAireC = 12.0, obtenidoEn = 0L)))
+    }
+
+    @Test
+    fun fuente_indicaQueEsModeladoYCuandoSeConsulto() {
+        val utc = TimeZone.getTimeZone("UTC")
+        val consultado = clima.copy(obtenidoEn = 1_795_271_520_000L) // 21/11/2026 14:32 UTC
+        assertEquals("21/11/2026 14:32", CodigoTiempo.consultado(consultado, utc))
+        assertEquals(
+            "Open-Meteo (dato modelado, consultado el 21/11/2026 a las 14:32)",
+            CodigoTiempo.fuente(consultado, utc),
+        )
+        assertEquals("No registrado", CodigoTiempo.consultado(null, utc))
+        assertEquals(CodigoTiempo.FUENTE, CodigoTiempo.fuente(null, utc))
     }
 
     @Test
