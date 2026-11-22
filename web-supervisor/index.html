@@ -200,10 +200,11 @@
   .insignia { min-width: 22px; height: 22px; padding: 0 7px; border-radius: var(--r-pill); background: var(--pend-graf); color: #3B2300; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
   .menu a[aria-current="page"] .insignia { background: #fff; color: var(--acento-texto); }
   .lateral .relleno { flex: 1; }
-  .tarjeta-vivo { position: relative; overflow: hidden; border-radius: var(--r-lg); padding: 16px; background: linear-gradient(160deg, rgba(15, 181, 166, .18), rgba(255, 255, 255, .04)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); }
-  .tarjeta-vivo svg.olas { position: absolute; right: -10px; bottom: -6px; width: 150px; opacity: .35; pointer-events: none; }
-  .tarjeta-vivo .fila-vivo { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fff; position: relative; }
-  .tarjeta-vivo p { font-size: 12px; color: var(--texto-inv-2); margin-top: 6px; position: relative; }
+  /* Estado de la conexión: una línea sobria al pie del menú, sin tarjeta ni adornos */
+  .tarjeta-vivo { position: relative; padding: 14px 4px 2px; border-top: 1px solid rgba(255, 255, 255, .08); }
+  .tarjeta-vivo .fila-vivo { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--texto-inv); }
+  .tarjeta-vivo .latido { width: 7px; height: 7px; animation: none; box-shadow: none; }
+  .tarjeta-vivo p { font-size: 12px; color: var(--texto-inv-2); margin-top: 4px; padding-left: 15px; }
   .tarjeta-vivo .modo-ej { display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #3B2300; background: var(--pend-graf); padding: 2px 8px; border-radius: var(--r-pill); position: relative; }
   .latido { width: 9px; height: 9px; border-radius: 50%; background: var(--acento-2); box-shadow: 0 0 0 0 rgba(16, 185, 129, .6); animation: latido 2s infinite; flex: none; }
   .latido.mal { background: var(--peligro); animation: none; }
@@ -436,7 +437,7 @@
     .app.lateral-min { --ancho-lateral: 76px; }
     .lateral-min .lateral { padding: 18px 10px 12px; }
     .lateral-min .lateral .logo { padding: 0 0 18px; justify-content: center; }
-    .lateral-min .lateral .logo > div:last-child, .lateral-min .menu-titulo, .lateral-min .tarjeta-vivo p, .lateral-min #vivo-titulo, .lateral-min .tarjeta-vivo svg.olas, .lateral-min .btn-colapsar span { display: none; }
+    .lateral-min .lateral .logo > div:last-child, .lateral-min .menu-titulo, .lateral-min .tarjeta-vivo p, .lateral-min #vivo-titulo, .lateral-min .btn-colapsar span { display: none; }
     .lateral-min .tarjeta-vivo .modo-ej { font-size: 9px; padding: 2px 4px; margin-top: 6px; }
     .lateral-min .menu a, .lateral-min .btn-colapsar { justify-content: center; padding: 0; }
     .lateral-min .menu .nav-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -788,7 +789,7 @@
     :root { --ancho-lateral: 76px; }
     .lateral { padding: 18px 10px 12px; }
     .lateral .logo { padding: 0 0 18px; justify-content: center; }
-    .lateral .logo > div:last-child, .menu-titulo, .tarjeta-vivo p, #vivo-titulo, .tarjeta-vivo svg.olas { display: none; }
+    .lateral .logo > div:last-child, .menu-titulo, .tarjeta-vivo p, #vivo-titulo { display: none; }
     .tarjeta-vivo .modo-ej { font-size: 9px; padding: 2px 4px; margin-top: 6px; }
     .menu a { justify-content: center; padding: 0; }
     .menu .nav-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -969,7 +970,6 @@
     <div class="relleno"></div>
     <button type="button" class="btn-colapsar" id="btn-colapsar" data-accion="colapsar-menu" aria-controls="menu" aria-expanded="true" aria-label="Contraer el menú"><i data-ico="panel"></i><span>Contraer menú</span></button>
     <div class="tarjeta-vivo" aria-live="polite">
-      <svg class="olas" viewBox="0 0 150 60" aria-hidden="true"><path d="M0 30 Q 18 18 37 30 T 75 30 T 112 30 T 150 30" fill="none" stroke="#5EEAD4" stroke-width="2"/><path d="M0 44 Q 18 32 37 44 T 75 44 T 112 44 T 150 44" fill="none" stroke="#5EEAD4" stroke-width="2"/><path d="M0 58 Q 18 46 37 58 T 75 58 T 112 58 T 150 58" fill="none" stroke="#5EEAD4" stroke-width="2"/></svg>
       <div class="fila-vivo"><span class="latido espera" id="latido-lateral"></span><span id="vivo-titulo">Conectando…</span></div>
       <p id="vivo-texto">Esperando la primera sincronización.</p>
       <span class="modo-ej oculto" id="marca-ejemplo">Ejemplo</span>
@@ -1373,7 +1373,7 @@
     var clase = 'latido' + (ok ? '' : ' mal');
     $('latido-sup').className = clase; $('latido-lateral').className = clase;
     $('texto-red').textContent = texto;
-    $('vivo-titulo').textContent = texto;
+    $('vivo-titulo').textContent = texto === 'En vivo' ? 'Conectado' : texto;
     actualizarTextoVivo();
     var pastillas = document.querySelectorAll('.pastilla-vivo');
     for (var i = 0; i < pastillas.length; i++) pintarPastilla(pastillas[i]);
@@ -1382,8 +1382,7 @@
     else { aviso.innerHTML = ico('sinred') + '<span>Sin conexión con la nube. Los datos se actualizarán solos cuando vuelva internet.</span>'; aviso.classList.remove('oculto'); }
   }
   function actualizarTextoVivo() {
-    var t = MODO_EJEMPLO ? 'Actualizado' : redOk ? 'Sincronizado con Firestore' : redOk === false ? 'Esperando conexión' : 'Esperando la primera sincronización.';
-    if (ultimaSync) t += ' · ' + horaCorta(ultimaSync);
+    var t = redOk === false ? 'Esperando conexión' : ultimaSync ? 'Actualizado a las ' + horaCorta(ultimaSync) : 'Cargando datos…';
     $('vivo-texto').textContent = t;
   }
   function pintarPastilla(el) {
