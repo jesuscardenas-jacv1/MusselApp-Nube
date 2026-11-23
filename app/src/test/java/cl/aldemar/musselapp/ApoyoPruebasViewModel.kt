@@ -4,6 +4,7 @@ import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.data.repository.MuestraRepository
+import cl.aldemar.musselapp.util.Fechas
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -85,6 +86,15 @@ class MuestrasEnMemoria(iniciales: List<Muestra> = emptyList()) : MuestraReposit
 }
 
 private const val DIA_MS = 24 * 60 * 60 * 1000L
+
+/**
+ * "Ahora" para las pruebas de la jornada de hoy: al menos 15 minutos después de la medianoche.
+ * Así una muestra registrada "hace unos minutos" sigue siendo de hoy aunque la prueba corra a las 00:02.
+ */
+fun ahoraDeHoy(): Long {
+    val ahora = System.currentTimeMillis()
+    return maxOf(ahora, Fechas.inicioDelDia(ahora) + 15 * 60_000L)
+}
 
 /** Muestra mínima para las pruebas; registrada ahora salvo que se indique otra fecha. */
 fun muestraDePrueba(
