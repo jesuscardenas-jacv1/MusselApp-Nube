@@ -43,6 +43,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,9 +74,13 @@ import cl.aldemar.musselapp.ui.theme.FormaTarjetaChica
 import cl.aldemar.musselapp.ui.theme.Linea
 import cl.aldemar.musselapp.ui.theme.Rotulo
 import cl.aldemar.musselapp.ui.theme.tarjetaMussel
+import cl.aldemar.musselapp.util.Textos
 import cl.aldemar.musselapp.ui.theme.colores
 
 // Componentes compartidos por las pantallas con sesión iniciada (Principal, Historial, ...)
+
+/** Si el teléfono tiene internet; lo entrega MainActivity. true en vistas previas y pruebas. */
+val LocalEnLinea = compositionLocalOf { true }
 
 /** Barra superior clara común a las pantallas con sesión iniciada: se funde con el fondo. */
 @Composable
@@ -90,6 +95,7 @@ fun BarraSuperiorMussel(
     /** Al tocar el logo de la app se vuelve a la Pantalla Principal. */
     onIrAInicio: () -> Unit,
 ) {
+    val enLinea = LocalEnLinea.current
     Surface(color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground) {
         Row(
             modifier = Modifier
@@ -116,12 +122,12 @@ fun BarraSuperiorMussel(
                         Modifier
                             .size(7.dp)
                             .clip(CircleShape)
-                            .background(if (pendientesSincronizar == 0) Acento else AcentoPendiente),
+                            .background(if (enLinea) Acento else AcentoPendiente),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        // Estado real de la cola: antes decía "ONLINE" siempre, aunque no hubiera conexión
-                        if (pendientesSincronizar == 0) "TODO SINCRONIZADO" else "$pendientesSincronizar EN COLA DE ENVÍO",
+                        // La luz indica si hay internet; el texto agrega las muestras que faltan por enviar
+                        Textos.estadoConexion(enLinea, pendientesSincronizar),
                         style = Rotulo,
                         color = MaterialTheme.colorScheme.secondary,
                     )

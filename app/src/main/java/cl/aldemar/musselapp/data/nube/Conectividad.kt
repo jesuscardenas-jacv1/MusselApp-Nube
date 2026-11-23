@@ -18,10 +18,14 @@ class Conectividad(context: Context) {
     init {
         try {
             manager?.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) { _enLinea.value = true }
-                override fun onLost(network: Network) { _enLinea.value = hayInternet() }
+                override fun onAvailable(network: Network) {
+                    _enLinea.value = manager.getNetworkCapabilities(network).conInternet()
+                }
+                // Se perdió la red por defecto y no hay otra. No se consulta a Android: en este instante
+                // todavía puede responder con la red que se acaba de cortar (por ejemplo, en modo avión)
+                override fun onLost(network: Network) { _enLinea.value = false }
                 override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                    _enLinea.value = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    _enLinea.value = caps.conInternet()
                 }
             })
         } catch (e: Exception) {
@@ -32,7 +36,12 @@ class Conectividad(context: Context) {
 
     private fun hayInternet(): Boolean {
         val m = manager ?: return true
-        val caps = m.getNetworkCapabilities(m.activeNetwork) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        return m.getNetworkCapabilities(m.activeNetwork).conInternet()
     }
+
+    /** Conectado a una red que Android comprobó que llega a internet (no basta con tener señal). */
+    private fun NetworkCapabilities?.conInternet(): Boolean =
+        this != null &&
+            hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 }
