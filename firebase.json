@@ -9,5 +9,16 @@
     "ui": {
       "enabled": false
     }
+  },
+  "hosting": {
+    "public": "web-supervisor",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "README.md",
+      "anterior/**"
+    ]
   }
 }
