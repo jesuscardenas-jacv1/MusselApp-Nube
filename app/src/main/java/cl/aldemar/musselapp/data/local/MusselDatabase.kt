@@ -30,7 +30,7 @@ import kotlinx.coroutines.withContext
         MuestraEntity::class,
         RevisionEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class MusselDatabase : RoomDatabase() {

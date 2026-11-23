@@ -34,6 +34,11 @@ data class Muestra(
     val posicion: Posicion? = null,
     /** Tiempo y estado del mar al muestrear; null si no hubo internet. */
     val clima: Clima? = null,
+    /**
+     * Lo que registró el operario, si el supervisor corrigió el conteo, la talla o las cholgas desde el
+     * portal (desde la versión 7 de la base). null si los valores no se corrigieron.
+     */
+    val valoresOperario: ValoresOperario? = null,
 ) {
     val codigoLinea: String get() = "L%02d".format(linea)
 
@@ -53,3 +58,10 @@ data class Muestra(
         const val DENSIDAD_ESTANDAR_IND_M = 380
     }
 }
+
+/** Valores que registró el operario antes de que el supervisor los corrigiera en el portal. */
+data class ValoresOperario(
+    val conteoIndM: Int,
+    val tallaMm: Int,
+    val cholgasIndM: Int?,
+)

@@ -7,6 +7,7 @@ import cl.aldemar.musselapp.data.model.Clima
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Posicion
 import cl.aldemar.musselapp.data.model.Usuario
+import cl.aldemar.musselapp.data.model.ValoresOperario
 import cl.aldemar.musselapp.util.RutValidator
 
 // Conversión de las filas de Room a los modelos que usan las pantallas.
@@ -46,6 +47,9 @@ fun MuestraCompleta.aModelo() = Muestra(
             mareaM = muestra.climaMareaM,
             obtenidoEn = obtenidoEn,
         )
+    },
+    valoresOperario = muestra.conteoOperario?.let { conteo ->
+        ValoresOperario(conteo, muestra.tallaOperario ?: muestra.tallaMm, muestra.cholgasOperario)
     },
 )
 

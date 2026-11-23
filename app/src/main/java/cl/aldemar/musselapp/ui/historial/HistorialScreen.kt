@@ -553,20 +553,29 @@ private fun TarjetaMuestra(
 @Composable
 private fun MetricasMuestra(muestra: Muestra) {
     val densidadBaja = muestra.conteoIndM < Muestra.DENSIDAD_MINIMA_IND_M
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(FormaCampo)
             .background(if (densidadBaja) AlertaFondo else SuperficieCampo)
             .border(1.dp, if (densidadBaja) AlertaFondo else Linea, FormaCampo)
             .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Metrica(
-            "Densidad", "${muestra.conteoIndM} ind/m", Modifier.weight(1.1f),
-            color = if (densidadBaja) AlertaTexto else null,
-        )
-        Metrica("Talla media", "${muestra.tallaMm} mm", Modifier.weight(1f))
-        Metrica("Profundidad", "${muestra.profundidadM} m", Modifier.weight(1f))
+        Row {
+            Metrica(
+                "Densidad", "${muestra.conteoIndM} ind/m", Modifier.weight(1.1f),
+                color = if (densidadBaja) AlertaTexto else null,
+            )
+            Metrica("Talla media", "${muestra.tallaMm} mm", Modifier.weight(1f))
+            Metrica("Profundidad", "${muestra.profundidadM} m", Modifier.weight(1f))
+        }
+        // Los mismos datos que ve el supervisor en el portal
+        Row {
+            Metrica("Cholgas", muestra.cholgasIndM?.let { "$it ind/m" } ?: "—", Modifier.weight(1.1f))
+            Metrica("Tramo", muestra.tramoCm?.let { "$it cm" } ?: "—", Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
+        }
     }
 }
 

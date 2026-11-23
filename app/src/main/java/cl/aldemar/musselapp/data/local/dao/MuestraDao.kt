@@ -53,6 +53,23 @@ interface MuestraDao {
     @Insert
     suspend fun insertarRevision(revision: RevisionEntity): Long
 
+    /**
+     * Aplica los valores que corrigió el supervisor en el portal. La primera vez guarda lo que había
+     * registrado el operario (SQLite evalúa la asignación con los valores de antes); si la corrección
+     * llega repetida, lo del operario no se pisa.
+     */
+    @Query(
+        """
+        UPDATE muestras SET
+            conteo_operario = COALESCE(conteo_operario, conteo_ind_m),
+            talla_operario = COALESCE(talla_operario, talla_mm),
+            cholgas_operario = CASE WHEN conteo_operario IS NULL THEN cholgas_ind_m ELSE cholgas_operario END,
+            conteo_ind_m = :conteoIndM, talla_mm = :tallaMm, cholgas_ind_m = :cholgasIndM
+        WHERE id = :id
+        """,
+    )
+    suspend fun aplicarCorreccion(id: Long, conteoIndM: Int, tallaMm: Int, cholgasIndM: Int?)
+
     @Query("UPDATE muestras SET estado = :estado, sincronizada = 0 WHERE id = :id")
     suspend fun actualizarEstado(id: Long, estado: EstadoMuestra)
 
