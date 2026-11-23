@@ -41,6 +41,9 @@ class MuestrasEnMemoria(iniciales: List<Muestra> = emptyList()) : MuestraReposit
     override val muestras: StateFlow<List<Muestra>> = _muestras
 
     var fallarAlSincronizar = false
+
+    /** Como la nube sin internet: no lanza error, pero no envía ninguna. */
+    var sinInternet = false
     var fallarAlDictaminar = false
     var llamadasSincronizar = 0
         private set
@@ -74,6 +77,7 @@ class MuestrasEnMemoria(iniciales: List<Muestra> = emptyList()) : MuestraReposit
     override suspend fun sincronizar(): Int {
         llamadasSincronizar++
         if (fallarAlSincronizar) error("sin conexión")
+        if (sinInternet) return 0
         val pendientes = _muestras.value.count { !it.sincronizada }
         _muestras.update { lista -> lista.map { it.copy(sincronizada = true) } }
         return pendientes

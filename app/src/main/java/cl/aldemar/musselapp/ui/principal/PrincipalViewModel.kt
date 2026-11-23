@@ -52,7 +52,8 @@ class PrincipalViewModel(
         viewModelScope.launch {
             // Si el envío falla, el ícono no debe quedar girando para siempre
             val mensaje = try {
-                Textos.resultadoSincronizacion(muestraRepository.sincronizar())
+                val enviadas = muestraRepository.sincronizar()
+                Textos.resultadoSincronizacion(enviadas, enCola = muestraRepository.contarPendientes())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

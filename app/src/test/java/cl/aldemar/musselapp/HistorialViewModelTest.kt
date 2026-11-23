@@ -114,6 +114,15 @@ class HistorialViewModelTest {
     }
 
     @Test
+    fun sincronizar_sinInternet_avisaQueSigueEnCola() = runTest(main.dispatcher) {
+        repo.sinInternet = true
+        val vm = vm()
+        vm.sincronizar()
+        assertEquals("No se pudo enviar: 1 muestra en cola. Se enviará sola al volver internet", vm.uiState.value.mensaje)
+        assertEquals(1, vm.uiState.value.pendientesSincronizar)
+    }
+
+    @Test
     fun sincronizar_conError_avisaYTermina() = runTest(main.dispatcher) {
         repo.fallarAlSincronizar = true
         val vm = vm()

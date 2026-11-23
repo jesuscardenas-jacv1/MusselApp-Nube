@@ -93,6 +93,17 @@ class PrincipalViewModelTest {
     }
 
     @Test
+    fun sincronizar_sinInternet_avisaQueSiguenEnCola() = runTest(main.dispatcher) {
+        repo.sinInternet = true
+        val vm = PrincipalViewModel(repo)
+        observar(vm)
+        vm.sincronizar()
+        val estado = vm.uiState.value
+        assertEquals("No se pudo enviar: 3 muestras en cola. Se enviarán solas al volver internet", estado.mensaje)
+        assertEquals(3, estado.resumen.pendientesSincronizar)
+    }
+
+    @Test
     fun onMensajeMostrado_limpiaElAviso() = runTest(main.dispatcher) {
         val vm = PrincipalViewModel(repo)
         observar(vm)
