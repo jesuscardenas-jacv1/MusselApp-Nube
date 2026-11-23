@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
@@ -23,6 +25,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +48,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -73,6 +78,7 @@ fun ConteoSobreFoto(
     tramoCm: Int?,
     conteo: ConteoMarcas,
     onCambiar: (ConteoMarcas) -> Unit,
+    onTramoCambiado: (Int?) -> Unit,
     onUsar: (Int) -> Unit,
     onCerrar: () -> Unit,
 ) {
@@ -82,7 +88,7 @@ fun ConteoSobreFoto(
     }
     Dialog(onDismissRequest = onCerrar, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         when (val actual = carga) {
-            is CargaConteo.Lista -> ConteoSobreImagen(actual.imagen, tramoCm, conteo, onCambiar, onUsar, onCerrar)
+            is CargaConteo.Lista -> ConteoSobreImagen(actual.imagen, tramoCm, conteo, onCambiar, onTramoCambiado, onUsar, onCerrar)
             CargaConteo.Cargando -> Box(Modifier.fillMaxSize().background(Color.Black)) {
                 CircularProgressIndicator(color = Color.White, modifier = Modifier.align(Alignment.Center))
             }
@@ -100,6 +106,7 @@ internal fun ConteoSobreImagen(
     tramoCm: Int?,
     conteo: ConteoMarcas,
     onCambiar: (ConteoMarcas) -> Unit,
+    onTramoCambiado: (Int?) -> Unit,
     onUsar: (Int) -> Unit,
     onCerrar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -111,7 +118,8 @@ internal fun ConteoSobreImagen(
     val onCambiarActual by rememberUpdatedState(onCambiar)
     val densidad = LocalDensity.current
     val proporcion = imagen.width.toFloat() / imagen.height
-    val indPorMetro = ConteoMarcas.indPorMetro(conteo.total, tramoCm)
+    val tramoValido = tramoCm != null && tramoCm in 1..TRAMO_MAXIMO_CM
+    val indPorMetro = if (tramoValido) ConteoMarcas.indPorMetro(conteo.total, tramoCm) else null
     val valido = indPorMetro != null && indPorMetro in 1..CONTEO_MAXIMO_IND_M
 
     Column(modifier.fillMaxSize().background(Color.Black)) {
@@ -196,14 +204,28 @@ internal fun ConteoSobreImagen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Marcas: ${conteo.total}", color = Paleta.Texto, style = MaterialTheme.typography.titleMedium)
+            // El tramo se puede escribir aquí mismo: sin él, las marcas no se pueden pasar a ind/m
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = tramoCm?.toString() ?: "",
+                    onValueChange = { texto -> onTramoCambiado(texto.filter(Char::isDigit).take(3).toIntOrNull()) },
+                    label = { Text("Tramo (cm)") },
+                    singleLine = true,
+                    isError = tramoCm != null && !tramoValido,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    modifier = Modifier.width(132.dp).testTag(ETIQUETA_TRAMO),
+                )
+                Text("Marcas: ${conteo.total}", color = Paleta.Texto, style = MaterialTheme.typography.titleMedium)
+            }
             Text(
                 text = when {
-                    tramoCm == null -> "Ingresa el tramo (cm) en la Vista previa para convertir las marcas a ind/m"
+                    tramoCm == null -> "Escribe el tramo para pasar las marcas a ind/m"
+                    !tramoValido -> "El tramo debe estar entre 1 y $TRAMO_MAXIMO_CM cm"
                     indPorMetro == null -> "Tramo de $tramoCm cm: marca los individuos para calcular ind/m"
                     else -> "Tramo de $tramoCm cm → $indPorMetro ind/m"
                 },
-                color = Paleta.TextoSuave,
+                // Lo que falta para poder usar el conteo se avisa en rojo, no como texto secundario
+                color = if (tramoCm == null || !tramoValido) Paleta.Error else Paleta.TextoSuave,
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (indPorMetro != null && !valido) {
@@ -232,5 +254,8 @@ internal fun ConteoSobreImagen(
 
 /** Etiqueta del área de la foto, para las pruebas de interfaz. */
 internal const val ETIQUETA_LIENZO = "lienzo-conteo"
+
+/** Etiqueta del campo del tramo dentro del conteo, para las pruebas de interfaz. */
+internal const val ETIQUETA_TRAMO = "tramo-conteo"
 private val RADIO_MARCA = 9.dp
 private val RADIO_TOQUE = 18.dp

@@ -455,6 +455,8 @@ fun VistaPreviaScreen(
             tramoCm = borrador.tramoCm,
             conteo = marcas,
             onCambiar = { marcas = it },
+            // Mismo tramo que el campo de la Vista previa: escribirlo en el conteo también lo completa ahí
+            onTramoCambiado = onTramoCambiado,
             onUsar = { indPorMetro ->
                 onConteoCambiado(indPorMetro)
                 contando = false
