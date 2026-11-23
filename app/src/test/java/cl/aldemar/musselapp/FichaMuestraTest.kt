@@ -57,6 +57,23 @@ class FichaMuestraTest {
     }
 
     @Test
+    fun ubicacion_distanciaCortaYArea() {
+        assertEquals(null, FichaMuestra.distanciaCorta(muestra))
+        assertEquals(null, FichaMuestra.dentroDelArea(muestra))
+        // Unos 3 km al sur del punto de referencia de Dalcahue: fuera del área
+        val lejos = muestra.copy(posicion = Posicion(-42.401, -73.622, 12.0))
+        assertEquals("3,0 km del centro", FichaMuestra.distanciaCorta(lejos))
+        assertEquals(false, FichaMuestra.dentroDelArea(lejos))
+    }
+
+    @Test
+    fun desvio_enDosPartes() {
+        assertEquals("+20 %" to "sobre la referencia de 380 ind/m", FichaMuestra.desvioPartes(muestra.copy(conteoIndM = 456)))
+        assertEquals("−21 %" to "bajo la referencia de 380 ind/m", FichaMuestra.desvioPartes(muestra.copy(conteoIndM = 300)))
+        assertEquals("0 %" to "igual a la referencia de 380 ind/m", FichaMuestra.desvioPartes(muestra.copy(conteoIndM = 380)))
+    }
+
+    @Test
     fun nombreYTitulo_usanElCodigoDeLaMuestra() {
         assertEquals("Ficha_Muestra_012.pdf", FichaMuestra.nombreArchivo(muestra))
         assertEquals("Ficha técnica · Muestra 012", FichaMuestra.titulo(muestra))
