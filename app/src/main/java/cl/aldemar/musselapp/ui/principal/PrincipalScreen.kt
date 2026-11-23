@@ -1,5 +1,8 @@
 package cl.aldemar.musselapp.ui.principal
 
+import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.HistoryEdu
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.Icon
@@ -45,12 +49,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.core.content.edit
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -113,6 +129,10 @@ fun PrincipalRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // La Principal resume el centro con el que se inició sesión
     LaunchedEffect(centro.id) { viewModel.mostrarCentro(centro.id) }
+    // Cada usuario elige si ver las muestras recientes; se recuerda al volver a entrar
+    val contexto = LocalContext.current
+    val preferencias = remember { PreferenciasPrincipal(contexto) }
+    var recientesDesplegadas by rememberSaveable(usuario.rut) { mutableStateOf(preferencias.recientesDesplegadas(usuario.rut)) }
     PrincipalScreen(
         usuario = usuario,
         centro = centro,
@@ -122,7 +142,25 @@ fun PrincipalRoute(
         onNavegar = onNavegar,
         onVerMuestra = onVerMuestra,
         onMensajeMostrado = viewModel::onMensajeMostrado,
+        recientesDesplegadas = recientesDesplegadas,
+        onAlternarRecientes = {
+            recientesDesplegadas = !recientesDesplegadas
+            preferencias.guardarRecientesDesplegadas(usuario.rut, recientesDesplegadas)
+        },
     )
+}
+
+/** Preferencias de la pantalla Principal por usuario (por ahora, si se ven las muestras recientes). */
+class PreferenciasPrincipal(context: Context) {
+
+    private val prefs = context.applicationContext.getSharedPreferences("pantalla_principal", Context.MODE_PRIVATE)
+
+    /** Desplegadas salvo que el usuario las haya ocultado. */
+    fun recientesDesplegadas(rut: String): Boolean = prefs.getBoolean("recientes_desplegadas_$rut", true)
+
+    fun guardarRecientesDesplegadas(rut: String, desplegadas: Boolean) {
+        prefs.edit { putBoolean("recientes_desplegadas_$rut", desplegadas) }
+    }
 }
 
 /** UI sin estado de la Pantalla Principal (diseño "2. Principal / Dashboard" de Stitch). */
@@ -136,6 +174,8 @@ fun PrincipalScreen(
     onNavegar: (Destino) -> Unit,
     onVerMuestra: (Long) -> Unit,
     onMensajeMostrado: () -> Unit,
+    recientesDesplegadas: Boolean = true,
+    onAlternarRecientes: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val destinos = Destino.disponiblesPara(usuario.rol)
@@ -185,6 +225,8 @@ fun PrincipalScreen(
             MuestrasRecientes(
                 muestras = uiState.recientes,
                 ultimaRegistradaEn = uiState.resumen.ultimaRegistradaEn,
+                desplegadas = recientesDesplegadas,
+                onAlternar = onAlternarRecientes,
                 onMuestraClick = { onVerMuestra(it.id) },
             )
         }
@@ -412,18 +454,60 @@ private fun IconoCuadrado(icono: ImageVector, fondo: Color) {
 }
 
 @Composable
-private fun MuestrasRecientes(muestras: List<Muestra>, ultimaRegistradaEn: Long?, onMuestraClick: (Muestra) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        EncabezadoSeccion("Muestras recientes", ultimaRegistradaEn?.let { "Última ${haceCuanto(it)}" })
-        if (muestras.isEmpty()) {
-            Text(
-                "Aún no hay muestras registradas",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(horizontal = 4.dp),
+internal fun MuestrasRecientes(
+    muestras: List<Muestra>,
+    ultimaRegistradaEn: Long?,
+    desplegadas: Boolean,
+    onAlternar: () -> Unit,
+    onMuestraClick: (Muestra) -> Unit,
+) {
+    Column {
+        // Todo el encabezado responde al toque: la flecha junto al título muestra u oculta la lista
+        val giro by animateFloatAsState(if (desplegadas) 180f else 0f, label = "flecha-recientes")
+        val accion = if (desplegadas) "Ocultar las muestras recientes" else "Mostrar las muestras recientes"
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onAlternar)
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button
+                    contentDescription = accion
+                    stateDescription = if (desplegadas) "Desplegadas" else "Ocultas"
+                }
+                .testTag(ETIQUETA_FLECHA_RECIENTES)
+                .heightIn(min = 40.dp)
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Muestras recientes", style = MaterialTheme.typography.titleMedium)
+            Icon(
+                Icons.Filled.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(start = 2.dp).size(22.dp).rotate(giro),
             )
+            Spacer(Modifier.weight(1f))
+            ultimaRegistradaEn?.let {
+                Text("Última ${haceCuanto(it)}".uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary)
+            }
         }
-        muestras.forEach { muestra -> FilaMuestra(muestra, onClick = { onMuestraClick(muestra) }) }
+        AnimatedVisibility(visible = desplegadas) {
+            Column(
+                modifier = Modifier.padding(top = 4.dp).testTag(ETIQUETA_LISTA_RECIENTES),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (muestras.isEmpty()) {
+                    Text(
+                        "Aún no hay muestras registradas",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+                muestras.forEach { muestra -> FilaMuestra(muestra, onClick = { onMuestraClick(muestra) }) }
+            }
+        }
     }
 }
 
@@ -521,3 +605,7 @@ private fun PrincipalOperarioPreview() {
         )
     }
 }
+
+/** Etiquetas de la sección Muestras recientes, para las pruebas de interfaz. */
+internal const val ETIQUETA_FLECHA_RECIENTES = "recientes-flecha"
+internal const val ETIQUETA_LISTA_RECIENTES = "recientes-lista"
