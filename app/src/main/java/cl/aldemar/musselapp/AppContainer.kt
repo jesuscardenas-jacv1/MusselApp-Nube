@@ -6,6 +6,7 @@ import cl.aldemar.musselapp.data.local.MusselDatabase
 import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
 import cl.aldemar.musselapp.data.nube.AvisoRevision
 import cl.aldemar.musselapp.data.nube.Conectividad
+import cl.aldemar.musselapp.data.nube.EnvioPendientes
 import cl.aldemar.musselapp.data.nube.Notificador
 import cl.aldemar.musselapp.data.nube.NubeSync
 import cl.aldemar.musselapp.data.repository.AuthRepository
@@ -63,10 +64,20 @@ class AppContainer(context: Context) {
     val conectividad: Conectividad by lazy { Conectividad(appContext) }
 
     init {
-        // Al volver la conexión se envían solas las muestras que quedaron pendientes
+        // Al volver la conexión se envían solas las muestras que quedaron pendientes (con la app abierta)
         alcanceApp.launch {
             conectividad.enLinea.collect { enLinea ->
                 if (enLinea) runCatching { muestraRepository.sincronizar() }
+            }
+        }
+        // Cada vez que aparece una muestra pendiente nueva (guardada, revisada o que quedó de antes al abrir la app),
+        // se deja un envío en WorkManager: sale apenas haya internet, aunque se cierre la app
+        alcanceApp.launch {
+            var anteriores = emptySet<Long>()
+            muestraRepository.muestras.collect { lista ->
+                val pendientes = lista.filterNot { it.sincronizada }.mapTo(HashSet()) { it.id }
+                if ((pendientes - anteriores).isNotEmpty()) runCatching { EnvioPendientes.programar(appContext) }
+                anteriores = pendientes
             }
         }
     }

@@ -129,9 +129,12 @@ class SincronizacionNubeTest {
         nube.subidaOk = true
         val pendientes = db.muestraDao().pendientesDeSincronizar()
         assertTrue(pendientes.contains(id))
+        // WorkManager decide si reintentar con este conteo, que sale de Room
+        assertEquals(pendientes.size, repositorio.contarPendientes())
         assertEquals(pendientes.size, repositorio.sincronizar())
         assertTrue(muestra(id).sincronizada)
         assertEquals(0, db.muestraDao().pendientesDeSincronizar().size)
+        assertEquals(0, repositorio.contarPendientes())
     }
 
     @Test

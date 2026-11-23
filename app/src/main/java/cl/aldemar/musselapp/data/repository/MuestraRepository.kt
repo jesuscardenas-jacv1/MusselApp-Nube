@@ -29,4 +29,7 @@ interface MuestraRepository {
 
     /** Envía al servidor las muestras guardadas localmente y devuelve cuántas se enviaron. */
     suspend fun sincronizar(): Int
+
+    /** Cuántas muestras siguen sin subir a la nube. */
+    suspend fun contarPendientes(): Int = muestras.value.count { !it.sincronizada }
 }
