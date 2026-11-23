@@ -28,9 +28,9 @@ android {
         applicationId = "cl.aldemar.musselapp"
         minSdk = 24
         targetSdk = 37
-        // Subir ambos antes de cada versión publicada (tag v1.2.0 → versionCode 3, "1.2.0")
-        versionCode = 3
-        versionName = "1.2.0"
+        // Subir ambos antes de cada versión publicada (tag v1.3.0 → versionCode 4, "1.3.0")
+        versionCode = 4
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
