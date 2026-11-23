@@ -36,6 +36,15 @@ data class VeredictoNube(
     val estado: EstadoMuestra,
     val comentario: String?,
     val revisadaEn: Long,
+    /** Valores que corrigió el supervisor en el portal; null si dictaminó sin cambiarlos. */
+    val corregidos: ValoresCorregidos? = null,
+)
+
+/** Conteo, talla y cholgas que dejó el supervisor al corregir la muestra en el portal. */
+data class ValoresCorregidos(
+    val conteoIndM: Int,
+    val tallaMm: Int,
+    val cholgasIndM: Int?,
 )
 
 /**
@@ -97,6 +106,17 @@ class NubeSync(context: Context) : ServicioNube {
     @Volatile
     private var alEliminarRemoto: ((Long) -> Unit)? = null
 
+    /**
+     * Valores que corrigió el supervisor. El portal solo escribe `valoresOperario` cuando cambia el conteo,
+     * la talla o las cholgas, así que sin ese campo no hay corrección que aplicar.
+     */
+    private fun valoresCorregidosDe(doc: DocumentSnapshot): ValoresCorregidos? {
+        if (doc.get("valoresOperario") == null) return null
+        val conteo = doc.getLong("conteoIndM") ?: return null
+        val talla = doc.getLong("tallaMm") ?: return null
+        return ValoresCorregidos(conteo.toInt(), talla.toInt(), doc.getLong("cholgasIndM")?.toInt())
+    }
+
     /** Dictamen que tiene el documento de la nube, o null si sigue pendiente o no se entiende. */
     private fun veredictoDe(muestraId: Long, doc: DocumentSnapshot): VeredictoNube? {
         val estado = runCatching { EstadoMuestra.valueOf(doc.getString("estado") ?: "") }.getOrNull() ?: return null
@@ -106,6 +126,7 @@ class NubeSync(context: Context) : ServicioNube {
             estado = estado,
             comentario = doc.getString("comentarioSupervisor"),
             revisadaEn = doc.getLong("revisadaEn") ?: System.currentTimeMillis(),
+            corregidos = valoresCorregidosDe(doc),
         )
     }
 

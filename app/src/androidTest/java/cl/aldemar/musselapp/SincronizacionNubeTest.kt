@@ -11,6 +11,7 @@ import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Rol
 import cl.aldemar.musselapp.data.model.Usuario
 import cl.aldemar.musselapp.data.nube.ServicioNube
+import cl.aldemar.musselapp.data.nube.ValoresCorregidos
 import cl.aldemar.musselapp.data.nube.VeredictoNube
 import cl.aldemar.musselapp.data.repository.RoomMuestraRepository
 import kotlinx.coroutines.CoroutineScope
@@ -172,6 +173,51 @@ class SincronizacionNubeTest {
         assertEquals(id, aviso.first.id)
         assertEquals(EstadoMuestra.VALIDADO, aviso.second)
         assertEquals("Conforme", aviso.third)
+    }
+
+    @Test
+    fun veredictoConValoresCorregidos_aplicaLosDelSupervisorYGuardaLosDelOperario() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val antes = muestra(id)
+
+        nube.emitir(
+            VeredictoNube(id, EstadoMuestra.CORREGIDO, "Recontada", System.currentTimeMillis(), ValoresCorregidos(380, 61, 4)),
+        )
+
+        esperar("la muestra toma los valores corregidos") {
+            muestra(id).let { it.estado == EstadoMuestra.CORREGIDO && it.conteoIndM == 380 && it.sincronizada }
+        }
+        val m = muestra(id)
+        assertEquals(61, m.tallaMm)
+        assertEquals(4, m.cholgasIndM)
+        // Lo que había registrado el operario queda guardado, como en el portal
+        val originales = m.valoresOperario!!
+        assertEquals(antes.conteoIndM, originales.conteoIndM)
+        assertEquals(antes.tallaMm, originales.tallaMm)
+        assertEquals(antes.cholgasIndM, originales.cholgasIndM)
+
+        // Si la corrección se aplica de nuevo, los valores del operario no se pisan con los corregidos
+        db.muestraDao().aplicarCorreccion(id, 390, 62, 5)
+        assertEquals(antes.conteoIndM, muestra(id).valoresOperario!!.conteoIndM)
+        assertEquals(390, muestra(id).conteoIndM)
+    }
+
+    @Test
+    fun veredictoSinCorreccion_dejaLosValoresDelOperario() = runBlocking {
+        val nube = FakeServicioNube()
+        val repositorio = crearRepositorio(nube)
+        esperar("Room entrega la primera lista") { repositorio.muestras.value.isNotEmpty() }
+        val id = idSembrada(EstadoMuestra.PENDIENTE)
+        val antes = muestra(id)
+
+        nube.emitir(VeredictoNube(id, EstadoMuestra.VALIDADO, null, System.currentTimeMillis()))
+
+        esperar("la muestra queda validada") { muestra(id).let { it.estado == EstadoMuestra.VALIDADO && it.sincronizada } }
+        assertEquals(antes.conteoIndM, muestra(id).conteoIndM)
+        assertNull(muestra(id).valoresOperario)
     }
 
     @Test

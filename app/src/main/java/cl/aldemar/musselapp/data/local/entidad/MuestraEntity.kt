@@ -61,4 +61,9 @@ data class MuestraEntity(
     @ColumnInfo(name = "clima_marea_m") val climaMareaM: Double? = null,
     /** Momento en que se consultó el clima; null si no se pudo obtener. */
     @ColumnInfo(name = "clima_obtenido_en") val climaObtenidoEn: Long? = null,
+    // Desde la versión 7: lo que registró el operario si el supervisor corrigió los valores en el portal.
+    // null mientras no haya corrección.
+    @ColumnInfo(name = "conteo_operario") val conteoOperario: Int? = null,
+    @ColumnInfo(name = "talla_operario") val tallaOperario: Int? = null,
+    @ColumnInfo(name = "cholgas_operario") val cholgasOperario: Int? = null,
 )

@@ -71,6 +71,8 @@ class RoomMuestraRepository(
                         // en este teléfono que aún no se subió: el de la nube llegó primero y es el que vale
                         if (!ProteccionDictamen.debeAplicarRemoto(local.estado, local.sincronizada, v.estado)) return@launch
                         muestraDao.registrarRevision(v.muestraId, v.estado, v.comentario, DatosIniciales.RUT_SUPERVISOR, v.revisadaEn)
+                        // Si el supervisor corrigió valores en el portal, el teléfono muestra los mismos
+                        v.corregidos?.let { muestraDao.aplicarCorreccion(v.muestraId, it.conteoIndM, it.tallaMm, it.cholgasIndM) }
                         muestraDao.marcarSincronizada(v.muestraId)
                         alRevisar(local, v.estado, v.comentario)
                     }

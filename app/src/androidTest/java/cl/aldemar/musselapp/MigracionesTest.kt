@@ -185,4 +185,34 @@ class MigracionesTest {
             assertTrue(c.isNull(4))
         }
     }
+
+    @Test
+    fun de6a7_seAgreganLosValoresDelOperarioYLasMuestrasSeConservan() {
+        // Base en versión 6 con una muestra con tramo, antes de que existieran los valores del operario
+        helper.createDatabase(nombre, 6).apply {
+            execSQL("INSERT INTO centros (id, nombre, lat, lon, radio_m) VALUES ('dalcahue', 'Centro Dalcahue', -42.374, -73.622, 1500)")
+            execSQL("INSERT INTO trenes (id, centro_id, codigo) VALUES (1, 'dalcahue', 'A')")
+            execSQL("INSERT INTO lineas (id, tren_id, numero) VALUES (1, 1, 4)")
+            execSQL("INSERT INTO usuarios (rut, nombre, rol, pin) VALUES ('111111111', 'Carla Vera', 'OPERARIO', 'x')")
+            execSQL(
+                "INSERT INTO muestras (id, linea_id, operador_rut, profundidad_m, talla_mm, conteo_ind_m, " +
+                    "observacion, estado, registrada_en, sincronizada, foto_ruta, cholgas_ind_m, tramo_cm) " +
+                    "VALUES (1, 1, '111111111', 3, 55, 401, 'Con tramo', 'PENDIENTE', 0, 1, NULL, 9, 50)",
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(nombre, 7, true, Migraciones.DE_6_A_7)
+
+        // Conserva sus datos y queda sin corrección (null en las tres columnas nuevas)
+        db.query("SELECT conteo_ind_m, tramo_cm, conteo_operario, talla_operario, cholgas_operario FROM muestras").use { c ->
+            assertEquals(1, c.count)
+            c.moveToNext()
+            assertEquals(401, c.getInt(0))
+            assertEquals(50, c.getInt(1))
+            assertTrue(c.isNull(2))
+            assertTrue(c.isNull(3))
+            assertTrue(c.isNull(4))
+        }
+    }
 }

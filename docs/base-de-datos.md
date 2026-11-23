@@ -51,6 +51,9 @@ erDiagram
         INTEGER sincronizada "0 / 1"
         TEXT foto_ruta "ruta del archivo, no la imagen"
         INTEGER tramo_cm "largo del tramo muestreado (v6), null en las antiguas"
+        INTEGER conteo_operario "lo que registró el operario si el supervisor corrigió (v7)"
+        INTEGER talla_operario "idem talla (v7)"
+        INTEGER cholgas_operario "idem cholgas (v7)"
         REAL lat "posición del teléfono (v5), null si no hubo GPS"
         REAL lon
         REAL precision_m
@@ -97,7 +100,7 @@ erDiagram
 - **Datos iniciales:** al crear la base por primera vez se cargan centros, trenes A–C, líneas 1–12, los 2 usuarios de prueba y 14 muestras ficticias (`DatosIniciales.kt`).
 - **PIN como hash:** la columna `pin` guarda `pbkdf2$iteraciones$sal$hash` (PBKDF2 con HmacSHA1, disponible desde minSdk 24), calculado en `util/HashPin.kt`. El login compara contra el hash, nunca contra el PIN.
 - **Sin respaldo en la nube:** `allowBackup="false"` y las reglas de `res/xml/` excluyen la base, las fotos y las preferencias del respaldo y de la transferencia entre teléfonos.
-- **Migraciones:** `data/local/Migraciones.kt`. La v2 convierte el estado Observado (eliminado) en Corregido sin perder muestras; la v3 reemplaza cada PIN en texto plano por su hash; la v4 agrega el conteo de cholgas, la v5 la posición, el clima y las coordenadas de los centros, y la v6 el largo del tramo muestreado (`tramo_cm`) (todas en `MigracionesTest`). Solo una bajada de versión recrea la base (`fallbackToDestructiveMigrationOnDowngrade`); al subir de versión, una migración faltante es un error y no borra datos.
+- **Migraciones:** `data/local/Migraciones.kt`. La v2 convierte el estado Observado (eliminado) en Corregido sin perder muestras; la v3 reemplaza cada PIN en texto plano por su hash; la v4 agrega el conteo de cholgas, la v5 la posición, el clima y las coordenadas de los centros, la v6 el largo del tramo muestreado (`tramo_cm`) y la v7 los valores que registró el operario cuando el supervisor los corrige en el portal (`conteo_operario`, `talla_operario`, `cholgas_operario`) (todas en `MigracionesTest`). Solo una bajada de versión recrea la base (`fallbackToDestructiveMigrationOnDowngrade`); al subir de versión, una migración faltante es un error y no borra datos.
 - **Un solo dispositivo:** Room es local; operario y supervisor deben usar el mismo teléfono en la demo. La columna `sincronizada` y la interfaz `MuestraRepository` dejan listo el camino para sincronizar con un servidor en una etapa futura.
 
 ## Estructura del código

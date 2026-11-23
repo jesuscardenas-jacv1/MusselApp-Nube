@@ -1068,6 +1068,21 @@
     SIN_UBICACION: { t: 'Sin ubicación' }, UBICACION_IMPRECISA: { t: 'Ubicación imprecisa' }, DESVIO_DENSIDAD: { t: 'Desvío de densidad' },
     CHOLGAS_ALTAS: { t: 'Cholgas altas' }, TALLA_FUERA_DE_RANGO: { t: 'Talla fuera de rango' }, MAL_TIEMPO: { t: 'Mal tiempo al muestrear' }
   };
+  // Alertas que dependen del conteo, la talla y las cholgas. Misma regla que AlertasMuestra.kt de la app:
+  // se recalculan cuando el supervisor corrige esos valores; las de ubicación y clima se conservan.
+  var ALERTAS_DE_VALORES = ['DENSIDAD_BAJA', 'DESVIO_DENSIDAD', 'CHOLGAS_ALTAS', 'TALLA_FUERA_DE_RANGO'];
+  function alertasConValores(previas, conteo, talla, cholgas) {
+    var l = (previas || []).filter(function (a) { return ALERTAS_DE_VALORES.indexOf(a) < 0; });
+    if (conteo < 350) l.push('DENSIDAD_BAJA');
+    else if (Math.abs(conteo - 380) * 100 > 20 * 380) l.push('DESVIO_DENSIDAD');
+    if (cholgas != null && cholgas * 100 > 10 * conteo) l.push('CHOLGAS_ALTAS');
+    if (talla < 30 || talla > 90) l.push('TALLA_FUERA_DE_RANGO');
+    // Mismo orden que la app: las críticas primero y, dentro de cada grupo, el orden en que se evalúan
+    var orden = ['SIN_UBICACION', 'FUERA_DE_AREA', 'UBICACION_IMPRECISA', 'DENSIDAD_BAJA', 'DESVIO_DENSIDAD', 'CHOLGAS_ALTAS', 'TALLA_FUERA_DE_RANGO', 'MAL_TIEMPO'];
+    var critica = function (a) { return ALERTAS[a] && ALERTAS[a].critica ? 1 : 0; };
+    return l.sort(function (a, b) { return critica(b) - critica(a) || orden.indexOf(a) - orden.indexOf(b); });
+  }
+
   // Radio del área de cada centro, igual que CentroCultivo.RADIO_AREA_M en la app
   var RADIO_AREA_M = 1500;
   // Estratos de profundidad de la app (ComponentesMuestra.kt): Superficie 1 m, Media 3 m, Fondo 5 m
@@ -1476,6 +1491,8 @@
               // Se guardan los valores corregidos y los que registró el operario, para no perder la trazabilidad
               datos.conteoIndM = cambios.conteoIndM; datos.tallaMm = cambios.tallaMm; datos.cholgasIndM = cambios.cholgasIndM;
               datos.valoresOperario = { conteoIndM: snap.data().conteoIndM, tallaMm: snap.data().tallaMm, cholgasIndM: snap.data().cholgasIndM == null ? null : snap.data().cholgasIndM };
+              // Las alertas se calcularon con los valores del operario: se actualizan con los corregidos
+              datos.alertas = alertasConValores(snap.data().alertas, cambios.conteoIndM, cambios.tallaMm, cambios.cholgasIndM);
             }
             tx.update(ref, datos);
           });
@@ -1608,7 +1625,7 @@
           var d = buscar(m.id);
           if (!d) throw new Error('no-existe');
           if (d.data.estado && d.data.estado !== 'PENDIENTE') throw new Error('ya-dictaminada');
-          if (cambios) { d.data.valoresOperario = { conteoIndM: d.data.conteoIndM, tallaMm: d.data.tallaMm, cholgasIndM: d.data.cholgasIndM == null ? null : d.data.cholgasIndM }; d.data.conteoIndM = cambios.conteoIndM; d.data.tallaMm = cambios.tallaMm; d.data.cholgasIndM = cambios.cholgasIndM; }
+          if (cambios) { d.data.valoresOperario = { conteoIndM: d.data.conteoIndM, tallaMm: d.data.tallaMm, cholgasIndM: d.data.cholgasIndM == null ? null : d.data.cholgasIndM }; d.data.conteoIndM = cambios.conteoIndM; d.data.tallaMm = cambios.tallaMm; d.data.cholgasIndM = cambios.cholgasIndM; d.data.alertas = alertasConValores(d.data.alertas, cambios.conteoIndM, cambios.tallaMm, cambios.cholgasIndM); }
           d.data.estado = estado; d.data.revisadaPor = SUPERVISOR.nombre; d.data.revisadaEn = Date.now(); d.data.comentarioSupervisor = coment;
           setTimeout(emitir, 0);
         });

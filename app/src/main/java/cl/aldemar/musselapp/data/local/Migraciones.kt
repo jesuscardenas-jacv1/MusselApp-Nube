@@ -89,5 +89,17 @@ object Migraciones {
         }
     }
 
-    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5, DE_5_A_6)
+    /**
+     * v6 → v7: si el supervisor corrige en el portal el conteo, la talla o las cholgas, el teléfono
+     * aplica los valores nuevos y guarda aquí lo que había registrado el operario. Las muestras que ya
+     * estaban guardadas quedan con null (no se corrigieron).
+     */
+    val DE_6_A_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            listOf("conteo_operario INTEGER", "talla_operario INTEGER", "cholgas_operario INTEGER")
+                .forEach { db.execSQL("ALTER TABLE muestras ADD COLUMN $it") }
+        }
+    }
+
+    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5, DE_5_A_6, DE_6_A_7)
 }

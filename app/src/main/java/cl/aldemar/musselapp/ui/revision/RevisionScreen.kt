@@ -509,6 +509,14 @@ fun RevisionScreen(
                                             }
                                         }
                                     }
+                                    // Cholgas y tramo: el supervisor decide con los mismos datos que ve en el portal
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Cholgas: " + (muestra.cholgasIndM?.let { "$it ind/m" } ?: "no registradas") +
+                                            "  ·  Tramo: " + (muestra.tramoCm?.let { "$it cm" } ?: "no registrado"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.secondary,
+                                    )
                                 }
                             }
 

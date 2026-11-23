@@ -4,6 +4,7 @@ import cl.aldemar.musselapp.data.model.Clima
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Posicion
+import cl.aldemar.musselapp.data.model.ValoresOperario
 import cl.aldemar.musselapp.util.FichaMuestra
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -81,5 +82,21 @@ class FichaMuestraTest {
         assertTrue(texto.startsWith(FichaMuestra.titulo(muestra)))
         assertTrue(texto.contains("Revisada por: Diego Muñoz"))
         assertTrue(texto.endsWith(FichaMuestra.PIE))
+    }
+
+    @Test
+    fun sinCorreccion_noMuestraValoresDelOperario() {
+        assertEquals(null, FichaMuestra.valoresOperario(muestra))
+        assertTrue(FichaMuestra.filas(muestra, utc).none { it.first == "Registrado por el operario" })
+    }
+
+    @Test
+    fun corregidaEnElPortal_muestraLoQueRegistroElOperario() {
+        val corregida = muestra.copy(valoresOperario = ValoresOperario(conteoIndM = 420, tallaMm = 52, cholgasIndM = null))
+        assertEquals("420 ind/m · 52 mm · cholgas sin registrar", FichaMuestra.valoresOperario(corregida))
+        assertEquals("420 ind/m · 52 mm · cholgas sin registrar", FichaMuestra.filas(corregida, utc).toMap()["Registrado por el operario"])
+        val revision = FichaMuestra.secciones(corregida, utc).first { it.titulo == "Revisión del supervisor" }
+        assertTrue(revision.filas.any { it.first == "Registrado por el operario" })
+        assertEquals("420 ind/m · 52 mm · 8 cholgas/m", FichaMuestra.valoresOperario(corregida.copy(valoresOperario = ValoresOperario(420, 52, 8))))
     }
 }

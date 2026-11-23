@@ -29,7 +29,7 @@ object FichaMuestra {
     fun nombreArchivo(muestra: Muestra): String = "Ficha_${muestra.codigo.replace(' ', '_')}.pdf"
 
     /** Filas "etiqueta → valor" de la ficha, en el orden en que se muestran. */
-    fun filas(muestra: Muestra, zona: TimeZone = TimeZone.getDefault()): List<Pair<String, String>> = listOf(
+    fun filas(muestra: Muestra, zona: TimeZone = TimeZone.getDefault()): List<Pair<String, String>> = listOfNotNull(
         "Centro de cultivo" to nombreCentro(muestra.centroId),
         "Tren / Línea" to "Tren ${muestra.tren} · ${muestra.codigoLinea}",
         "Profundidad" to "${muestra.profundidadM} m",
@@ -49,6 +49,7 @@ object FichaMuestra {
         "Operario" to muestra.operador.ifBlank { "—" },
         "Revisada por" to (muestra.revisadaPor ?: "Sin revisión"),
         "Comentario del supervisor" to (muestra.comentarioSupervisor?.takeIf { it.isNotBlank() } ?: "—"),
+        valoresOperario(muestra)?.let { "Registrado por el operario" to it },
         "Observación de terreno" to muestra.observacion.ifBlank { "—" },
         "Sincronizada" to if (muestra.sincronizada) "Sí" else "No (pendiente de envío)",
     )
@@ -70,6 +71,15 @@ object FichaMuestra {
             pct < 0 -> "−${-pct} % bajo el $estandar"
             else -> "Igual al $estandar"
         }
+    }
+
+    /**
+     * Lo que registró el operario si el supervisor corrigió los valores en el portal, por ejemplo
+     * "420 ind/m · 52 mm · 8 cholgas/m". null si no hubo corrección.
+     */
+    fun valoresOperario(muestra: Muestra): String? = muestra.valoresOperario?.let { v ->
+        val cholgas = v.cholgasIndM?.let { "$it cholgas/m" } ?: "cholgas sin registrar"
+        "${v.conteoIndM} ind/m · ${v.tallaMm} mm · $cholgas"
     }
 
     /** Alertas de la muestra, las críticas primero (para pintarlas en el PDF). */
@@ -99,11 +109,12 @@ object FichaMuestra {
         ),
         SeccionFicha(
             "Revisión del supervisor",
-            listOf(
+            listOfNotNull(
                 "Estado" to muestra.estado.etiqueta,
                 "Revisada por" to (muestra.revisadaPor ?: "Sin revisión"),
                 "Fecha de revisión" to (muestra.revisadaEn?.let { fecha(it, zona) } ?: "—"),
                 "Comentario" to (muestra.comentarioSupervisor?.takeIf { it.isNotBlank() } ?: "—"),
+                valoresOperario(muestra)?.let { "Registrado por el operario" to it },
             ),
         ),
         SeccionFicha(

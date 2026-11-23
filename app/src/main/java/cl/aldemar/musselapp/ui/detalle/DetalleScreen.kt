@@ -587,6 +587,14 @@ private fun TarjetaDictamenTecnico(
             muestra.comentarioSupervisor?.takeIf { it.isNotBlank() }?.let { comentario ->
                 CajaTexto(etiqueta = "COMENTARIO DEL SUPERVISOR", texto = comentario, colorBorde = colorBordeEstado)
             }
+            // El supervisor corrigió los valores en el portal: los de arriba son los suyos
+            FichaMuestra.valoresOperario(muestra)?.let { originales ->
+                CajaTexto(
+                    etiqueta = "VALORES CORREGIDOS POR EL SUPERVISOR",
+                    texto = "El operario había registrado $originales.",
+                    colorBorde = colorBordeEstado,
+                )
+            }
             CajaTexto(
                 etiqueta = "OBSERVACIÓN DEL OPERARIO",
                 texto = muestra.observacion.takeIf { it.isNotBlank() } ?: "Sin observaciones de terreno.",
