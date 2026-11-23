@@ -54,13 +54,41 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 
 ## 3. Capturas
 
-| Login | Nueva muestra | Vista previa | Historial |
-|---|---|---|---|
-| <img src="docs/capturas/01-login.jpg" width="180"> | <img src="docs/capturas/02-nueva-muestra-validacion.jpg" width="180"> | <img src="docs/capturas/03-vista-previa.jpg" width="180"> | <img src="docs/capturas/04-historial.jpg" width="180"> |
+Capturas de la versión 1.3.0 en un teléfono Android, con los datos de ejemplo de la app (usuarios, muestras y foto ficticios).
 
-| Detalle | Revisión del supervisor | Principal | Ficha PDF |
+**Inicio y operario**
+
+| Inicio | Login | Principal | Muestras recientes desplegadas |
 |---|---|---|---|
-| <img src="docs/capturas/05-detalle.jpg" width="180"> | <img src="docs/capturas/06-revision-supervisor.jpg" width="180"> | <img src="docs/capturas/07-principal.jpg" width="180"> | <img src="docs/capturas/08-ficha-pdf.jpg" width="180"> |
+| <img src="docs/capturas/00-inicio.jpg" width="180"> | <img src="docs/capturas/01-login.jpg" width="180"> | <img src="docs/capturas/02-principal.jpg" width="180"> | <img src="docs/capturas/03-principal-recientes.jpg" width="180"> |
+
+**Nueva muestra: parámetros y foto**
+
+| Parámetros | Validación de campos | Parámetros completos | Captura |
+|---|---|---|---|
+| <img src="docs/capturas/04-nueva-muestra.jpg" width="180"> | <img src="docs/capturas/05-nueva-muestra-validacion.jpg" width="180"> | <img src="docs/capturas/06-nueva-muestra-completa.jpg" width="180"> | <img src="docs/capturas/07-captura.jpg" width="180"> |
+
+**Foto, Vista previa y conteo con marcas**
+
+| Foto de la muestra | Vista previa | Conteo sobre la foto | Tramo y ubicación |
+|---|---|---|---|
+| <img src="docs/capturas/08-captura-foto.jpg" width="180"> | <img src="docs/capturas/09-vista-previa.jpg" width="180"> | <img src="docs/capturas/10-conteo-marcas.jpg" width="180"> | <img src="docs/capturas/11-vista-previa-datos.jpg" width="180"> |
+
+**Historial, Detalle y ficha PDF**
+
+| Historial | Historial con detalle | Detalle | Condiciones al muestrear |
+|---|---|---|---|
+| <img src="docs/capturas/12-historial.jpg" width="180"> | <img src="docs/capturas/13-historial-expandido.jpg" width="180"> | <img src="docs/capturas/14-detalle.jpg" width="180"> | <img src="docs/capturas/15-detalle-condiciones.jpg" width="180"> |
+
+| Trazabilidad | Ficha técnica PDF |
+|---|---|
+| <img src="docs/capturas/16-detalle-trazabilidad.jpg" width="180"> | <img src="docs/capturas/17-ficha-pdf.jpg" width="180"> |
+
+**Supervisor**
+
+| Principal del supervisor | Revisión | Alertas y condiciones | Dictamen |
+|---|---|---|---|
+| <img src="docs/capturas/18-principal-supervisor.jpg" width="180"> | <img src="docs/capturas/19-revision.jpg" width="180"> | <img src="docs/capturas/20-revision-condiciones.jpg" width="180"> | <img src="docs/capturas/21-revision-dictamen.jpg" width="180"> |
 
 ## 4. Instrucciones de ejecución
 
