@@ -129,7 +129,7 @@ fun PrincipalRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // La Principal resume el centro con el que se inició sesión
     LaunchedEffect(centro.id) { viewModel.mostrarCentro(centro.id) }
-    // Cada usuario elige si ver las muestras recientes; se recuerda al volver a entrar
+    // Muestras recientes va oculta por defecto; cada usuario la despliega si quiere y se recuerda al volver a entrar
     val contexto = LocalContext.current
     val preferencias = remember { PreferenciasPrincipal(contexto) }
     var recientesDesplegadas by rememberSaveable(usuario.rut) { mutableStateOf(preferencias.recientesDesplegadas(usuario.rut)) }
@@ -155,8 +155,8 @@ class PreferenciasPrincipal(context: Context) {
 
     private val prefs = context.applicationContext.getSharedPreferences("pantalla_principal", Context.MODE_PRIVATE)
 
-    /** Desplegadas salvo que el usuario las haya ocultado. */
-    fun recientesDesplegadas(rut: String): Boolean = prefs.getBoolean("recientes_desplegadas_$rut", true)
+    /** Ocultas por defecto, para no cargar la pantalla; el usuario las despliega con la flecha. */
+    fun recientesDesplegadas(rut: String): Boolean = prefs.getBoolean("recientes_desplegadas_$rut", false)
 
     fun guardarRecientesDesplegadas(rut: String, desplegadas: Boolean) {
         prefs.edit { putBoolean("recientes_desplegadas_$rut", desplegadas) }
@@ -174,7 +174,7 @@ fun PrincipalScreen(
     onNavegar: (Destino) -> Unit,
     onVerMuestra: (Long) -> Unit,
     onMensajeMostrado: () -> Unit,
-    recientesDesplegadas: Boolean = true,
+    recientesDesplegadas: Boolean = false,
     onAlternarRecientes: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }

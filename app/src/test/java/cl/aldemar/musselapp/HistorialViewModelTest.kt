@@ -24,7 +24,7 @@ class HistorialViewModelTest {
     @get:Rule
     val main = ReglaDispatcherPrincipal()
 
-    private val ahora = System.currentTimeMillis()
+    private val ahora = ahoraDeHoy()
 
     private val repo = MuestrasEnMemoria(
         listOf(
