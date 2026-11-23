@@ -1,5 +1,9 @@
 package cl.aldemar.musselapp.ui.principal
 
+import android.content.Context
+import androidx.core.content.edit
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.FactCheck
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.HistoryEdu
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.Icon
@@ -45,12 +50,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -113,6 +129,10 @@ fun PrincipalRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     // La Principal resume el centro con el que se inició sesión
     LaunchedEffect(centro.id) { viewModel.mostrarCentro(centro.id) }
+    // Cada usuario elige si ver los contadores del historial; se recuerda al volver a entrar
+    val contexto = LocalContext.current
+    val preferencias = remember { PreferenciasPrincipal(contexto) }
+    var historialDesplegado by rememberSaveable(usuario.rut) { mutableStateOf(preferencias.historialDesplegado(usuario.rut)) }
     PrincipalScreen(
         usuario = usuario,
         centro = centro,
@@ -122,7 +142,25 @@ fun PrincipalRoute(
         onNavegar = onNavegar,
         onVerMuestra = onVerMuestra,
         onMensajeMostrado = viewModel::onMensajeMostrado,
+        historialDesplegado = historialDesplegado,
+        onAlternarHistorial = {
+            historialDesplegado = !historialDesplegado
+            preferencias.guardarHistorialDesplegado(usuario.rut, historialDesplegado)
+        },
     )
+}
+
+/** Preferencias de la pantalla Principal por usuario (por ahora, si el cuadro del historial va desplegado). */
+class PreferenciasPrincipal(context: Context) {
+
+    private val prefs = context.applicationContext.getSharedPreferences("pantalla_principal", Context.MODE_PRIVATE)
+
+    /** Desplegado salvo que el usuario lo haya plegado. */
+    fun historialDesplegado(rut: String): Boolean = prefs.getBoolean("historial_desplegado_$rut", true)
+
+    fun guardarHistorialDesplegado(rut: String, desplegado: Boolean) {
+        prefs.edit { putBoolean("historial_desplegado_$rut", desplegado) }
+    }
 }
 
 /** UI sin estado de la Pantalla Principal (diseño "2. Principal / Dashboard" de Stitch). */
@@ -136,6 +174,8 @@ fun PrincipalScreen(
     onNavegar: (Destino) -> Unit,
     onVerMuestra: (Long) -> Unit,
     onMensajeMostrado: () -> Unit,
+    historialDesplegado: Boolean = true,
+    onAlternarHistorial: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val destinos = Destino.disponiblesPara(usuario.rol)
@@ -181,7 +221,12 @@ fun PrincipalScreen(
                 },
             )
             MetricasJornada(resumen = uiState.resumen)
-            TarjetaHistorial(resumen = uiState.resumen, onVerTodo = { onNavegar(Destino.HISTORIAL) })
+            TarjetaHistorial(
+                resumen = uiState.resumen,
+                desplegado = historialDesplegado,
+                onAlternar = onAlternarHistorial,
+                onVerTodo = { onNavegar(Destino.HISTORIAL) },
+            )
             MuestrasRecientes(
                 muestras = uiState.recientes,
                 ultimaRegistradaEn = uiState.resumen.ultimaRegistradaEn,
@@ -348,7 +393,12 @@ private fun TarjetaMetrica(
 }
 
 @Composable
-private fun TarjetaHistorial(resumen: ResumenJornada, onVerTodo: () -> Unit) {
+internal fun TarjetaHistorial(
+    resumen: ResumenJornada,
+    desplegado: Boolean,
+    onAlternar: () -> Unit,
+    onVerTodo: () -> Unit,
+) {
     Surface(
         shape = FormaTarjeta,
         color = MaterialTheme.colorScheme.surface,
@@ -356,7 +406,7 @@ private fun TarjetaHistorial(resumen: ResumenJornada, onVerTodo: () -> Unit) {
         shadowElevation = ElevacionTarjeta,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconoCuadrado(Icons.Filled.HistoryEdu, fondo = AcentoSuave)
                 Spacer(Modifier.width(12.dp))
@@ -372,11 +422,39 @@ private fun TarjetaHistorial(resumen: ResumenJornada, onVerTodo: () -> Unit) {
                     Text("Ver todo", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = AcentoTexto)
                 }
             }
-            // Contadores en gris neutro para no saturar el resumen
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ContadorEstado(resumen.validadas, "VALIDADAS", SuperficieCampo, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-                ContadorEstado(resumen.pendientes, "PENDIENTES", SuperficieCampo, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-                ContadorEstado(resumen.corregidas, "CORREGIDAS", SuperficieCampo, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            // Contadores en gris neutro para no saturar el resumen; se pliegan con la flecha de abajo
+            AnimatedVisibility(visible = desplegado) {
+                Row(
+                    modifier = Modifier.padding(top = 12.dp).testTag(ETIQUETA_CONTADORES),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ContadorEstado(resumen.validadas, "VALIDADAS", SuperficieCampo, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                    ContadorEstado(resumen.pendientes, "PENDIENTES", SuperficieCampo, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                    ContadorEstado(resumen.corregidas, "CORREGIDAS", SuperficieCampo, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+                }
+            }
+            // Flecha para mostrar u ocultar los contadores: toda la franja inferior responde al toque
+            val giro by animateFloatAsState(if (desplegado) 180f else 0f, label = "flecha-historial")
+            val accion = if (desplegado) "Ocultar los contadores del historial" else "Mostrar los contadores del historial"
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .clickable(onClick = onAlternar)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = accion
+                        stateDescription = if (desplegado) "Desplegado" else "Plegado"
+                    }
+                    .testTag(ETIQUETA_FLECHA_HISTORIAL),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(22.dp).rotate(giro),
+                )
             }
         }
     }
@@ -521,3 +599,7 @@ private fun PrincipalOperarioPreview() {
         )
     }
 }
+
+/** Etiquetas del cuadro del historial, para las pruebas de interfaz. */
+internal const val ETIQUETA_CONTADORES = "historial-contadores"
+internal const val ETIQUETA_FLECHA_HISTORIAL = "historial-flecha"
