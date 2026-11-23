@@ -179,6 +179,9 @@ class RoomMuestraRepository(
         return muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
     }
 
+    // Se consulta Room y no la lista en memoria, que puede ir un paso atrás de la base
+    override suspend fun contarPendientes(): Int = muestraDao.pendientesDeSincronizar().size
+
     companion object {
         /** Tiempo durante el cual todavía se pide el clima de una muestra guardada sin internet. */
         const val PLAZO_CLIMA_MS = 2 * 60 * 60 * 1000L

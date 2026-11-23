@@ -106,6 +106,8 @@ dependencies {
     // Play Services trae androidx.fragment 1.1.0 y el lint del release exige 1.3.0 o más para
     // registerForActivityResult (permiso de notificaciones en MainActivity)
     implementation(libs.androidx.fragment)
+    // Envío de las muestras pendientes en segundo plano, aunque la app esté cerrada (Req. 5)
+    implementation(libs.androidx.work.runtime.ktx)
     // room-testing (MigrationTestHelper) necesita kotlinx-serialization 1.8.1; la app traía 1.7.3 y la
     // prueba de migración fallaba con AbstractMethodError. Se fija la versión para que coincidan.
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")

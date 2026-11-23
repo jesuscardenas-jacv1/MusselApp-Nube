@@ -43,6 +43,7 @@ En el muestreo de líneas de cultivo de choritos, el operario extrae un tramo re
 | Alertas automáticas para el supervisor (fuera del área, densidad, cholgas, talla, mal tiempo) | Supervisión, Detalle, portal web | `AlertasMuestra.evaluar()`, reglas puras con los límites en `Umbrales` |
 | Métricas de la jornada y muestras recientes | Principal | `PrincipalViewModel` + `ResumenJornada` |
 | Sincronización con la nube y dictamen desde el computador | Todas, portal web | `NubeSync` (Firestore) detrás de la interfaz `ServicioNube`; Room sigue siendo la fuente de verdad, se guarda sin red y se sube después. El supervisor puede dictaminar en el portal o en el teléfono: el dictamen del teléfono se sube de inmediato y, si los dos dictaminan la misma muestra, vale el primero que llegó a la nube (`ProteccionDictamen`) |
+| Envío automático de lo pendiente, aunque la app esté cerrada | Todas | WorkManager (`EnvioPendientesWorker`): cada muestra pendiente nueva deja un envío en cola que corre apenas hay internet, con reintentos (espera exponencial, hasta 8 intentos). Con la app abierta, además, se reenvía al volver la conexión (`Conectividad`) |
 | Muestra borrada en el portal | Notificación, Historial | Al eliminar una muestra en el portal, el teléfono que la registró la borra (con sus revisiones y su foto) y avisa con una notificación |
 | Conteo asistido con marcas sobre la foto | Vista previa | `ConteoSobreFoto`: se toca cada individuo para marcarlo (o quitarlo), con zoom, Deshacer y Limpiar; el total se convierte a ind/m con el tramo muestreado y completa el campo Conteo (`ConteoMarcas.indPorMetro`) |
 | Seguridad local | Login | PIN guardado con hash PBKDF2, bloqueo tras 5 intentos fallidos y base excluida del respaldo |
@@ -109,7 +110,7 @@ Al abrir la app se muestra la animación de inicio. En el Login se ingresa RUT, 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 174 pruebas unitarias (los 7 ViewModels, conteo con marcas, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew testDebugUnitTest          # 179 pruebas unitarias (los 7 ViewModels, conteo con marcas, envío con WorkManager, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
 ./gradlew connectedDebugAndroidTest  # 45 pruebas instrumentadas: Room real, migraciones, catálogo, sincronización con una nube falsa y los Compose UI Test del formulario y del conteo (requiere teléfono o emulador)
 ./gradlew reporteCobertura           # cobertura de ViewModels y Repositories en app/build/reports/jacoco/reporteCobertura/html/index.html
 ```
@@ -276,7 +277,6 @@ Las pautas EA4 y EA5 nombran algunas librerías como recomendadas. Donde el proy
 | Telephoto (ampliar la foto) | `ui/componentes/VisorFoto.kt`: zoom de 1 a 5×, desplazamiento y doble toque | Misma función que el visor de Telephoto |
 | MockK (dobles de prueba) | Dobles propios: `FakeMuestraRepository`, `FakeAuthRepository`, `FakeServicioNube`, `MuestrasEnMemoria` y funciones inyectables | Aíslan ViewModels y Repositories de Room, la red y los archivos, y permiten forzar errores |
 | DataStore (preferencias) | `SharedPreferences` (`BloqueoLogin.kt`, instalación en `NubeSync.kt`) | Mismo almacenamiento clave-valor; los datos de negocio están en Room |
-| WorkManager (sincronización) | `Conectividad.kt` + `sincronizar()` en `AppContainer.kt` | Al volver la red se reenvía solo lo pendiente. Diferencia: funciona con la app abierta |
 | Filtros por fechas y comparación por línea | App: búsqueda por tren y línea y períodos. Portal: filtros por tren, línea, estado, operario y fechas, y evolución por línea | El análisis se hace en el portal, junto al dashboard |
 | Exportar validadas a PDF o .xlsx | Portal: XLSX, PDF, CSV y JSON con filtro por estado. App: ficha PDF por muestra | El informe se genera donde están los datos de todos los teléfonos |
 
