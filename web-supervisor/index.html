@@ -1906,7 +1906,7 @@
         (m.estado === 'PENDIENTE'
           ? '<div class="tres editable cuatro">' +
               '<label id="ed-l-conteo"><small>Conteo</small><span class="num-ed"><input id="ed-conteo" type="number" inputmode="numeric" min="1" max="5000" step="1" value="' + esc(edicion.conteo) + '" aria-describedby="ed-nota"><em>ind/m</em></span></label>' +
-              '<label id="ed-l-talla"><small>Calibre prom.</small><span class="num-ed"><input id="ed-talla" type="number" inputmode="numeric" min="1" max="200" step="1" value="' + esc(edicion.talla) + '" aria-describedby="ed-nota"><em>mm</em></span></label>' +
+              '<label id="ed-l-talla"><small>Calibre prom.</small><span class="num-ed"><input id="ed-talla" type="number" inputmode="numeric" min="1" max="100" step="1" value="' + esc(edicion.talla) + '" aria-describedby="ed-nota"><em>mm</em></span></label>' +
               '<label id="ed-l-cholgas"><small>Cholgas</small><span class="num-ed"><input id="ed-cholgas" type="number" inputmode="numeric" min="0" max="5000" step="1" placeholder="—" value="' + esc(edicion.cholgas) + '" aria-describedby="ed-nota"><em>ind/m</em></span></label>' +
               '<div class="calc"><small>Rendimiento</small><b id="ed-rend">' + n1(rendimiento(m)) + '</b><em>kg/m</em><span class="ayuda-ed">Se recalcula solo</span></div></div>' +
             '<p class="nota-ed" id="ed-nota" aria-live="polite"></p>'
@@ -1964,7 +1964,7 @@
     // Cholgas vacías solo se aceptan si la muestra ya venía sin ese dato (muestras antiguas)
     var cholgas = !h ? m.cholgasIndM : h.value.trim() === '' ? null : Number(h.value);
     var error = !(Number.isInteger(conteo) && conteo >= 1 && conteo <= 5000) ? 'El conteo debe ser un número entero entre 1 y 5.000 ind/m.'
-      : !(Number.isInteger(talla) && talla >= 1 && talla <= 200) ? 'El calibre debe ser un número entero entre 1 y 200 mm.'
+      : !(Number.isInteger(talla) && talla >= 1 && talla <= 100) ? 'El calibre debe ser un número entero entre 1 y 100 mm.'
       : cholgas === null ? (m.cholgasIndM === null ? '' : 'Ingresa las cholgas (0 si no hay).')
       : !(Number.isInteger(cholgas) && cholgas >= 0 && cholgas <= 5000) ? 'Las cholgas deben ser un número entero entre 0 y 5.000 ind/m.' : '';
     return { conteo: conteo, talla: talla, cholgas: cholgas, error: error, cambio: !error && (conteo !== m.conteoIndM || talla !== m.tallaMm || cholgas !== m.cholgasIndM) };
