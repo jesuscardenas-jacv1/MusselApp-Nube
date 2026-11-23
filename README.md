@@ -367,18 +367,18 @@ flowchart TD
 
 ## 11. Diseño de interfaces
 
-Diseños base generados con **Google Stitch** (Material Design 3), guardados en [`docs/diseno/interfaces/`](docs/diseno/interfaces/). La exportación original de Stitch (HTML y capturas de cada pantalla, y el sistema de diseño) está en [`docs/diseno/stitch/`](docs/diseno/stitch/). Las capturas de la app real están en la sección 3.
+Diseños base generados con **Google Stitch** (Material Design 3), exportados en [`docs/diseno/stitch/`](docs/diseno/stitch/) (HTML y captura de cada pantalla, y el sistema de diseño). En [`docs/diseno/interfaces/`](docs/diseno/interfaces/) quedan solo las versiones ajustadas después de Stitch (login, principal, historial y detalle). Las capturas de la app real están en la sección 3.
 
 | Pantalla | Objetivo | Diseño |
 |---|---|---|
 | Login | Verificación de credenciales de los usuarios | [`01-login.png`](docs/diseno/interfaces/01-login.png) |
 | Principal | Menú de opciones según el rol | [`02-principal.png`](docs/diseno/interfaces/02-principal.png) |
-| Muestra | Iniciar un muestreo | [`03-muestra.png`](docs/diseno/interfaces/03-muestra.png) |
-| Captura | Capturar un registro visual de la muestra | [`04-captura.png`](docs/diseno/interfaces/04-captura.png) |
-| Vista previa | Previsualizar fotografía y datos, y confirmar el muestreo | [`05-vista-previa.png`](docs/diseno/interfaces/05-vista-previa.png) |
+| Muestra | Iniciar un muestreo | [`screen.png`](docs/diseno/stitch/3._formulario_nueva_muestra/screen.png) |
+| Captura | Capturar un registro visual de la muestra | [`screen.png`](docs/diseno/stitch/4._captura_foto/screen.png) |
+| Vista previa | Previsualizar fotografía y datos, y confirmar el muestreo | [`screen.png`](docs/diseno/stitch/5._vista_previa/screen.png) |
 | Historial | Listar las muestras registradas | [`06-historial.png`](docs/diseno/interfaces/06-historial.png) |
 | Detalle | Ver en detalle una muestra seleccionada | [`07-detalle.png`](docs/diseno/interfaces/07-detalle.png) |
-| Revisión del Supervisor | Gestionar el estado de las muestras | [`08-revision.png`](docs/diseno/interfaces/08-revision.png) |
+| Revisión del Supervisor | Gestionar el estado de las muestras | [`screen.png`](docs/diseno/stitch/8._revisi_n_del_supervisor/screen.png) |
 
 ### Navegación
 
