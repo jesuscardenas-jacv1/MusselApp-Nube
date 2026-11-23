@@ -132,7 +132,7 @@ fun TarjetaCondiciones(muestra: Muestra, modifier: Modifier = Modifier) {
             FilaCondicion("Mar", CodigoTiempo.mar(muestra.clima))
             if (muestra.clima != null) {
                 Text(
-                    "Fuente: ${CodigoTiempo.FUENTE}",
+                    "Fuente: ${CodigoTiempo.fuente(muestra.clima)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )

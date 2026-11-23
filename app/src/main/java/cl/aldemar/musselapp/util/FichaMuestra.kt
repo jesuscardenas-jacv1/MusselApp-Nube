@@ -42,6 +42,7 @@ object FichaMuestra {
         "Distancia al centro" to distanciaAlCentro(muestra),
         "Tiempo" to CodigoTiempo.tiempo(muestra.clima),
         "Mar" to CodigoTiempo.mar(muestra.clima),
+        "Clima consultado" to CodigoTiempo.consultado(muestra.clima, zona),
         "Alertas al registrar" to alertas(muestra),
         "Estado" to muestra.estado.etiqueta,
         "Registrada" to fecha(muestra.registradaEn, zona),
@@ -93,6 +94,7 @@ object FichaMuestra {
                 "Distancia al centro" to distanciaAlCentro(muestra),
                 "Tiempo" to CodigoTiempo.tiempo(muestra.clima),
                 "Mar" to CodigoTiempo.mar(muestra.clima),
+                "Clima consultado" to CodigoTiempo.consultado(muestra.clima, zona),
             ),
         ),
         SeccionFicha(

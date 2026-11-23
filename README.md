@@ -109,7 +109,7 @@ Al abrir la app se muestra la animación de inicio. En el Login se ingresa RUT, 
 ### Pruebas automatizadas
 
 ```bash
-./gradlew testDebugUnitTest          # 174 pruebas unitarias (los 7 ViewModels, conteo con marcas, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
+./gradlew testDebugUnitTest          # 175 pruebas unitarias (los 7 ViewModels, conteo con marcas, validaciones, regla del comentario al corregir, catálogo de trenes y líneas, filtros, hash del PIN, alertas, distancia, clima, protección del dictamen)
 ./gradlew connectedDebugAndroidTest  # 45 pruebas instrumentadas: Room real, migraciones, catálogo, sincronización con una nube falsa y los Compose UI Test del formulario y del conteo (requiere teléfono o emulador)
 ./gradlew reporteCobertura           # cobertura de ViewModels y Repositories en app/build/reports/jacoco/reporteCobertura/html/index.html
 ```

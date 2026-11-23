@@ -1172,7 +1172,7 @@
       // Posición del teléfono, clima y alertas al registrar (app v5); null o vacío en las muestras anteriores
       lat: numN(d.lat), lon: numN(d.lon), precisionM: numN(d.precisionM), distanciaCentroM: numN(d.distanciaCentroM),
       clima: d.clima && typeof d.clima === 'object' ? { tempAireC: numN(d.clima.tempAireC), vientoKn: numN(d.clima.vientoKn), rachaKn: numN(d.clima.rachaKn), vientoDir: numN(d.clima.vientoDir),
-        descripcion: d.clima.descripcion ? String(d.clima.descripcion) : '', olaM: numN(d.clima.olaM), tempAguaC: numN(d.clima.tempAguaC), mareaM: numN(d.clima.mareaM) } : null,
+        descripcion: d.clima.descripcion ? String(d.clima.descripcion) : '', olaM: numN(d.clima.olaM), tempAguaC: numN(d.clima.tempAguaC), mareaM: numN(d.clima.mareaM), obtenidoEn: numN(d.clima.obtenidoEn) } : null,
       alertas: Array.isArray(d.alertas) ? d.alertas.filter(function (a) { return ALERTAS[a]; }) : [],
       demo: d.demo === true,
       historico: d.historico === true,
@@ -1551,7 +1551,7 @@
       }
       var racha = 6 + r2() * 16 + (r2() < .06 ? 12 : 0), ola = Math.round((.1 + r2() * .5 + (racha > 25 ? .5 : 0)) * 100) / 100;
       d.clima = { tempAireC: Math.round((9 + r2() * 9) * 10) / 10, vientoKn: Math.round(racha * 5.5) / 10, rachaKn: Math.round(racha * 10) / 10, vientoDir: Math.floor(r2() * 360),
-        descripcion: ['Despejado', 'Parcialmente nublado', 'Nublado', 'Llovizna', 'Lluvia'][Math.floor(r2() * 5)], olaM: ola, tempAguaC: Math.round((11.5 + r2() * 4) * 10) / 10, mareaM: Math.round((r2() * 2 - 1) * 100) / 100 };
+        descripcion: ['Despejado', 'Parcialmente nublado', 'Nublado', 'Llovizna', 'Lluvia'][Math.floor(r2() * 5)], olaM: ola, tempAguaC: Math.round((11.5 + r2() * 4) * 10) / 10, mareaM: Math.round((r2() * 2 - 1) * 100) / 100, obtenidoEn: d.registradaEn };
       d.alertas = [];
       if (!sinGps && dist > RADIO_AREA_M) d.alertas.push('FUERA_DE_AREA');
       if (d.conteoIndM < 350) d.alertas.push('DENSIDAD_BAJA');
@@ -1889,7 +1889,7 @@
           '<div><dt>Ubicación</dt><dd>' + esc(txtPosicion(m)) + '</dd></div><div><dt>Distancia al centro</dt><dd>' + esc(txtDistanciaCentro(m)) + '</dd></div>' +
           '<div><dt>Tiempo</dt><dd>' + esc(txtTiempo(m.clima)) + '</dd></div><div><dt>Mar</dt><dd>' + esc(txtMar(m.clima)) + '</dd></div></dl>' +
           (m.lat != null && m.lon != null ? '<div id="mini-mapa" role="img" aria-label="Mapa con la posición de la muestra y el área del centro"></div>' : '') +
-          (m.clima ? '<p class="fuente-clima">Clima: Open-Meteo (dato modelado).</p>' : '') + '</div>';
+          (m.clima ? '<p class="fuente-clima">Clima: Open-Meteo (dato modelado' + (m.clima.obtenidoEn ? ', consultado el ' + esc(fecha(m.clima.obtenidoEn)) : '') + ').</p>' : '') + '</div>';
     var pie;
     if (m.estado === 'PENDIENTE') {
       var corr = previoModo === 'corregir';
