@@ -276,27 +276,14 @@ fun VistaPreviaScreen(
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 2.dp)
             )
-            // Largo del tramo de cuerda muestreado: mismo ancho que las métricas de arriba
-            Row(
-                modifier = Modifier.height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TarjetaMetrica(
-                    titulo = "Tramo",
-                    valor = borrador.tramoCm,
-                    unidad = "cm",
-                    error = errorMedicion(borrador.tramoCm, TRAMO_MAXIMO_CM),
-                    onCambiar = onTramoCambiado,
-                    modifier = Modifier.weight(1f).fillMaxHeight()
-                )
-                Text(
-                    text = "Largo del tramo de cuerda que se muestreó, en centímetros",
-                    color = Paleta.TextoSuave,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.weight(2f).padding(horizontal = 2.dp)
-                )
-            }
+            // Largo del tramo de cuerda muestreado: una cinta métrica a todo el ancho
+            CintaMetrica(
+                valor = borrador.tramoCm,
+                maximo = TRAMO_MAXIMO_CM,
+                error = errorMedicion(borrador.tramoCm, TRAMO_MAXIMO_CM),
+                onCambiar = onTramoCambiado,
+                modifier = Modifier.fillMaxWidth()
+            )
             // Conteo asistido: marcar cada individuo sobre la foto y pasar el total a ind/m con el tramo
             if (rutaFoto != null) {
                 PildoraAccion(
