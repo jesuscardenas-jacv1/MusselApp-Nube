@@ -63,7 +63,7 @@ class PrincipalViewModelTest {
 
     @Test
     fun recientes_sonLasTresMasNuevas() = runTest(main.dispatcher) {
-        val ahora = System.currentTimeMillis()
+        val ahora = ahoraDeHoy()
         val repo = MuestrasEnMemoria((1L..5L).map { muestraDePrueba(it, registradaEn = ahora - (10 - it) * 60_000) })
         val vm = PrincipalViewModel(repo)
         observar(vm)
