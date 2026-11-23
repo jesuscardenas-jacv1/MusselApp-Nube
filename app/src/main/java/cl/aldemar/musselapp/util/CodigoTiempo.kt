@@ -7,8 +7,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+/** Un dato del clima en su recuadro: rótulo, número y unidad (por ejemplo "Racha", "12", "kn"). */
+data class DatoCondicion(val etiqueta: String, val valor: String, val unidad: String)
+
 /** Textos del clima para la ficha y las pantallas. No depende de Android: se prueba en la JVM. */
 object CodigoTiempo {
+
+    /** Sin dato: el recuadro muestra una raya, igual que los campos vacíos de la app. */
+    const val SIN_DATO = "—"
 
     const val FUENTE = "Open-Meteo (dato modelado)"
 
@@ -78,6 +84,23 @@ object CodigoTiempo {
         c.mareaM?.let { partes += "marea ${String.format(es, "%+.2f", it)} m" }
         return partes.joinToString(" · ").ifEmpty { "No registrado" }
     }
+
+    /** Aire, viento (con su dirección) y racha, para los recuadros de la tarjeta de condiciones. */
+    fun datosTiempo(c: Clima): List<DatoCondicion> = listOf(
+        DatoCondicion("Aire", c.tempAireC?.let(::n0) ?: SIN_DATO, "°C"),
+        DatoCondicion("Viento", c.vientoKn?.let(::n0) ?: SIN_DATO, cardinal(c.vientoDir)?.let { "kn del $it" } ?: "kn"),
+        DatoCondicion("Racha", c.rachaKn?.let(::n0) ?: SIN_DATO, "kn"),
+    )
+
+    /** Ola, temperatura del agua y marea. El servicio de mar no cubre todos los puntos: cada uno puede faltar. */
+    fun datosMar(c: Clima): List<DatoCondicion> = listOf(
+        DatoCondicion("Ola", c.olaM?.let(::n1) ?: SIN_DATO, "m"),
+        DatoCondicion("Agua", c.tempAguaC?.let(::n1) ?: SIN_DATO, "°C"),
+        DatoCondicion("Marea", c.mareaM?.let { String.format(es, "%+.2f", it) } ?: SIN_DATO, "m"),
+    )
+
+    /** true si llegó al menos un dato del mar. */
+    fun hayMar(c: Clima): Boolean = c.olaM != null || c.tempAguaC != null || c.mareaM != null
 
     /** "-42.3741, -73.6220 (±12 m)". */
     fun posicion(p: Posicion?): String {

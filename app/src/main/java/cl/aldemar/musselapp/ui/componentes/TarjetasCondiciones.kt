@@ -1,6 +1,19 @@
 package cl.aldemar.musselapp.ui.componentes
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Waves
+import androidx.compose.ui.graphics.vector.ImageVector
+import cl.aldemar.musselapp.ui.theme.AcentoSuave
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
+import cl.aldemar.musselapp.ui.theme.Linea
+import cl.aldemar.musselapp.ui.theme.Rotulo
+import cl.aldemar.musselapp.ui.theme.SuperficieCampo
+import cl.aldemar.musselapp.util.DatoCondicion
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,7 +123,11 @@ private fun detalleAlerta(alerta: Alerta, m: Muestra): String = when (alerta) {
     Alerta.MAL_TIEMPO -> "Racha ${m.clima?.rachaKn?.toInt() ?: 0} kn"
 }
 
-/** Dónde se tomó la muestra y con qué tiempo y mar. */
+/**
+ * Dónde se tomó la muestra y con qué tiempo y mar. Cada dato va en su recuadro (número grande y
+ * unidad abajo) para leerlo de un vistazo; la ubicación va al final, con la distancia antes que
+ * las coordenadas.
+ */
 @Composable
 fun TarjetaCondiciones(muestra: Muestra, modifier: Modifier = Modifier) {
     Surface(
@@ -120,19 +137,40 @@ fun TarjetaCondiciones(muestra: Muestra, modifier: Modifier = Modifier) {
         border = BordeDeTarjeta,
         shadowElevation = ElevacionTarjeta,
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.WbCloudy, contentDescription = null, tint = Acento, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Condiciones al muestrear", style = MaterialTheme.typography.titleMedium)
             }
-            FilaCondicion("Ubicación", CodigoTiempo.posicion(muestra.posicion))
-            FilaCondicion("Distancia al centro", FichaMuestra.distanciaAlCentro(muestra))
-            FilaCondicion("Tiempo", CodigoTiempo.tiempo(muestra.clima))
-            FilaCondicion("Mar", CodigoTiempo.mar(muestra.clima))
-            if (muestra.clima != null) {
+            val clima = muestra.clima
+            if (clima == null) {
                 Text(
-                    "Fuente: ${CodigoTiempo.fuente(muestra.clima)}",
+                    "Tiempo y mar no registrados",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            } else {
+                val cielo = CodigoTiempo.descripcion(clima.codigo)
+                GrupoCondicion(
+                    titulo = if (clima.codigo != null) "Tiempo · $cielo" else "Tiempo",
+                    icono = Icons.Filled.Thermostat,
+                    datos = CodigoTiempo.datosTiempo(clima),
+                )
+                if (CodigoTiempo.hayMar(clima)) {
+                    GrupoCondicion(titulo = "Mar", icono = Icons.Filled.Waves, datos = CodigoTiempo.datosMar(clima))
+                } else {
+                    Text(
+                        "Mar: sin datos para este punto",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+            }
+            UbicacionMuestra(muestra)
+            if (clima != null) {
+                Text(
+                    "Fuente: ${CodigoTiempo.fuente(clima)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.secondary,
                 )
@@ -141,19 +179,90 @@ fun TarjetaCondiciones(muestra: Muestra, modifier: Modifier = Modifier) {
     }
 }
 
+/** Título con ícono y una fila de recuadros que ocupa todo el ancho. */
 @Composable
-private fun FilaCondicion(etiqueta: String, valor: String) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-        Text(etiqueta, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
-        Spacer(Modifier.width(12.dp))
-        Text(
-            valor,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f),
-        )
+private fun GrupoCondicion(titulo: String, icono: ImageVector, datos: List<DatoCondicion>) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icono, contentDescription = null, tint = Acento, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(titulo, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            datos.forEach { RecuadroDato(it.etiqueta, it.valor, it.unidad, Modifier.weight(1f)) }
+        }
+    }
+}
+
+/** Distancia al centro con su pastilla (dentro o fuera del área) y, debajo, las coordenadas. */
+@Composable
+private fun UbicacionMuestra(muestra: Muestra) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = Acento, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                FichaMuestra.distanciaCorta(muestra) ?: "Ubicación no registrada",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (muestra.posicion != null) {
+                Text(
+                    CodigoTiempo.posicion(muestra.posicion),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+            }
+        }
+        FichaMuestra.dentroDelArea(muestra)?.let { dentro ->
+            Spacer(Modifier.width(8.dp))
+            Text(
+                if (dentro) "Dentro del área" else "Fuera del área",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = if (dentro) AcentoTexto else AlertaTexto,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(if (dentro) AcentoSuave else AlertaFondo)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Dato en un recuadro gris claro: rótulo arriba, número grande y unidad abajo. Lo usan las
+ * condiciones al muestrear y el resumen biométrico del Detalle, así todos los datos se leen igual.
+ */
+@Composable
+fun RecuadroDato(etiqueta: String, valor: String, unidad: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = FormaCampo,
+        color = SuperficieCampo,
+        border = BorderStroke(1.dp, Linea),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(etiqueta.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary, maxLines = 1)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                valor,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (valor == CodigoTiempo.SIN_DATO) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Text(
+                unidad,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+            )
+        }
     }
 }
 

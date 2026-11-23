@@ -6,6 +6,7 @@ import cl.aldemar.musselapp.data.clima.TiempoActual
 import cl.aldemar.musselapp.data.model.Clima
 import cl.aldemar.musselapp.data.model.Posicion
 import cl.aldemar.musselapp.util.CodigoTiempo
+import cl.aldemar.musselapp.util.DatoCondicion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -66,6 +67,27 @@ class CodigoTiempoTest {
         )
         assertEquals("No registrado", CodigoTiempo.consultado(null, utc))
         assertEquals(CodigoTiempo.FUENTE, CodigoTiempo.fuente(null, utc))
+    }
+
+    @Test
+    fun recuadros_deTiempoYMar() {
+        assertEquals(
+            listOf(DatoCondicion("Aire", "17", "°C"), DatoCondicion("Viento", "2", "kn del N"), DatoCondicion("Racha", "5", "kn")),
+            CodigoTiempo.datosTiempo(clima),
+        )
+        assertEquals(
+            listOf(DatoCondicion("Ola", "0,1", "m"), DatoCondicion("Agua", "16,3", "°C"), DatoCondicion("Marea", "+0,28", "m")),
+            CodigoTiempo.datosMar(clima),
+        )
+    }
+
+    @Test
+    fun recuadros_conDatosQueFaltan_muestranRaya() {
+        val parcial = Clima(tempAireC = 12.0, obtenidoEn = 0L)
+        assertEquals(listOf("12", "—", "—"), CodigoTiempo.datosTiempo(parcial).map { it.valor })
+        assertEquals("kn", CodigoTiempo.datosTiempo(parcial)[1].unidad) // sin dirección no dice "del"
+        assertEquals(false, CodigoTiempo.hayMar(parcial))
+        assertEquals(true, CodigoTiempo.hayMar(clima))
     }
 
     @Test

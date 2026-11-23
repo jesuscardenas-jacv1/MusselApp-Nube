@@ -147,6 +147,28 @@ object FichaMuestra {
         return "${Distancia.texto(metros)} ($area)"
     }
 
+    /** true dentro del radio del centro, false fuera; null si falta la posición o el centro. */
+    fun dentroDelArea(muestra: Muestra): Boolean? {
+        val centro = CentroCultivo.porId(muestra.centroId) ?: return null
+        val metros = Distancia.alCentro(muestra, centro) ?: return null
+        return metros <= centro.radioM
+    }
+
+    /** "541 m del centro" o "3,2 km del centro"; null si no hay posición. */
+    fun distanciaCorta(muestra: Muestra): String? =
+        Distancia.alCentro(muestra)?.let { "${Distancia.texto(it)} del centro" }
+
+    /** Desvío de la densidad frente a la referencia, en dos partes: "+18 %" y "sobre la referencia de 380 ind/m". */
+    fun desvioPartes(muestra: Muestra): Pair<String, String> {
+        val pct = muestra.desvioDensidadPct
+        val referencia = "la referencia de ${Muestra.DENSIDAD_ESTANDAR_IND_M} ind/m"
+        return when {
+            pct > 0 -> "+$pct %" to "sobre $referencia"
+            pct < 0 -> "−${-pct} %" to "bajo $referencia"
+            else -> "0 %" to "igual a $referencia"
+        }
+    }
+
     fun alertas(muestra: Muestra): String =
         AlertasMuestra.evaluar(muestra).joinToString(", ") { it.etiqueta }.ifEmpty { "Sin alertas" }
 

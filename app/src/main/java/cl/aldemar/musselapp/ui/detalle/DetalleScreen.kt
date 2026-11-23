@@ -117,6 +117,11 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import cl.aldemar.musselapp.ui.componentes.RecuadroDato
+import cl.aldemar.musselapp.util.CodigoTiempo
 
 @Composable
 fun DetalleRoute(
@@ -645,10 +650,9 @@ private fun CajaTexto(etiqueta: String, texto: String, colorBorde: Color) {
 
 @Composable
 private fun TarjetaResumenBiometrico(muestra: Muestra) {
-    val desvio = muestra.desvioDensidadPct
-    val esBajo = desvio < 0
-    val desvioTexto = if (desvio >= 0) "+$desvio%" else "$desvio%"
+    val esBajo = muestra.desvioDensidadPct < 0
     val colorDesvio = if (esBajo) AlertaTexto else EstadoValidadoTexto
+    val (desvioPct, desvioTexto) = FichaMuestra.desvioPartes(muestra)
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -659,29 +663,15 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Analytics, contentDescription = null, tint = Acento, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Resumen biométrico", style = MaterialTheme.typography.titleMedium)
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(if (esBajo) AlertaFondo else EstadoValidadoFondo)
-                        .padding(horizontal = 9.dp, vertical = 4.dp),
-                ) {
-                    Text("$desvioTexto DESVÍO", color = colorDesvio, style = Rotulo, fontWeight = FontWeight.SemiBold)
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Analytics, contentDescription = null, tint = Acento, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Resumen biométrico", style = MaterialTheme.typography.titleMedium)
             }
 
-            // Densidad medida por el operario frente a la densidad de referencia
+            // Densidad medida por el operario y, en su propia franja, cuánto se aleja de la referencia
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = FormaCampo,
@@ -699,63 +689,60 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                         Spacer(Modifier.width(6.dp))
                         Text("ind / m", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(bottom = 4.dp))
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(FormaCampo)
+                            .background(if (esBajo) AlertaFondo else EstadoValidadoFondo)
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Icon(
                             if (esBajo) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
                             contentDescription = null,
                             tint = colorDesvio,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(18.dp),
                         )
-                        Spacer(Modifier.width(2.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text(
-                            "$desvioTexto respecto a la densidad de referencia (${Muestra.DENSIDAD_ESTANDAR_IND_M} ind/m)",
-                            style = MaterialTheme.typography.labelMedium,
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)) { append(desvioPct) }
+                                append(" ")
+                                append(desvioTexto)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
                             color = colorDesvio,
                         )
                     }
-                    // Cholgas: otra especie de la misma familia, contada aparte en el mismo tramo
-                    Text(
-                        "Cholgas: " + (muestra.cholgasIndM?.let { "$it ind / m" } ?: "no registradas"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                    Text(
-                        "Tramo muestreado: " + (muestra.tramoCm?.let { "$it cm" } ?: "no registrado"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ItemMetricaBiometrica("Talla media", "${muestra.tallaMm}", "milímetros", Modifier.weight(1f))
-                ItemMetricaBiometrica("Rendimiento", "${muestra.rendimientoKgM}", "kg / m (estimado)", Modifier.weight(1f))
-                ItemMetricaBiometrica("Profundidad", "${muestra.profundidadM}", "metros", Modifier.weight(1f))
+            // Cinco datos con el mismo recuadro: tres arriba y dos abajo, siempre a todo el ancho
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RecuadroDato("Talla media", "${muestra.tallaMm}", "mm", Modifier.weight(1f))
+                RecuadroDato(
+                    "Rendimiento",
+                    String.format(Locale("es", "CL"), "%.1f", muestra.rendimientoKgM),
+                    "kg/m estimado",
+                    Modifier.weight(1f),
+                )
+                RecuadroDato("Profundidad", "${muestra.profundidadM}", "metros", Modifier.weight(1f))
             }
-        }
-    }
-}
-
-@Composable
-private fun ItemMetricaBiometrica(titulo: String, valor: String, unidad: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = FormaCampo,
-        color = SuperficieCampo,
-        border = BorderStroke(1.dp, Linea),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(titulo.uppercase(), style = Rotulo, color = MaterialTheme.colorScheme.secondary, maxLines = 1)
-            Spacer(Modifier.height(4.dp))
-            Text(valor, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text(unidad, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, textAlign = TextAlign.Center)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RecuadroDato(
+                    "Cholgas",
+                    muestra.cholgasIndM?.toString() ?: CodigoTiempo.SIN_DATO,
+                    if (muestra.cholgasIndM != null) "ind / m" else "sin registro",
+                    Modifier.weight(1f),
+                )
+                RecuadroDato(
+                    "Tramo",
+                    muestra.tramoCm?.toString() ?: CodigoTiempo.SIN_DATO,
+                    if (muestra.tramoCm != null) "cm" else "sin registro",
+                    Modifier.weight(1f),
+                )
+            }
         }
     }
 }
