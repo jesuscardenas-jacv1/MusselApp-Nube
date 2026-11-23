@@ -2,7 +2,10 @@ package cl.aldemar.musselapp.util
 
 import cl.aldemar.musselapp.data.model.Clima
 import cl.aldemar.musselapp.data.model.Posicion
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /** Textos del clima para la ficha y las pantallas. No depende de Android: se prueba en la JVM. */
 object CodigoTiempo {
@@ -10,6 +13,21 @@ object CodigoTiempo {
     const val FUENTE = "Open-Meteo (dato modelado)"
 
     private val es = Locale("es", "CL")
+
+    /** Cuándo se consultó el clima, por ejemplo "21/11/2026 14:32", o "No registrado". */
+    fun consultado(c: Clima?, zona: TimeZone = TimeZone.getDefault()): String =
+        c?.let { SimpleDateFormat("dd/MM/yyyy HH:mm", es).apply { timeZone = zona }.format(Date(it.obtenidoEn)) }
+            ?: "No registrado"
+
+    /**
+     * Fuente del clima con la hora de la consulta (Anexo D: el dato es estimado y tiene fecha),
+     * por ejemplo "Open-Meteo (dato modelado, consultado el 21/11/2026 a las 14:32)".
+     */
+    fun fuente(c: Clima?, zona: TimeZone = TimeZone.getDefault()): String {
+        if (c == null) return FUENTE
+        val (dia, hora) = consultado(c, zona).split(" ")
+        return "Open-Meteo (dato modelado, consultado el $dia a las $hora)"
+    }
 
     /** Código WMO del tiempo (el que entrega Open-Meteo) en palabras. */
     fun descripcion(codigo: Int?): String = when (codigo) {

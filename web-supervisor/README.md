@@ -113,7 +113,10 @@ La app del operario debe escuchar esos cambios para actualizar la muestra en su 
 
 ## Cuentas y seguridad
 
-- **Supervisor (portal):** entra con correo y contraseña de **Firebase Authentication**. Para que una cuenta sea supervisor
+- **Supervisor (portal):** entra con **RUT y PIN**, igual que en la app. Por dentro es una cuenta de correo y contraseña de
+  **Firebase Authentication**: el RUT se convierte en el correo `{rut sin puntos}@musselapp.cl` (ficticio, no recibe
+  correos) y el PIN en la contraseña `pin-{PIN}`, porque Firebase pide al menos 6 caracteres. Por ejemplo, el RUT
+  `22.222.222-2` corresponde a la cuenta `22222222-2@musselapp.cl`; con K, en minúscula (`12345678-k@musselapp.cl`). Para que una cuenta sea supervisor
   hay que crear, en la consola de Firebase, el documento `supervisores/{uid}` con el campo `nombre` (es el nombre que
   queda en `revisadaPor`). Una cuenta que no está en esa colección no puede entrar al portal.
 - **Teléfono (app):** inicia una **sesión anónima** de Firebase sin pedirle nada al operario (el RUT y el PIN de la app
@@ -127,7 +130,8 @@ La app del operario debe escuchar esos cambios para actualizar la muestra en su 
 
 Orden para activar la seguridad en el proyecto (hecho una vez):
 1. En **Authentication → Método de acceso**, activar **Anónimo** y **Correo electrónico/contraseña**.
-2. Crear la cuenta del supervisor en **Authentication → Usuarios** y el documento `supervisores/{uid}` en Firestore.
+2. Crear la cuenta del supervisor en **Authentication → Usuarios** (correo `{rut}@musselapp.cl`, contraseña
+   `pin-` seguido del PIN del supervisor) y el documento `supervisores/{uid}` en Firestore con `nombre: "Diego Muñoz"`.
 3. Instalar la versión nueva de la app en los teléfonos y abrirla una vez con internet.
 4. Publicar `firestore.rules` (consola → Firestore → Reglas, o `firebase deploy --only firestore:rules`).
    Si algo falla, volver a pegar las reglas anteriores.

@@ -144,6 +144,21 @@
   .login-marca { position: relative; overflow: hidden; margin: 16px; border-radius: var(--r-xl); background: radial-gradient(120% 90% at 0% 0%, #17406A 0%, var(--marino) 55%), var(--marino); color: var(--texto-inv); padding: 48px; display: flex; flex-direction: column; justify-content: flex-start; min-height: calc(100vh - 32px); }
   .login-marca .ilustracion { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 48%; pointer-events: none; }
   .login-marca > * { position: relative; }
+  /* Foto de fondo del panel de marca */
+  .login-marca .foto-fondo { position: absolute; inset: 0; overflow: hidden; pointer-events: none; display: none; }
+  .login-marca.con-foto .foto-fondo { display: block; }
+  .login-marca.con-foto .ilustracion { display: none; }
+  .login-marca.con-foto { background: #051629; }
+  .foto-fondo img { width: 100%; height: 100%; object-fit: cover; object-position: center 56%; transform: scale(1.03); opacity: .82; filter: blur(.6px) saturate(.9) contrast(1.08);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.32) 0%, rgba(0,0,0,.62) 36%, #000 64%, rgba(0,0,0,.85) 100%);
+            mask-image: linear-gradient(180deg, rgba(0,0,0,.32) 0%, rgba(0,0,0,.62) 36%, #000 64%, rgba(0,0,0,.85) 100%); }
+  .foto-fondo > div { position: absolute; inset: 0; }
+  .foto-fondo .velo-desenfoque { background: rgba(5,21,38,.28); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.92) 38%, rgba(0,0,0,.35) 58%, transparent 74%);
+            mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.92) 38%, rgba(0,0,0,.35) 58%, transparent 74%); }
+  .foto-fondo .velo-vertical { background: linear-gradient(180deg, rgba(4,18,35,.93) 0%, rgba(5,22,42,.78) 38%, rgba(6,28,52,.28) 68%, rgba(4,18,34,.8) 100%); }
+  .foto-fondo .velo-horizontal { background: linear-gradient(95deg, rgba(4,18,35,.62) 0%, rgba(5,22,42,.22) 52%, rgba(5,22,42,.04) 100%); }
+  .foto-fondo .velo-marino { background: radial-gradient(ellipse 95% 52% at 54% 78%, rgba(16,148,134,.22) 0%, rgba(12,84,108,.08) 48%, transparent 78%); }
   .login-marca .lema { max-width: 460px; margin-top: 48px; }
   .login-marca h2 { font-size: clamp(28px, 3.2vw, 40px); line-height: 1.12; font-weight: 800; color: #fff; letter-spacing: -.02em; }
   .login-marca h2 span { background: var(--grad-brillo); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -185,10 +200,11 @@
   .insignia { min-width: 22px; height: 22px; padding: 0 7px; border-radius: var(--r-pill); background: var(--pend-graf); color: #3B2300; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
   .menu a[aria-current="page"] .insignia { background: #fff; color: var(--acento-texto); }
   .lateral .relleno { flex: 1; }
-  .tarjeta-vivo { position: relative; overflow: hidden; border-radius: var(--r-lg); padding: 16px; background: linear-gradient(160deg, rgba(15, 181, 166, .18), rgba(255, 255, 255, .04)); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07); }
-  .tarjeta-vivo svg.olas { position: absolute; right: -10px; bottom: -6px; width: 150px; opacity: .35; pointer-events: none; }
-  .tarjeta-vivo .fila-vivo { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #fff; position: relative; }
-  .tarjeta-vivo p { font-size: 12px; color: var(--texto-inv-2); margin-top: 6px; position: relative; }
+  /* Estado de la conexión: una línea sobria al pie del menú, sin tarjeta ni adornos */
+  .tarjeta-vivo { position: relative; padding: 14px 4px 2px; border-top: 1px solid rgba(255, 255, 255, .08); }
+  .tarjeta-vivo .fila-vivo { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--texto-inv); }
+  .tarjeta-vivo .latido { width: 7px; height: 7px; animation: none; box-shadow: none; }
+  .tarjeta-vivo p { font-size: 12px; color: var(--texto-inv-2); margin-top: 4px; padding-left: 15px; }
   .tarjeta-vivo .modo-ej { display: inline-block; margin-top: 10px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #3B2300; background: var(--pend-graf); padding: 2px 8px; border-radius: var(--r-pill); position: relative; }
   .latido { width: 9px; height: 9px; border-radius: 50%; background: var(--acento-2); box-shadow: 0 0 0 0 rgba(16, 185, 129, .6); animation: latido 2s infinite; flex: none; }
   .latido.mal { background: var(--peligro); animation: none; }
@@ -421,7 +437,7 @@
     .app.lateral-min { --ancho-lateral: 76px; }
     .lateral-min .lateral { padding: 18px 10px 12px; }
     .lateral-min .lateral .logo { padding: 0 0 18px; justify-content: center; }
-    .lateral-min .lateral .logo > div:last-child, .lateral-min .menu-titulo, .lateral-min .tarjeta-vivo p, .lateral-min #vivo-titulo, .lateral-min .tarjeta-vivo svg.olas, .lateral-min .btn-colapsar span { display: none; }
+    .lateral-min .lateral .logo > div:last-child, .lateral-min .menu-titulo, .lateral-min .tarjeta-vivo p, .lateral-min #vivo-titulo, .lateral-min .btn-colapsar span { display: none; }
     .lateral-min .tarjeta-vivo .modo-ej { font-size: 9px; padding: 2px 4px; margin-top: 6px; }
     .lateral-min .menu a, .lateral-min .btn-colapsar { justify-content: center; padding: 0; }
     .lateral-min .menu .nav-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -773,7 +789,7 @@
     :root { --ancho-lateral: 76px; }
     .lateral { padding: 18px 10px 12px; }
     .lateral .logo { padding: 0 0 18px; justify-content: center; }
-    .lateral .logo > div:last-child, .menu-titulo, .tarjeta-vivo p, #vivo-titulo, .tarjeta-vivo svg.olas { display: none; }
+    .lateral .logo > div:last-child, .menu-titulo, .tarjeta-vivo p, #vivo-titulo { display: none; }
     .tarjeta-vivo .modo-ej { font-size: 9px; padding: 2px 4px; margin-top: 6px; }
     .menu a { justify-content: center; padding: 0; }
     .menu .nav-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -881,7 +897,15 @@
 
 <!-- ═══════════════ Inicio de sesión ═══════════════ -->
 <section id="login" class="login" aria-labelledby="titulo-login">
-  <div class="login-marca">
+  <div class="login-marca con-foto">
+    <!-- Foto de líneas de cultivo con velos para que el texto se lea. Si no carga, queda la ilustración -->
+    <div class="foto-fondo" aria-hidden="true">
+      <img src="img/lineas-cultivo.jpg" alt="" onerror="this.closest('.login-marca').classList.remove('con-foto')">
+      <div class="velo-desenfoque"></div>
+      <div class="velo-vertical"></div>
+      <div class="velo-horizontal"></div>
+      <div class="velo-marino"></div>
+    </div>
     <svg class="ilustracion" viewBox="0 0 800 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
       <defs>
         <linearGradient id="lg-ola1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0FB5A6" stop-opacity=".55"/><stop offset="1" stop-color="#0FB5A6" stop-opacity="0"/></linearGradient>
@@ -916,16 +940,16 @@
       <h1 id="titulo-login">Iniciar sesión</h1>
       <p>Acceso web para el supervisor de calidad.</p>
       <div class="grupo-campo">
-        <label class="etq" for="correo">Correo</label>
-        <input class="campo" id="correo" type="email" inputmode="email" placeholder="supervisor@ejemplo.cl" required autocomplete="username">
+        <label class="etq" for="rut">RUT</label>
+        <input class="campo" id="rut" type="text" inputmode="text" placeholder="Ej: 22.222.222-2" maxlength="12" required autocomplete="username">
       </div>
       <div class="grupo-campo">
-        <label class="etq" for="clave">Contraseña</label>
-        <input class="campo" id="clave" type="password" placeholder="••••••" required autocomplete="current-password">
+        <label class="etq" for="clave">PIN de seguridad</label>
+        <input class="campo" id="clave" type="password" inputmode="numeric" placeholder="Ingresa tu PIN" maxlength="8" required autocomplete="current-password">
       </div>
       <div class="error" id="error-login" role="alert"></div>
       <button class="btn btn-primario" type="submit">Ingresar <i data-ico="flecha"></i></button>
-      <div class="nota-login"><i data-ico="info"></i><span>Proyecto académico con datos ficticios. Entra con la cuenta de supervisor creada en Firebase.</span></div>
+      <div class="nota-login"><i data-ico="info"></i><span>Proyecto académico con datos ficticios. Entra con el mismo RUT y PIN de supervisor que usas en la app.</span></div>
       <a class="enlace-ejemplo" href="?ejemplo=1"><i data-ico="tubo"></i>Ver con datos de ejemplo (sin conexión a la nube)</a>
     </form>
   </div>
@@ -946,7 +970,6 @@
     <div class="relleno"></div>
     <button type="button" class="btn-colapsar" id="btn-colapsar" data-accion="colapsar-menu" aria-controls="menu" aria-expanded="true" aria-label="Contraer el menú"><i data-ico="panel"></i><span>Contraer menú</span></button>
     <div class="tarjeta-vivo" aria-live="polite">
-      <svg class="olas" viewBox="0 0 150 60" aria-hidden="true"><path d="M0 30 Q 18 18 37 30 T 75 30 T 112 30 T 150 30" fill="none" stroke="#5EEAD4" stroke-width="2"/><path d="M0 44 Q 18 32 37 44 T 75 44 T 112 44 T 150 44" fill="none" stroke="#5EEAD4" stroke-width="2"/><path d="M0 58 Q 18 46 37 58 T 75 58 T 112 58 T 150 58" fill="none" stroke="#5EEAD4" stroke-width="2"/></svg>
       <div class="fila-vivo"><span class="latido espera" id="latido-lateral"></span><span id="vivo-titulo">Conectando…</span></div>
       <p id="vivo-texto">Esperando la primera sincronización.</p>
       <span class="modo-ej oculto" id="marca-ejemplo">Ejemplo</span>
@@ -1172,7 +1195,7 @@
       // Posición del teléfono, clima y alertas al registrar (app v5); null o vacío en las muestras anteriores
       lat: numN(d.lat), lon: numN(d.lon), precisionM: numN(d.precisionM), distanciaCentroM: numN(d.distanciaCentroM),
       clima: d.clima && typeof d.clima === 'object' ? { tempAireC: numN(d.clima.tempAireC), vientoKn: numN(d.clima.vientoKn), rachaKn: numN(d.clima.rachaKn), vientoDir: numN(d.clima.vientoDir),
-        descripcion: d.clima.descripcion ? String(d.clima.descripcion) : '', olaM: numN(d.clima.olaM), tempAguaC: numN(d.clima.tempAguaC), mareaM: numN(d.clima.mareaM) } : null,
+        descripcion: d.clima.descripcion ? String(d.clima.descripcion) : '', olaM: numN(d.clima.olaM), tempAguaC: numN(d.clima.tempAguaC), mareaM: numN(d.clima.mareaM), obtenidoEn: numN(d.clima.obtenidoEn) } : null,
       alertas: Array.isArray(d.alertas) ? d.alertas.filter(function (a) { return ALERTAS[a]; }) : [],
       demo: d.demo === true,
       historico: d.historico === true,
@@ -1350,7 +1373,7 @@
     var clase = 'latido' + (ok ? '' : ' mal');
     $('latido-sup').className = clase; $('latido-lateral').className = clase;
     $('texto-red').textContent = texto;
-    $('vivo-titulo').textContent = texto;
+    $('vivo-titulo').textContent = texto === 'En vivo' ? 'Conectado' : texto;
     actualizarTextoVivo();
     var pastillas = document.querySelectorAll('.pastilla-vivo');
     for (var i = 0; i < pastillas.length; i++) pintarPastilla(pastillas[i]);
@@ -1359,8 +1382,7 @@
     else { aviso.innerHTML = ico('sinred') + '<span>Sin conexión con la nube. Los datos se actualizarán solos cuando vuelva internet.</span>'; aviso.classList.remove('oculto'); }
   }
   function actualizarTextoVivo() {
-    var t = MODO_EJEMPLO ? 'Actualizado' : redOk ? 'Sincronizado con Firestore' : redOk === false ? 'Esperando conexión' : 'Esperando la primera sincronización.';
-    if (ultimaSync) t += ' · ' + horaCorta(ultimaSync);
+    var t = redOk === false ? 'Esperando conexión' : ultimaSync ? 'Actualizado a las ' + horaCorta(ultimaSync) : 'Cargando datos…';
     $('vivo-texto').textContent = t;
   }
   function pintarPastilla(el) {
@@ -1551,7 +1573,7 @@
       }
       var racha = 6 + r2() * 16 + (r2() < .06 ? 12 : 0), ola = Math.round((.1 + r2() * .5 + (racha > 25 ? .5 : 0)) * 100) / 100;
       d.clima = { tempAireC: Math.round((9 + r2() * 9) * 10) / 10, vientoKn: Math.round(racha * 5.5) / 10, rachaKn: Math.round(racha * 10) / 10, vientoDir: Math.floor(r2() * 360),
-        descripcion: ['Despejado', 'Parcialmente nublado', 'Nublado', 'Llovizna', 'Lluvia'][Math.floor(r2() * 5)], olaM: ola, tempAguaC: Math.round((11.5 + r2() * 4) * 10) / 10, mareaM: Math.round((r2() * 2 - 1) * 100) / 100 };
+        descripcion: ['Despejado', 'Parcialmente nublado', 'Nublado', 'Llovizna', 'Lluvia'][Math.floor(r2() * 5)], olaM: ola, tempAguaC: Math.round((11.5 + r2() * 4) * 10) / 10, mareaM: Math.round((r2() * 2 - 1) * 100) / 100, obtenidoEn: d.registradaEn };
       d.alertas = [];
       if (!sinGps && dist > RADIO_AREA_M) d.alertas.push('FUERA_DE_AREA');
       if (d.conteoIndM < 350) d.alertas.push('DENSIDAD_BAJA');
@@ -1889,7 +1911,7 @@
           '<div><dt>Ubicación</dt><dd>' + esc(txtPosicion(m)) + '</dd></div><div><dt>Distancia al centro</dt><dd>' + esc(txtDistanciaCentro(m)) + '</dd></div>' +
           '<div><dt>Tiempo</dt><dd>' + esc(txtTiempo(m.clima)) + '</dd></div><div><dt>Mar</dt><dd>' + esc(txtMar(m.clima)) + '</dd></div></dl>' +
           (m.lat != null && m.lon != null ? '<div id="mini-mapa" role="img" aria-label="Mapa con la posición de la muestra y el área del centro"></div>' : '') +
-          (m.clima ? '<p class="fuente-clima">Clima: Open-Meteo (dato modelado).</p>' : '') + '</div>';
+          (m.clima ? '<p class="fuente-clima">Clima: Open-Meteo (dato modelado' + (m.clima.obtenidoEn ? ', consultado el ' + esc(fecha(m.clima.obtenidoEn)) : '') + ').</p>' : '') + '</div>';
     var pie;
     if (m.estado === 'PENDIENTE') {
       var corr = previoModo === 'corregir';
@@ -3104,17 +3126,43 @@
     var l = document.createElement('link'); l.rel = 'icon'; l.type = 'image/png'; l.href = u[1]; document.head.appendChild(l);
   })();
 
-  // ── Inicio de sesión del supervisor (Firebase Authentication, correo y contraseña) ──
+  // ── Inicio de sesión del supervisor: RUT y PIN, como en la app ──
+  // Por dentro es Firebase Authentication con correo y contraseña: el RUT se convierte en un correo
+  // ficticio (22.222.222-2 → 22222222-2@musselapp.cl, que no recibe correos) y el PIN en la
+  // contraseña "pin-" + PIN, porque Firebase exige al menos 6 caracteres.
+  var DOMINIO_CUENTAS = 'musselapp.cl';
+
+  // RUT sin puntos ni guion: { cuerpo, dv } o null si está incompleto o el dígito verificador no calza (módulo 11)
+  function leerRut(texto) {
+    var limpio = String(texto || '').replace(/[^0-9kK]/g, '').toUpperCase();
+    if (!/^[0-9]{7,8}[0-9K]$/.test(limpio)) return null;
+    var cuerpo = limpio.slice(0, -1), dv = limpio.slice(-1), suma = 0, mult = 2;
+    for (var i = cuerpo.length - 1; i >= 0; i--) { suma += +cuerpo[i] * mult; mult = mult === 7 ? 2 : mult + 1; }
+    var r = 11 - (suma % 11), esperado = r === 11 ? '0' : r === 10 ? 'K' : String(r);
+    return dv === esperado ? { cuerpo: cuerpo, dv: dv } : null;
+  }
+  function correoDeRut(rut) { return rut.cuerpo + '-' + rut.dv.toLowerCase() + '@' + DOMINIO_CUENTAS; }
+  function claveDePin(pin) { return 'pin-' + pin; }
+
+  // Mientras se escribe: el RUT toma puntos y guion (22.222.222-2) y el PIN acepta solo dígitos
+  $('rut').addEventListener('input', function () {
+    var l = this.value.replace(/[^0-9kK]/g, '').toUpperCase().replace(/K(?=.)/g, '').slice(0, 9);
+    if (l.length < 2) { this.value = l; return; }
+    var cuerpo = l.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    this.value = cuerpo + '-' + l.slice(-1);
+  });
+  $('clave').addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 8); });
+
   var dentro = false, ingresando = false;
   var MENSAJES_LOGIN = {
-    'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-    'auth/wrong-password': 'Correo o contraseña incorrectos.',
-    'auth/user-not-found': 'Correo o contraseña incorrectos.',
-    'auth/invalid-email': 'El correo no es válido.',
+    'auth/invalid-credential': 'RUT o PIN incorrectos.',
+    'auth/wrong-password': 'RUT o PIN incorrectos.',
+    'auth/user-not-found': 'RUT o PIN incorrectos.',
+    'auth/invalid-email': 'RUT inválido.',
     'auth/user-disabled': 'Esta cuenta está desactivada.',
     'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos y vuelve a probar.',
     'auth/network-request-failed': 'No hay conexión con Firebase. Revisa el internet.',
-    'auth/operation-not-allowed': 'El inicio de sesión con correo no está activado en Firebase.',
+    'auth/operation-not-allowed': 'El inicio de sesión de supervisores no está activado en Firebase.',
     'no-supervisor': 'Esta cuenta no tiene permiso de supervisor.'
   };
 
@@ -3134,8 +3182,12 @@
 
   $('form-login').addEventListener('submit', function (e) {
     e.preventDefault();
-    var correo = $('correo').value.trim(), clave = $('clave').value, boton = this.querySelector('button[type="submit"]');
-    if (!correo || !clave) { $('error-login').textContent = 'Escribe el correo y la contraseña.'; return; }
+    var textoRut = $('rut').value.trim(), pin = $('clave').value, boton = this.querySelector('button[type="submit"]');
+    if (!textoRut || !pin) { $('error-login').textContent = 'Escribe el RUT y el PIN.'; return; }
+    var rut = leerRut(textoRut);
+    if (!rut) { $('error-login').textContent = 'RUT inválido.'; return; }
+    if (pin.length < 4) { $('error-login').textContent = 'El PIN tiene al menos 4 dígitos.'; return; }
+    var correo = correoDeRut(rut), clave = claveDePin(pin);
     if (!iniciarFirebase()) { $('error-login').textContent = 'No se pudo cargar Firebase. Revisa el internet y recarga la página.'; return; }
     $('error-login').textContent = ''; boton.disabled = true; ingresando = true;
     var auth = firebase.auth();
