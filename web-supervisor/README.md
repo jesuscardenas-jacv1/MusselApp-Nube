@@ -2,7 +2,13 @@
 
 Página para que el supervisor revise, desde el computador, las muestras que los operarios suben en terreno.
 Se conecta al proyecto Firebase `musselapp-demo` (Firestore, colección `muestras`) y se actualiza sola.
-Es un solo archivo (`index.html`) que funciona con doble clic: no necesita servidor ni instalación.
+Está publicado en **https://musselapp-demo.web.app** (Firebase Hosting). También es un solo archivo (`index.html`) que funciona con doble clic: no necesita servidor ni instalación.
+
+Para publicar una versión nueva (con la herramienta de Firebase y una cuenta con permisos en el proyecto):
+```bash
+firebase deploy --only hosting --project musselapp-demo
+```
+Se publica la carpeta `web-supervisor/` sin el portal anterior ni este README (configuración en `firebase.json`).
 
 ## Cómo abrirla
 1. Abrir `web-supervisor/index.html` con Chrome (doble clic). Necesita internet (Firebase, tipografías, gráficos y mapa se cargan por CDN).
@@ -62,8 +68,8 @@ No disparan avisos de muestra nueva ni llegan a los teléfonos. **Borrar histori
 ## Portal anterior
 `web-supervisor/anterior/index.html` es el portal de antes del rediseño, sin cambios. Se abre igual (doble clic) y usa la misma
 base de Firestore, por si hay que volver a él.
-**Ojo:** el portal anterior no inicia sesión en Firebase (el RUT y el PIN de prueba están escritos en su código). Cuando se publiquen
-las reglas de `firestore.rules` deja de leer y escribir datos: solo sirve mientras siguen activas las reglas de prueba.
+**Ojo:** el portal anterior no inicia sesión en Firebase (el RUT y el PIN de prueba están escritos en su código). Desde el 23-nov-2026
+están publicadas las reglas de `firestore.rules`, así que ya no lee ni escribe datos. No se publica en Hosting.
 
 ## Librerías (por CDN, sin instalación)
 Firebase compat 10.14.1, Chart.js 4.4.6, Leaflet 1.9.4 (teselas de CARTO con datos de OpenStreetMap y clave gratuita no comercial en `CLAVE_CARTO`; se usan porque los servidores de OpenStreetMap rechazan el portal abierto como archivo), SheetJS 0.20.3 y las tipografías Inter y Plus Jakarta Sans.

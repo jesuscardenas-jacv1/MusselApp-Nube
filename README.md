@@ -169,7 +169,7 @@ En unos minutos aparece el Release `v1.1.0` con `MusselApp-v1.1.0.apk` adjunto y
 
 ### Portal web del supervisor
 
-El supervisor revisa y dictamina las muestras desde el computador abriendo [`web-supervisor/index.html`](web-supervisor/index.html) con doble clic en Chrome (sin servidor ni instalación). Se conecta al proyecto Firebase `musselapp-demo` y se actualiza en vivo. Entra con el correo y la contraseña de la cuenta de supervisor creada en Firebase, o con **Ver con datos de ejemplo** para probar sin nube. Detalle de pantallas y funcionamiento en [`web-supervisor/README.md`](web-supervisor/README.md).
+El supervisor revisa y dictamina las muestras desde el computador en **https://musselapp-demo.web.app** (Firebase Hosting). También se puede abrir [`web-supervisor/index.html`](web-supervisor/index.html) con doble clic en Chrome, sin servidor ni instalación. Se conecta al proyecto Firebase `musselapp-demo` y se actualiza en vivo. Entra con el mismo RUT y PIN de supervisor que en la app, o con **Ver con datos de ejemplo** para probar sin nube. Detalle de pantallas y funcionamiento en [`web-supervisor/README.md`](web-supervisor/README.md).
 
 ### Seguridad
 
