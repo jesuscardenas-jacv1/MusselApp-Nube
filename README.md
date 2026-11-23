@@ -185,7 +185,7 @@ Defensa en capas, según la guía de seguridad del equipo (18-11-2026):
 | Teléfono (release) | `FLAG_SECURE`: la app no aparece en apps recientes ni en capturas (el debug sí las permite) | `MainActivity.kt` |
 | Nube | Sesión de Firebase obligatoria: el teléfono usa una sesión anónima y cada documento lleva su `ownerUid` | `NubeSync.kt` |
 | Nube | Reglas por rol: sin sesión no se lee nada; el teléfono lee, crea y actualiza solo lo suyo, no puede cambiar un dictamen que ya está en la nube ni borrar; el supervisor del portal lee, dictamina y elimina todo | `firestore.rules`, probadas en `firestore-tests/` |
-| Portal | Login real con Firebase Authentication; solo entran las cuentas con documento en `supervisores/{uid}` | `web-supervisor/index.html` |
+| Portal | Login real con Firebase Authentication usando el mismo RUT y PIN de la app; solo entran las cuentas con documento en `supervisores/{uid}` | `web-supervisor/index.html` |
 | Portal | Escape de HTML (`esc()`) para que una observación no ejecute código en el navegador | `web-supervisor/index.html` |
 
 **Límite conocido:** como el teléfono usa una sesión anónima, cualquiera que instale la app puede *crear* muestras a su nombre, pero no puede leer, cambiar ni borrar las de otros. Para la demo es aceptable.
@@ -193,7 +193,7 @@ Defensa en capas, según la guía de seguridad del equipo (18-11-2026):
 **Pasos que se hacen en la consola de Firebase** (detalle en [`web-supervisor/README.md`](web-supervisor/README.md#cuentas-y-seguridad)):
 
 - [ ] Authentication: activar **Anónimo** y **Correo electrónico/contraseña**
-- [ ] Crear la cuenta del supervisor y su documento `supervisores/{uid}`
+- [ ] Crear la cuenta del supervisor (correo `{rut}@musselapp.cl`, contraseña `pin-` + PIN) y su documento `supervisores/{uid}`
 - [ ] Instalar la app nueva y abrirla una vez con internet
 - [ ] Probar `firestore.rules` en la Zona de pruebas (sin sesión → denegado; teléfono que cambia un dictamen ya puesto o que borra → denegado)
 - [ ] Publicar las reglas (la consola guarda el historial para volver atrás en un clic)
