@@ -48,7 +48,7 @@ En todas las pantallas: buscador superior (código, centro, tren, línea u opera
 indicador En vivo / Sin conexión y menú del usuario. El detalle de una muestra se abre en una ventana centrada y amplia: a la izquierda la foto (ampliable), las cifras y el desvío;
 a la derecha los datos, la observación y el dictamen, con los botones **Validar** / **Corregir** (el comentario es obligatorio al corregir) y **Eliminar**.
 Eliminar una muestra real la borra también del teléfono que la registró, que recibe una notificación.
-En una muestra pendiente el supervisor puede corregir el **conteo** (1–5.000 ind/m), el **calibre** (1–200 mm) y las **cholgas** (0–5.000 ind/m); el rendimiento y el desvío
+En una muestra pendiente el supervisor puede corregir el **conteo** (1–5.000 ind/m), el **calibre** (1–100 mm) y las **cholgas** (0–5.000 ind/m); el rendimiento y el desvío
 se recalculan al escribir. Los valores corregidos se guardan solo con **Corregir**: Firestore recibe `conteoIndM`, `tallaMm` y `cholgasIndM` nuevos más
 `valoresOperario` (lo que registró el operario), y el cambio se agrega al comentario, porque el teléfono solo recibe estado y comentario.
 Cuando llega una muestra nueva suena un aviso y aparece una notificación.

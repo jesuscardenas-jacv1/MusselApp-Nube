@@ -42,7 +42,7 @@ data class EstadoUbicacion(
 
 /** Rangos aceptados al ingresar las mediciones (evitan errores de tipeo, no son límites biológicos). */
 const val CONTEO_MAXIMO_IND_M = 5000
-const val TALLA_MAXIMA_MM = 200
+const val TALLA_MAXIMA_MM = 100
 const val TRAMO_MAXIMO_CM = 500
 
 /**

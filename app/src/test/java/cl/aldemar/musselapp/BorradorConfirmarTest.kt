@@ -53,7 +53,7 @@ class BorradorConfirmarTest {
         assertNull(validarBorrador(completo))
         assertEquals("El conteo debe estar entre 1 y 5000 ind/m", validarBorrador(completo.copy(conteoIndM = 0)))
         assertEquals("Ingresa la talla media en mm", validarBorrador(completo.copy(tallaMm = null)))
-        assertEquals("La talla debe estar entre 1 y 200 mm", validarBorrador(completo.copy(tallaMm = 201)))
+        assertEquals("La talla debe estar entre 1 y 100 mm", validarBorrador(completo.copy(tallaMm = 101)))
         assertEquals("Ingresa el conteo de cholgas (0 si no hay)", validarBorrador(completo.copy(cholgasIndM = null)))
         assertEquals("Las cholgas deben estar entre 0 y 5000 ind/m", validarBorrador(completo.copy(cholgasIndM = -1)))
         assertEquals("Ingresa el largo del tramo muestreado en cm", validarBorrador(completo.copy(tramoCm = null)))
