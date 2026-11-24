@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -119,6 +120,8 @@ internal fun ConteoSobreImagen(
     val densidad = LocalDensity.current
     val proporcion = imagen.width.toFloat() / imagen.height
     val tramoValido = tramoCm != null && tramoCm in 1..TRAMO_MAXIMO_CM
+    // Con el tramo ya medido en la Vista previa no se vuelve a pedir: solo se muestra y se puede cambiar
+    var editandoTramo by remember { mutableStateOf(!tramoValido) }
     val indPorMetro = if (tramoValido) ConteoMarcas.indPorMetro(conteo.total, tramoCm) else null
     val valido = indPorMetro != null && indPorMetro in 1..CONTEO_MAXIMO_IND_M
 
@@ -204,24 +207,34 @@ internal fun ConteoSobreImagen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // El tramo se puede escribir aquí mismo: sin él, las marcas no se pueden pasar a ind/m
+            // El tramo se escribe aquí solo si todavía no se midió: sin él, las marcas no se pueden pasar a ind/m
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = tramoCm?.toString() ?: "",
-                    onValueChange = { texto -> onTramoCambiado(texto.filter(Char::isDigit).take(3).toIntOrNull()) },
-                    label = { Text("Tramo (cm)") },
-                    singleLine = true,
-                    isError = tramoCm != null && !tramoValido,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                    modifier = Modifier.width(132.dp).testTag(ETIQUETA_TRAMO),
+                if (editandoTramo) {
+                    OutlinedTextField(
+                        value = tramoCm?.toString() ?: "",
+                        onValueChange = { texto -> onTramoCambiado(texto.filter(Char::isDigit).take(3).toIntOrNull()) },
+                        label = { Text("Tramo (cm)") },
+                        singleLine = true,
+                        isError = tramoCm != null && !tramoValido,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        modifier = Modifier.width(132.dp).testTag(ETIQUETA_TRAMO),
+                    )
+                }
+                Text(
+                    "Marcas: ${conteo.total}",
+                    color = Paleta.Texto,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
                 )
-                Text("Marcas: ${conteo.total}", color = Paleta.Texto, style = MaterialTheme.typography.titleMedium)
+                if (!editandoTramo) {
+                    PildoraAccion(texto = "Cambiar tramo", icono = Icons.Filled.Edit, onClick = { editandoTramo = true })
+                }
             }
             Text(
                 text = when {
                     tramoCm == null -> "Escribe el tramo para pasar las marcas a ind/m"
                     !tramoValido -> "El tramo debe estar entre 1 y $TRAMO_MAXIMO_CM cm"
-                    indPorMetro == null -> "Tramo de $tramoCm cm: marca los individuos para calcular ind/m"
+                    indPorMetro == null -> "Tramo de $tramoCm cm: marca los individuos"
                     else -> "Tramo de $tramoCm cm → $indPorMetro ind/m"
                 },
                 // Lo que falta para poder usar el conteo se avisa en rojo, no como texto secundario

@@ -167,6 +167,17 @@ fun VistaPreviaScreen(
     val rutaFoto = borrador.fotoRuta
     // Marcas del conteo sobre la foto: se conservan al cerrar el conteo y se borran si cambia la foto
     var marcas by remember(rutaFoto) { mutableStateOf(ConteoMarcas()) }
+    // Marcas con las que se calculó el conteo; null si se escribió a mano
+    var marcasUsadas by remember(rutaFoto) { mutableStateOf<Int?>(null) }
+    val cambiarConteo: (Int?) -> Unit = {
+        marcasUsadas = null
+        onConteoCambiado(it)
+    }
+    // El conteo por marcas depende del tramo: si el tramo cambia después, se recalcula
+    val cambiarTramo: (Int?) -> Unit = { tramo ->
+        marcasUsadas?.let { onConteoCambiado(ConteoMarcas.indPorMetro(it, tramo)) }
+        onTramoCambiado(tramo)
+    }
     // Se puede guardar con parámetros, foto, conteo y talla válidos (reglas en validarBorrador)
     val faltante = validarBorrador(borrador)
     val listo = faltante == null && !guardando
@@ -249,7 +260,7 @@ fun VistaPreviaScreen(
                     valor = borrador.conteoIndM,
                     unidad = "uds / m",
                     error = errorMedicion(borrador.conteoIndM, CONTEO_MAXIMO_IND_M),
-                    onCambiar = onConteoCambiado,
+                    onCambiar = cambiarConteo,
                     modifier = Modifier.weight(1f).fillMaxHeight()
                 )
                 TarjetaMetrica(
@@ -281,7 +292,7 @@ fun VistaPreviaScreen(
                 valor = borrador.tramoCm,
                 maximo = TRAMO_MAXIMO_CM,
                 error = errorMedicion(borrador.tramoCm, TRAMO_MAXIMO_CM),
-                onCambiar = onTramoCambiado,
+                onCambiar = cambiarTramo,
                 modifier = Modifier.fillMaxWidth()
             )
             // Conteo asistido: marcar cada individuo sobre la foto y pasar el total a ind/m con el tramo
@@ -443,8 +454,9 @@ fun VistaPreviaScreen(
             conteo = marcas,
             onCambiar = { marcas = it },
             // Mismo tramo que el campo de la Vista previa: escribirlo en el conteo también lo completa ahí
-            onTramoCambiado = onTramoCambiado,
+            onTramoCambiado = cambiarTramo,
             onUsar = { indPorMetro ->
+                marcasUsadas = marcas.total
                 onConteoCambiado(indPorMetro)
                 contando = false
             },
