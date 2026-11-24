@@ -33,3 +33,6 @@ firestore-debug.log
 # Backend Spring Boot (compilados y base H2 local)
 backend/target/
 backend/data/
+
+# Caché local de la CLI de Firebase Hosting (se regenera en cada deploy)
+.firebase/
