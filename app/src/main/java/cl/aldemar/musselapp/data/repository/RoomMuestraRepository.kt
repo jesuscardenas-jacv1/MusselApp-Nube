@@ -178,7 +178,94 @@ class RoomMuestraRepository(
             delay(latenciaSincronizacionMs) // Sin nube: simula el envío por el enlace satelital
             return muestraDao.marcarSincronizadas()
         }
-        return muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
+        val enviadas = muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
+        val remotas = aplicarCambiosRemotos()
+        return enviadas + remotas
+    }
+
+    /**
+     * Trae muestras creadas o modificadas desde el backend Spring Boot (por ejemplo en Swagger UI)
+     * y las refleja en Room sin duplicarlas.
+     */
+    private suspend fun aplicarCambiosRemotos(): Int {
+        val servicio = nube ?: return 0
+        val cambios = servicio.descargarCambios()
+        if (cambios.isEmpty()) return 0
+        var aplicadas = 0
+        aplicandoDictamen.withLock {
+            for (c in cambios) {
+                val idLocal = c.idLocalExistente
+                if (idLocal != null) {
+                    val local = muestraDao.observarPorId(idLocal).first()?.aModelo() ?: continue
+                    var cambioAlgo = false
+                    if (local.profundidadM != c.profundidadM ||
+                        local.tallaMm != c.tallaMm ||
+                        local.conteoIndM != c.conteoIndM ||
+                        local.cholgasIndM != c.cholgasIndM ||
+                        local.tramoCm != c.tramoCm ||
+                        local.observacion != c.observacion
+                    ) {
+                        muestraDao.actualizarDesdeRemoto(
+                            id = idLocal,
+                            profundidadM = c.profundidadM,
+                            tallaMm = c.tallaMm,
+                            conteoIndM = c.conteoIndM,
+                            cholgasIndM = c.cholgasIndM,
+                            tramoCm = c.tramoCm,
+                            observacion = c.observacion,
+                        )
+                        cambioAlgo = true
+                    }
+                    if (c.estado != EstadoMuestra.PENDIENTE &&
+                        ProteccionDictamen.debeAplicarRemoto(local.estado, local.sincronizada, c.estado)
+                    ) {
+                        muestraDao.registrarRevision(
+                            muestraId = idLocal,
+                            estado = c.estado,
+                            comentario = c.comentarioSupervisor,
+                            supervisorRut = DatosIniciales.RUT_SUPERVISOR,
+                            revisadaEn = c.revisadaEn ?: reloj(),
+                        )
+                        muestraDao.marcarSincronizada(idLocal)
+                        alRevisar(local, c.estado, c.comentarioSupervisor)
+                        cambioAlgo = true
+                    }
+                    if (cambioAlgo) aplicadas++
+                } else {
+                    val lineaId = db.catalogoDao().buscarLineaId(c.centroId, c.tren, c.linea) ?: continue
+                    val operadorRut = buscarRut(c.operadorRut) ?: DatosIniciales.RUT_OPERARIO
+                    val nuevoId = muestraDao.insertar(
+                        MuestraEntity(
+                            lineaId = lineaId,
+                            operadorRut = operadorRut,
+                            profundidadM = c.profundidadM,
+                            tallaMm = c.tallaMm,
+                            conteoIndM = c.conteoIndM,
+                            cholgasIndM = c.cholgasIndM,
+                            tramoCm = c.tramoCm,
+                            observacion = c.observacion,
+                            estado = c.estado,
+                            registradaEn = c.registradaEn,
+                            sincronizada = true,
+                            fotoRuta = null,
+                        ),
+                    )
+                    if (c.estado != EstadoMuestra.PENDIENTE) {
+                        muestraDao.registrarRevision(
+                            muestraId = nuevoId,
+                            estado = c.estado,
+                            comentario = c.comentarioSupervisor,
+                            supervisorRut = DatosIniciales.RUT_SUPERVISOR,
+                            revisadaEn = c.revisadaEn ?: reloj(),
+                        )
+                        muestraDao.marcarSincronizada(nuevoId)
+                    }
+                    servicio.registrarIdLocal(c.idRemoto, nuevoId)
+                    aplicadas++
+                }
+            }
+        }
+        return aplicadas
     }
 
     // Se consulta Room y no la lista en memoria, que puede ir un paso atrás de la base

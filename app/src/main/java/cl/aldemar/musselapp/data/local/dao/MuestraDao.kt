@@ -107,6 +107,25 @@ interface MuestraDao {
     @Query("UPDATE muestras SET sincronizada = 1 WHERE id = :id")
     suspend fun marcarSincronizada(id: Long)
 
+    /** Actualiza los datos de una muestra cuando fue modificada en el backend (ej. PUT en Swagger). */
+    @Query(
+        """
+        UPDATE muestras SET
+            profundidad_m = :profundidadM, talla_mm = :tallaMm, conteo_ind_m = :conteoIndM,
+            cholgas_ind_m = :cholgasIndM, tramo_cm = :tramoCm, observacion = :observacion
+        WHERE id = :id
+        """,
+    )
+    suspend fun actualizarDesdeRemoto(
+        id: Long,
+        profundidadM: Int,
+        tallaMm: Int,
+        conteoIndM: Int,
+        cholgasIndM: Int?,
+        tramoCm: Int?,
+        observacion: String,
+    )
+
     /** Borra la muestra; sus revisiones se borran en cascada. Devuelve cuántas filas se borraron. */
     @Query("DELETE FROM muestras WHERE id = :id")
     suspend fun eliminar(id: Long): Int

@@ -5,10 +5,13 @@ import cl.aldemar.musselapp.data.clima.ClimaRepository
 import cl.aldemar.musselapp.data.local.MusselDatabase
 import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
 import cl.aldemar.musselapp.data.nube.AvisoRevision
+import cl.aldemar.musselapp.data.nube.BackendSync
 import cl.aldemar.musselapp.data.nube.Conectividad
 import cl.aldemar.musselapp.data.nube.EnvioPendientes
 import cl.aldemar.musselapp.data.nube.Notificador
+import cl.aldemar.musselapp.data.nube.NubeCompuesta
 import cl.aldemar.musselapp.data.nube.NubeSync
+import cl.aldemar.musselapp.data.nube.ServicioNube
 import cl.aldemar.musselapp.data.repository.AuthRepository
 import cl.aldemar.musselapp.data.repository.BloqueoLogin
 import cl.aldemar.musselapp.data.repository.CatalogoRepository
@@ -45,7 +48,12 @@ class AppContainer(context: Context) {
 
     private val notificador by lazy { Notificador(appContext) }
 
-    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext), clima = ClimaRepository(),
+    private val servicioNube: ServicioNube by lazy {
+        val firebase = NubeSync(appContext)
+        if (BackendSync.ACTIVO) NubeCompuesta(primaria = BackendSync(appContext), secundaria = firebase) else firebase
+    }
+
+    val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = servicioNube, clima = ClimaRepository(),
             alRevisar = { muestra, estado, comentario ->
                 notificador.avisarRevision(muestra, estado, comentario)
                 avisos.update { it + AvisoRevision(muestra.codigo, muestra.codigoLinea, estado, comentario) }

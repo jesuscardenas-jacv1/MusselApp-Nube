@@ -29,3 +29,7 @@ keystore.properties
 firestore-tests/node_modules/
 firebase-debug.log
 firestore-debug.log
+
+# Backend Spring Boot (compilados y base H2 local)
+backend/target/
+backend/data/
