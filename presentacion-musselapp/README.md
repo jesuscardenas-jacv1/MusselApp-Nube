@@ -20,3 +20,5 @@ Descarga `MusselApp-Presentacion.html` y ábrela con doble clic en Chrome o Edge
 4. **Cierre:** cifras del proyecto y conclusiones.
 
 La diapositiva **Pruebas en vivo** tiene los comandos y los JSON listos para copiar. Su botón **Abrir** apunta a `http://localhost:8080/swagger-ui.html`, así que solo funciona en el computador donde esté corriendo el backend.
+
+En **Portal web de supervisión** cada avance trae una página del portal al frente; también se puede hacer clic en el menú. **Usarlo aquí, en vivo** carga el portal publicado con datos de ejemplo (necesita internet): mientras está abierto las flechas no avanzan, hay que presionar **Volver a las pantallas**.
