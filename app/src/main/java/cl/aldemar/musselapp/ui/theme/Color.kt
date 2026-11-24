@@ -36,13 +36,17 @@ val Adicional = BordeCampo
 val EstadoValidadoFondo = Color(0xFFD1FAE5)
 val EstadoValidadoTexto = Color(0xFF065F46)
 
-// Pendiente y Corregido comparten color para no saturar la pantalla.
-// Se distinguen por la etiqueta y el ícono.
+// Pendiente en ámbar
 val EstadoEnEsperaFondo = Color(0xFFFEF3C7)
 val EstadoEnEsperaTexto = Color(0xFF92400E)
 
+// Corregido en azul, con su propio color: los mismos del portal (texto/fondo 7,2:1)
+val EstadoCorregidoFondo = Color(0xFFDBEAFE)
+val EstadoCorregidoTexto = Color(0xFF1E40AF)
+
 // Franja lateral de las tarjetas del Historial según el estado
 val AcentoValidado = Color(0xFF16A34A)
+val AcentoCorregido = Color(0xFF2563EB) // 5,2:1 sobre blanco
 val AcentoPendiente = Color(0xFFC76C05) // 3,1:1 sobre el fondo de pantalla (punto de conexión) y 3,8:1 sobre blanco
 
 // Alertas que no son un estado (por ejemplo, densidad bajo el mínimo)

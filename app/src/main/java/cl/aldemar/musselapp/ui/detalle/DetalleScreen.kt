@@ -528,7 +528,7 @@ private fun TarjetaDictamenTecnico(
     esSupervisor: Boolean,
     onIrARevision: () -> Unit,
 ) {
-    // Pendiente y Corregido usan el ámbar de ColoresEstado
+    // Pendiente (ámbar) y Corregido (azul) usan el acento de ColoresEstado
     val colorBordeEstado = when (muestra.estado) {
         EstadoMuestra.VALIDADO -> EstadoValidadoTexto
         EstadoMuestra.CORREGIDO, EstadoMuestra.PENDIENTE -> muestra.estado.colores.acento
