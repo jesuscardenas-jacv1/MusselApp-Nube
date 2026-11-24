@@ -1,6 +1,6 @@
 # Presentación de la aplicación MusselApp
 
-Presentación de **MusselApp v1.3.1** para la evaluación del ramo (DSY1105, Duoc UC).
+Presentación de **MusselApp v1.3.2** para la evaluación del ramo (DSY1105, Duoc UC).
 
 ## Cómo abrirla
 
@@ -15,7 +15,7 @@ Descarga `MusselApp-Presentacion.html` y ábrela con doble clic en Chrome o Edge
 ## Contenido
 
 1. **La nueva MusselApp:** flujo operativo en nueve etapas.
-2. **Recorrido por la app:** cada pantalla antes (v1.0) y ahora (v1.3.1), con animaciones de las funciones nuevas.
+2. **Recorrido por la app:** cada pantalla antes (v1.0) y ahora (v1.3.2), con animaciones de las funciones nuevas.
 3. **Lo que hay detrás:** Firebase, APIs externas, Retrofit, backend Spring Boot + Swagger y la guía de pruebas en vivo.
 4. **Cierre:** cifras del proyecto y conclusiones.
 
