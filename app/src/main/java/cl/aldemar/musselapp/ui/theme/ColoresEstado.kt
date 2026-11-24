@@ -19,7 +19,7 @@ data class ColoresEstado(
 val EstadoMuestra.colores: ColoresEstado
     get() = when (this) {
         EstadoMuestra.VALIDADO -> ColoresEstado(EstadoValidadoFondo, EstadoValidadoTexto, AcentoValidado)
-        // Mismo color (decisión del equipo para no saturar la pantalla); distinto ícono y etiqueta
-        EstadoMuestra.PENDIENTE, EstadoMuestra.CORREGIDO ->
-            ColoresEstado(EstadoEnEsperaFondo, EstadoEnEsperaTexto, AcentoPendiente)
+        EstadoMuestra.PENDIENTE -> ColoresEstado(EstadoEnEsperaFondo, EstadoEnEsperaTexto, AcentoPendiente)
+        // Corregido con su propio color (azul), igual que en el portal
+        EstadoMuestra.CORREGIDO -> ColoresEstado(EstadoCorregidoFondo, EstadoCorregidoTexto, AcentoCorregido)
     }
