@@ -245,7 +245,7 @@ class MusselAppBackendTests {
         crear(VALIDA.replace("\"tramoCm\":40", "\"tramoCm\":1"));
         for (String mala : new String[]{
                 VALIDA.replace("\"tallaMm\":62", "\"tallaMm\":101"),
-                VALIDA.replace("\"profundidadM\":3", "\"profundidadM\":7"),
+                VALIDA.replace("\"profundidadM\":3", "\"profundidadM\":11"),
                 VALIDA.replace("\"tramoCm\":40", "\"tramoCm\":501"),
                 VALIDA.replace("\"conteoIndM\":390", "\"conteoIndM\":5001"),
                 VALIDA.replace("Pedro Soto", ""),

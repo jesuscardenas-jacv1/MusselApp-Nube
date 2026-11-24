@@ -32,8 +32,8 @@ public record MuestraRequest(
         @Schema(description = "Número de línea dentro del tren (1 a 12)", example = "8")
         int linea,
 
-        @Min(value = 1, message = "La profundidad debe estar entre 1 y 6 m")
-        @Max(value = 6, message = "La profundidad debe estar entre 1 y 6 m")
+        @Min(value = 1, message = "La profundidad debe estar entre 1 y 10 m")
+        @Max(value = 10, message = "La profundidad debe estar entre 1 y 10 m")
         @Schema(description = "Profundidad o estrato en metros (1, 3 o 5)", example = "3")
         int profundidadM,
 

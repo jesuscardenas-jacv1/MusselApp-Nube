@@ -33,7 +33,7 @@ El servidor escucha solo en `127.0.0.1`: no se ve desde otros equipos de la red.
 - **Corregir** exige un comentario de al menos 5 caracteres y puede cambiar conteo, talla y cholgas; se guarda lo que había registrado el operario.
 - **Reintentos**: un `POST` con un `idCliente` que ya existe no duplica ni pisa la muestra; solo completa el GPS y el clima que faltaban.
 - **`PUT`**: los campos opcionales que no vienen se conservan.
-- **Límites**: los mismos de la app (talla 1–100 mm, conteo 1–5000, cholgas 0–5000, tramo 1–500 cm, profundidad 1–6 m).
+- **Límites**: los mismos de la app (talla 1–100 mm, conteo 1–5000, cholgas 0–5000, tramo 1–500 cm, profundidad 1–10 m, porque las muestras de ejemplo llegan a 9).
 
 ## Cómo se sincroniza con la app
 
