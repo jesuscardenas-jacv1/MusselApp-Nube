@@ -133,8 +133,7 @@
 | Backend | ✔️ **Ya cumple** | `@Valid` con límites en los DTO (`MuestraRequest`, `RevisionRequest`, `FotoRequest`) |
 | Reglas de Firestore | ❌ **Falta** | Controlan **quién** escribe, pero no **qué**: no revisan tipos, rangos ni tamaño. Una sesión anónima fuera de la app podría escribir un conteo negativo, un texto gigante o campos extra |
 
-*Propuesta (pendiente de aprobación):* agregar a `firestore.rules` una validación del esquema de `muestras` (tipos y rangos de los campos que hoy escribe la app) y un tamaño máximo para `fotos.fotoBase64`, con pruebas nuevas en `firestore-tests/` antes de publicar.
-⚠ Si la regla olvida un campo que la app escribe, **la subida falla**. Por eso solo se aplicaría con las pruebas en verde y revisando el inventario de arriba.
+*Hecho en la rama (⚠️, sin publicar):* `firestore.rules` valida ahora los campos, tipos y rangos de lo que escribe el teléfono, y el tamaño de `fotos.fotoBase64`. Ver la Fase 3.
 
 ### Hallazgo adicional (fuera de la lista, se informa)
 | Hallazgo | Riesgo | Evidencia |
@@ -146,14 +145,226 @@
 
 ---
 
-## Resumen de estado
-| Ítem | Estado |
-|---|---|
-| A1 Rate limiting | ✔️ PIN y Auth · ❌ falta App Check |
-| A2 .env / secretos | ✔️ · ❌ sin verificar las restricciones de las API keys |
-| A3 Secretos en la plataforma | ✔️ |
-| A4 IP limiting | ➖ Firebase · ✔️ backend y red |
-| A5 Validación de entrada | ✔️ app, portal y backend · ❌ reglas de Firestore |
-| Contraseña del supervisor en el portal | ⚠ riesgo medio |
+### A) Controles base, continuación
 
-**Cambios aplicados al código: ninguno.** Las propuestas esperan tu aprobación y el resto del prompt (listas B, C y D).
+**A6 · Validación del lado del servidor**
+*Qué es:* que el servidor revise los datos aunque el cliente ya los haya revisado, porque el cliente se puede saltar.
+- ✔️ **Backend:** `@Valid` en los DTO.
+- ❌ → ⚠️ **Firestore:** las reglas eran el único "servidor" y no validaban datos. Se corrigió en la rama (ver la Fase 3).
+
+**A7 · Mínimo privilegio en las reglas**
+*Qué es:* cada uno puede hacer solo lo que necesita.
+- ✔️ **Ya cumple:**
+  - `supervisores` solo se lee a sí mismo (`firestore.rules:91-93`).
+  - El teléfono lee y lista solo lo suyo (`:101-103`) y no borra nada (`:119`).
+  - Gana el primer dictamen (`:113-114`).
+- ❌ → ⚠️ **Qué campos escribe el teléfono:** podía escribir cualquier campo. Ahora solo puede escribir los campos de la app (`camposDelTelefono`, `:46-51`).
+- 🕒 **Rol del teléfono:** el supervisor de la app usa la misma sesión anónima que el operario, así que Firestore no puede distinguirlos (ver B).
+
+**A8 · Cifrado**
+*Qué es:* que los datos viajen y se guarden protegidos.
+- ✔️ **En tránsito:**
+  - Firestore y Auth usan HTTPS siempre.
+  - La release no permite HTTP.
+  - Debug permite HTTP solo hacia la propia máquina (`seguridad_red.xml`).
+- ✔️ **En el teléfono:**
+  - El PIN se guarda con hash PBKDF2 y sal (`HashPin.kt:18-19`).
+  - `allowBackup="false"` (`AndroidManifest.xml:19`).
+  - Las SharedPreferences (`nube`, `bloqueo_login`, `backend_sync`, `pantalla_principal`) usan `MODE_PRIVATE` y no guardan PIN ni tokens.
+- ➖ **Cifrar Room completa:** los datos son de muestreo, no personales sensibles, y Room está protegida por el sandbox de Android. No se cambia (restricción: no tocar Room).
+
+**A9 · Sesión**
+*Qué es:* cómo se entra, se sale y se bloquea.
+- ✔️ **App:**
+  - Bloqueo tras 5 intentos (`BloqueoLogin.kt:47-48`).
+  - Cerrar sesión limpia el estado (`LoginViewModel.kt:47`).
+  - La sesión anónima de Firebase se conserva a propósito: es la identidad del teléfono (`ownerUid`).
+- ✔️ **Portal:**
+  - `signOut` al salir (`index.html:3218`).
+  - Si la cuenta no está en `supervisores`, se cierra la sesión (`index.html:3267`).
+  - `auth/too-many-requests` se maneja (`index.html:3201`).
+- ❌ → ⚠️ **Política de contraseñas y protección contra enumeración de correos:** son ajustes de la consola de Firebase. No están en el código, así que no se pueden verificar desde aquí. Ver los pasos manuales.
+
+**A10 · CORS**
+*Qué es:* qué páginas web pueden llamar a una API.
+- ➖ El portal no llama a ninguna API propia: usa el SDK de Firebase.
+- ➖ El backend escucha solo en `127.0.0.1` y no tiene `@CrossOrigin` (`application.properties:4`).
+- ✔️ El valor por defecto de Spring (sin CORS) es el más cerrado.
+
+### B) Roles
+| Pregunta | Respuesta | Evidencia |
+|---|---|---|
+| ¿Quién puede leer muestras ajenas? | Solo el supervisor del portal | `firestore.rules:97, 101-103`; prueba "el teléfono lee sus muestras y no las de otro" |
+| ¿Quién puede dictaminar? | El supervisor del portal (todo) y el teléfono, sobre muestras suyas sin dictamen previo | `:111-114`; prueba "gana el primer dictamen" |
+| ¿Un usuario puede darse el rol de supervisor? | No: nadie escribe en `supervisores` | `:91-93`; prueba "nadie edita la lista" |
+| ¿El rol del teléfono se revisa en el servidor? | 🕒 No: operario y supervisor de la app usan la misma sesión anónima. Se revisa solo en la app. Arreglarlo exige que el supervisor de la app entre con su cuenta de Firebase, lo que es un cambio de diseño | `NubeSync.kt:304` |
+
+### C) OWASP Top 10:2025
+| Ítem | Estado | Nota |
+|---|---|---|
+| A01 Control de acceso roto | ✔️ · 🕒 | Reglas por dueño probadas (22 pruebas). El rol del teléfono queda pendiente (B) |
+| A02 Mala configuración | ❌ → ✅ / ⚠️ | Faltaban cabeceras de Hosting (✅ nosniff y Referrer-Policy). La CSP y X-Frame-Options quedan ⚠️. La consola H2 del backend sigue activa, pero solo en local (➖) |
+| A03 Cadena de suministro | ✔️ · 🕒 | Gradle con versiones fijas. `npm audit` de `firestore-tests` sin fallas en producción; las de desarrollo (`@grpc/grpc-js` dentro de firebase-tools) solo se arreglan con `--force` (versión mayor) → 🕒 |
+| A04 Fallas criptográficas | ✔️ | PBKDF2 con sal, HTTPS, sin secretos en el repo |
+| A05 Inyección | ✔️ | Room sin SQL armado con datos del usuario; el portal escapa todo con `esc()` (`index.html:1113`) |
+| A06 Diseño inseguro | ⚠️ | La contraseña del supervisor es `pin-` + PIN (ver el hallazgo adicional) |
+| A07 Fallas de autenticación | ✔️ · ⚠️ | Bloqueo en la app y en Auth. Faltan App Check y la protección contra enumeración (consola) |
+| A08 Integridad de datos | ❌ → ⚠️ | Validación de datos en reglas (Fase 3); APK firmado con llave fuera del repo |
+| A09 Registro y alertas | ✔️ | Logs de release sin RUT, PIN ni tokens; R8 quita `Log.v/d/i` (`rules.keep`) |
+| A10 Manejo de errores | ✔️ | Sin conexión o sin sesión, la muestra queda pendiente sin caerse (`NubeSync.kt:139-140`) |
+
+### D) Endurecimiento Android (MASVS)
+| Control | Estado | Evidencia |
+|---|---|---|
+| Componentes exportados | ✔️ Solo el launcher; el FileProvider no se exporta | `AndroidManifest.xml:29, 46` |
+| Copias de seguridad | ✔️ `allowBackup="false"` | `AndroidManifest.xml:19` |
+| Tráfico sin cifrar | ✔️ Release sin HTTP; debug solo a la propia máquina | `app/src/debug/res/xml/seguridad_red.xml` |
+| Ofuscación (R8) | ✔️ Activa en release | `app/build.gradle.kts:61` |
+| Capturas de pantalla | ✔️ `FLAG_SECURE` en release | `MainActivity.kt:31` |
+| Permisos | ✔️ Todos se usan (cámara, ubicación, notificaciones, red) | Manifest |
+| Certificate pinning / root | ➖ No se implementa sin tu permiso (restricción) | — |
+| Cabeceras del portal | ❌ → ✅ nosniff y Referrer-Policy · ⚠️ CSP y X-Frame-Options | `firebase.json` |
+
+---
+
+## Clasificación de lo que falla
+| Ítem | Clase | Por qué |
+|---|---|---|
+| `.firebase/` sin ignorar | ✅ SEGURA | Solo `.gitignore` |
+| Cabeceras nosniff y Referrer-Policy | ✅ SEGURA | No cambian nada visible; se activan al publicar Hosting |
+| Reglas: validación de datos | ⚠️ CON RIESGO | Si olvidan un campo, la subida falla. Están escritas y probadas, **sin publicar** |
+| CSP y X-Frame-Options | ⚠️ CON RIESGO | El portal tiene scripts en línea y usa CDN; una CSP mal hecha lo deja en blanco. X-Frame-Options podría afectar al iframe interno de Firebase Auth en `/__/auth/` |
+| App Check | ⚠️ CON RIESGO | Si se exige sin registrar bien la app, deja afuera a los teléfonos. Primero en modo monitor |
+| Contraseña `pin-` + PIN del supervisor | ⚠️ CON RIESGO | Cambia cómo entra el supervisor; hay que coordinarlo con el equipo |
+| Restricción de las API keys, enumeración de correos, política de contraseñas | ⚠️ manual | Se hacen en la consola, no en el código |
+| Rol del teléfono en Firestore | 🕒 DESPUÉS | Cambio de diseño |
+| Dependencias de desarrollo de `firestore-tests` | 🕒 DESPUÉS | El arreglo es una versión mayor |
+
+---
+
+## Fase 3 · Cambios en la rama `security/hardening`
+Cada cambio va en su propio commit. **No se fusionó con main ni se publicó nada.**
+
+| Commit | Qué hace | Clase | Cómo deshacerlo |
+|---|---|---|---|
+| `d2441f1` | Ignora `.firebase/` (caché de la CLI de Hosting) | ✅ | `git revert d2441f1` |
+| `cc3dc62` | Cabeceras `X-Content-Type-Options: nosniff` y `Referrer-Policy: strict-origin-when-cross-origin` en Hosting | ✅ | `git revert cc3dc62` |
+| `c8a1d3e` | Reglas v2: campos permitidos, tipos y rangos de lo que escribe el teléfono; `codigo` y `registradaEn` no cambian; fotos solo con `fotoBase64` (≤ 1 MB) y `ownerUid`. Incluye 7 pruebas nuevas | ⚠️ | `git revert c8a1d3e` |
+
+**Qué se validó en las reglas v2.** Solo afecta al teléfono; el supervisor no queda limitado.
+- Campos permitidos: los que sube `NubeSync.subir` (`NubeSync.kt:144-186`), más `fotoBase64` para poder borrarlo.
+- Al actualizar se revisan solo los campos que cambian. Así, una muestra antigua con campos que ya no se usan se sigue pudiendo actualizar.
+- Límites holgados, por ejemplo conteo entre 0 y 100.000, talla entre 0 y 1.000 mm y textos de hasta 1.000 caracteres. Todos aceptan `null`, porque la app sube `null` cuando no hay dato.
+- `estado` debe ser PENDIENTE, VALIDADO o CORREGIDO. Se permite crear una muestra ya validada, porque la app valida sin conexión.
+
+**Pruebas** (`firestore-tests/reglas.test.js`, emulador con `@firebase/rules-unit-testing`):
+- Las 15 pruebas existentes no se tocaron y siguen pasando.
+- 7 pruebas nuevas:
+  - subidas reales de la app (completa, con nulos, con foto y validada sin conexión);
+  - una muestra antigua con campos extra;
+  - ataques: campos extra, valores absurdos o de otro tipo, cambiar la fecha o el código, y fotos con campos extra o gigantes;
+  - el supervisor sin límites.
+- Resultado: **22/22 con las reglas v2**. Con las reglas actuales, 4 de las pruebas de ataque **fallan**, lo que demuestra el hueco.
+
+**Publicar las reglas (decides tú):**
+```
+npx.cmd --yes firebase-tools@15.35.0 deploy --only firestore:rules --project musselapp-demo
+```
+**Volver a las reglas anteriores:**
+```
+git show main:firestore.rules > firestore.rules
+npx.cmd --yes firebase-tools@15.35.0 deploy --only firestore:rules --project musselapp-demo
+git checkout firestore.rules
+```
+No hay `storage.rules`: el proyecto no usa Firebase Storage (las fotos van en Firestore).
+
+**Cabeceras de Hosting:** se activan en el próximo `deploy --only hosting`. El emulador local de Hosting no aplica cabeceras personalizadas, así que hay que comprobarlas después de publicar:
+```
+curl -sI https://musselapp-demo.web.app/
+```
+Deben aparecer `x-content-type-options: nosniff` y `referrer-policy`.
+
+---
+
+## Fase 4 · Pasada de atacante
+| Intento | Resultado |
+|---|---|
+| Abrir el APK release y buscar secretos | Solo aparecen la API key de Firebase (pública por diseño, en `resources.arsc`) y la URL `http://127.0.0.1:8080/` del backend de debug (local, no se usa en release). No hay contraseñas, llaves privadas ni el prefijo `pin-`. El código está ofuscado por R8 |
+| Con esa configuración, entrar de forma anónima y leer muestras de otros | Bloqueado: solo lista con filtro por su `ownerUid` (pruebas de lista y lectura) |
+| Darse el rol de supervisor | Bloqueado: nadie escribe en `supervisores` |
+| Escribir basura (campos extra, conteos negativos, textos enormes) | **Hoy funciona en producción**; queda bloqueado al publicar las reglas v2 |
+| Crear muchas muestras falsas a su nombre, que el supervisor vería en el portal | ⚠️ Sigue siendo posible con datos bien formados. Lo frena **App Check**, porque solo la app real obtendría token |
+| Adivinar el PIN del supervisor en el portal | Frenado por `too-many-requests`, pero posible lento (ver el hallazgo adicional) |
+
+---
+
+## Fase 5 · No-regresión (comparado con la línea base)
+| Prueba | Línea base | Después |
+|---|---|---|
+| `assembleDebug` | ✔ | ✔ |
+| `assembleRelease` (firmado) | ✔ | ✔ |
+| Pruebas unitarias | 200/200 | 200/200 |
+| Pruebas instrumentadas (compilan) | ✔ | ✔ |
+| Pruebas de reglas | 15/15 | 22/22 (las 15 originales sin tocar) |
+
+**No se tocó código de la app ni del portal:** los commits cambian solo `.gitignore`, `firebase.json`, `firestore.rules` y `firestore-tests/`. Por eso el checklist de "Funciones que deben seguir funcionando" no cambia hasta publicar las reglas.
+
+**Checklist manual después de publicar las reglas v2.** Hazlo con un teléfono real:
+1. Registra una muestra **con foto y GPS** con internet: debe llegar al portal con la foto.
+2. Registra otra **sin internet** y vuelve a conectarte: debe subir sola.
+3. Valida una muestra en el teléfono como supervisor sin internet y conéctate: debe llegar como VALIDADO.
+4. Corrige una muestra en el portal: el teléfono debe recibir el dictamen.
+5. Elimina una muestra y activa el modo demo en el portal.
+6. Si algo falla, usa el comando de "Volver a las reglas anteriores".
+
+---
+
+## Pasos manuales en la consola de Firebase (no se pueden hacer desde el código)
+1. **Publicar las reglas v2.** Usa el comando de la Fase 3, después de revisar el diff.
+2. **App Check en modo monitor:**
+   1. Ve a Consola → App Check → Apps.
+   2. Registra la app Android con **Play Integrity**. Agrega la huella SHA-256 de la llave de release, que está en `../musselapp-release.jks` (alias `musselapp`).
+   3. Registra el portal con **reCAPTCHA Enterprise**.
+   4. Deja Firestore en "No aplicado" y mira las métricas una semana antes de exigirlo.
+   Ojo: esto también requiere agregar el SDK de App Check a la app y al portal, que es un cambio de código ⚠️ y va aparte.
+3. **Protección contra enumeración de correos:** Authentication → Configuración → Acciones del usuario → activar "Protección contra la enumeración de correos".
+4. **Política de contraseñas:** Authentication → Configuración → Política de contraseñas. Hay que coordinarla con el cambio de PIN del supervisor, porque una política más estricta deja afuera a las cuentas actuales.
+5. **Restringir la API key:** Google Cloud → APIs y servicios → Credenciales.
+   - La key de Android: restringirla a apps Android con el paquete `cl.aldemar.musselapp` y la huella SHA-1.
+   - La key web: restringirla a los referentes `musselapp-demo.web.app/*` y `musselapp-demo.firebaseapp.com/*`.
+
+---
+
+## Resumen de estado
+| Ítem | Qué es | Aplica | Antes | Acción | Evidencia | Riesgo |
+|---|---|---|---|---|---|---|
+| A1 Rate limiting | Frenar intentos repetidos | Sí | ✔️ / ❌ App Check | Pendiente ⚠️ | `BloqueoLogin.kt:47-48` | Medio |
+| A2 Secretos / .env | Claves fuera del repo | Sí | ✔️ / ❌ keys sin restringir | Manual (consola) | `.gitignore` | Bajo |
+| A3 Secretos en la plataforma | Llaves fuera del código | Sí | ✔️ | Ninguna | `keystore.properties` ignorado | — |
+| A4 IP limiting | Filtrar por origen | Parcial | ➖ / ✔️ | Ninguna | `application.properties:4` | — |
+| A5 Validación de entrada | Tipos y rangos | Sí | ✔️ / ❌ reglas | Reglas v2 ⚠️ | `firestore.rules:44-84` | Medio |
+| A6 Validación en el servidor | No confiar en el cliente | Sí | ❌ | Reglas v2 ⚠️ | `firestore.rules:105-117` | Medio |
+| A7 Mínimo privilegio | Solo lo necesario | Sí | ✔️ / ❌ campos | Reglas v2 ⚠️ | `firestore.rules:46-51` | Medio |
+| A8 Cifrado | En tránsito y guardado | Sí | ✔️ | Ninguna | `HashPin.kt:18-19` | — |
+| A9 Sesión | Entrar y salir | Sí | ✔️ / ❌ consola | Manual (consola) | `index.html:3218, 3267` | Bajo |
+| A10 CORS | Quién llama a la API | No | ➖ | Ninguna | `application.properties:4` | — |
+| B Roles | Quién puede qué | Sí | ✔️ / 🕒 teléfono | 🕒 | `NubeSync.kt:304` | Medio |
+| C OWASP | Top 10:2025 | Sí | Ver tabla C | Ver tabla C | — | — |
+| D Android | MASVS | Sí | ✔️ / ❌ cabeceras | ✅ cabeceras | `firebase.json` | Bajo |
+
+### Lo que ya cumplía y no se tocó
+- PIN con PBKDF2 y bloqueo.
+- `allowBackup=false`, componentes no exportados, `FLAG_SECURE`, R8 y logs limpios.
+- Red de debug limitada a la propia máquina.
+- Backend en `127.0.0.1` con `@Valid`.
+- Escape en el portal (`esc()`).
+- Room sin SQL armado con datos del usuario.
+- Reglas de acceso por dueño, primer dictamen y lista de supervisores.
+- `.gitignore` de llaves, sin secretos en el historial y workflows sin secretos.
+
+### Para la presentación
+1. Auditamos MusselApp con OWASP Top 10:2025 y MASVS: la mayoría de los controles ya se cumplían, y lo dejamos documentado con archivo y línea.
+2. El hueco principal era que Firestore revisaba **quién** escribía pero no **qué** escribía; escribimos reglas nuevas que validan campos, tipos y rangos, con 22 pruebas automáticas en el emulador.
+3. Demostramos el hueco: 4 pruebas de ataque fallan con las reglas actuales y pasan con las nuevas, sin romper ninguna de las 15 pruebas originales.
+4. Cada cambio está en un commit aparte en la rama `security/hardening`, se puede deshacer con `git revert`, y la app sigue pasando sus 200 pruebas.
+5. Lo que queda (App Check y la contraseña del supervisor) está priorizado, con pasos concretos para la consola de Firebase.
