@@ -31,9 +31,10 @@ val Error = Color(0xFFB91C1C)           // errores y acciones de borrado (6,5:1 
 val Secundario = TextoSecundario
 val Adicional = BordeCampo
 
-// Estados de una muestra (chips del historial y la pantalla principal)
-val EstadoValidadoFondo = Color(0xFFDBEAFE)
-val EstadoValidadoTexto = Color(0xFF1E3A8A)
+// Estados de una muestra (chips del historial y la pantalla principal).
+// Validado es verde, igual que en el portal y que la franja del Historial (6,8:1 texto/fondo).
+val EstadoValidadoFondo = Color(0xFFD1FAE5)
+val EstadoValidadoTexto = Color(0xFF065F46)
 
 // Pendiente y Corregido comparten color para no saturar la pantalla.
 // Se distinguen por la etiqueta y el ícono.
@@ -42,7 +43,7 @@ val EstadoEnEsperaTexto = Color(0xFF92400E)
 
 // Franja lateral de las tarjetas del Historial según el estado
 val AcentoValidado = Color(0xFF16A34A)
-val AcentoPendiente = Color(0xFFD97706)
+val AcentoPendiente = Color(0xFFC76C05) // 3,1:1 sobre el fondo de pantalla (punto de conexión) y 3,8:1 sobre blanco
 
 // Alertas que no son un estado (por ejemplo, densidad bajo el mínimo)
 val AlertaFondo = Color(0xFFFEE2E2)
