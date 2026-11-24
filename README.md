@@ -187,7 +187,7 @@ En unos minutos aparece el Release `v1.1.0` con `MusselApp-v1.1.0.apk` adjunto y
    keytool -genkeypair -v -keystore ../musselapp-release.jks -alias musselapp -keyalg RSA -keysize 2048 -validity 10000
    ```
 2. Copiar `keystore.properties.ejemplo` como `keystore.properties` y completar la ruta, el alias y las contraseñas.
-3. Subir `versionCode` y `versionName` en `app/build.gradle.kts` (hoy `5` / `"1.3.1"`).
+3. Subir `versionCode` y `versionName` en `app/build.gradle.kts` (hoy `6` / `"1.3.2"`).
 4. Generar el APK firmado:
    ```bash
    ./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
