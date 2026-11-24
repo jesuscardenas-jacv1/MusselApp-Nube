@@ -21,6 +21,7 @@
     --superficie-3: #EEF2F7;
     --linea: #E6EBF2;
     --linea-2: #D3DCE7;
+    --borde-campo: #7C8BA1; /* contorno de campos editables: el mismo BordeCampo de la app (3,5:1 sobre blanco) */
     /* Marino (barra lateral) */
     --marino: #0B1E33;
     --marino-2: #112A45;
@@ -42,8 +43,8 @@
     --oceano: #2563EB;
     --oceano-suave: #E7EEFD;
     /* Estados (consistentes en toda la web y en los gráficos) */
-    --pend: #D97706; --pend-graf: #F59E0B; --pend-suave: #FEF3C7; --pend-texto: #92400E;
-    --val: #059669;  --val-graf: #10B981;  --val-suave: #D1FAE5;  --val-texto: #065F46;
+    --pend: #D97706; --pend-graf: #CE8509; --pend-suave: #FEF3C7; --pend-texto: #92400E;
+    --val: #059669;  --val-graf: #0EA472;  --val-suave: #D1FAE5;  --val-texto: #065F46;
     --cor: #2563EB;  --cor-graf: #3B82F6;  --cor-suave: #DBEAFE;  --cor-texto: #1E40AF;
     --peligro: #DC2626; --peligro-fuerte: #B91C1C; --peligro-suave: #FEE2E2; --peligro-texto: #991B1B;
     /* Radios */
@@ -90,8 +91,8 @@
   .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
   .btn-primario { background: var(--grad-acento); color: #fff; box-shadow: var(--sombra-acento); }
   .btn-primario:hover:not(:disabled) { box-shadow: 0 10px 26px rgba(14, 128, 118, .40); transform: translateY(-1px); }
-  .btn-secundario { background: var(--superficie); color: var(--texto); box-shadow: inset 0 0 0 1px var(--linea-2); }
-  .btn-secundario:hover:not(:disabled) { background: var(--superficie-2); box-shadow: inset 0 0 0 1px #B8C5D6; }
+  .btn-secundario { background: var(--superficie); color: var(--texto); box-shadow: inset 0 0 0 1px var(--borde-campo); }
+  .btn-secundario:hover:not(:disabled) { background: var(--superficie-2); box-shadow: inset 0 0 0 1px var(--texto-3); }
   .btn-fantasma { background: transparent; color: var(--texto-2); }
   .btn-fantasma:hover:not(:disabled) { background: var(--superficie-3); color: var(--texto); }
   .btn-peligro { background: var(--peligro-suave); color: var(--peligro-texto); }
@@ -109,8 +110,8 @@
   .borrar-ico:hover { background: var(--peligro-suave); color: var(--peligro-fuerte); }
   .borrar-ico .ico { width: 16px; height: 16px; }
 
-  .campo { height: 40px; width: 100%; padding: 0 12px; border: 1px solid var(--linea-2); border-radius: var(--r-sm); background: var(--superficie); color: var(--texto); transition: border-color var(--t-rapida), box-shadow var(--t-rapida); min-width: 0; }
-  .campo:hover { border-color: #B8C5D6; }
+  .campo { height: 40px; width: 100%; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: var(--r-sm); background: var(--superficie); color: var(--texto); transition: border-color var(--t-rapida), box-shadow var(--t-rapida); min-width: 0; }
+  .campo:hover { border-color: var(--texto-3); }
   .campo:focus { outline: none; border-color: var(--acento-fuerte); box-shadow: 0 0 0 3px rgba(15, 181, 166, .22); }
   select.campo { padding-right: 32px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235B6B80' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
   textarea.campo { height: auto; padding: 10px 12px; resize: vertical; line-height: 1.5; }
@@ -249,7 +250,7 @@
   .panel-campana { width: 360px; }
   .panel-campana header { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px 10px; }
   .panel-campana h3 { font-size: 15px; }
-  .nuevo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acento); flex: none; }
+  .nuevo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acento-fuerte); flex: none; }
 
   .cinta-ejemplo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 18px; padding: 10px 16px; border-radius: var(--r-md); background: repeating-linear-gradient(-45deg, #FFF7E0, #FFF7E0 12px, #FFF1CC 12px, #FFF1CC 24px); color: var(--pend-texto); font-weight: 600; box-shadow: inset 0 0 0 1px #F6D58A; }
   .cinta-ejemplo .ico { color: var(--pend); }
@@ -692,7 +693,7 @@
   /* Dos columnas: la foto a la izquierda y los datos y el dictamen a la derecha */
   .drawer-cuerpo.det-2col { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; padding: 24px; }
   .tres.cuatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .tres.editable label { display: block; background: var(--superficie-2); border-radius: var(--r-md); padding: 12px 14px; box-shadow: inset 0 0 0 1.5px var(--linea-2); cursor: text; transition: box-shadow var(--t-rapida); }
+  .tres.editable label { display: block; background: var(--superficie-2); border-radius: var(--r-md); padding: 12px 14px; box-shadow: inset 0 0 0 1.5px var(--borde-campo); cursor: text; transition: box-shadow var(--t-rapida); }
   .tres.editable label:focus-within { box-shadow: inset 0 0 0 2px var(--acento-fuerte), 0 0 0 3px rgba(15, 181, 166, .18); background: var(--superficie); }
   .tres.editable label.cambiado { box-shadow: inset 0 0 0 2px var(--cor); }
   .tres.editable .num-ed { display: flex; align-items: baseline; gap: 4px; }
@@ -727,7 +728,7 @@
   .desvio-caja { padding: 14px; border-radius: var(--r-md); background: var(--superficie-2); }
   .desvio-caja .dc-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
   .desvio-caja .dc-cab span { color: var(--texto-2); font-weight: 600; }
-  .medidor { position: relative; height: 10px; border-radius: var(--r-pill); margin: 14px 0 6px; background: linear-gradient(90deg, #BFDBFE 0%, #BFDBFE 30%, #A7F3D0 30%, #A7F3D0 70%, #FECACA 70%, #FECACA 100%); }
+  .medidor { position: relative; height: 10px; border-radius: var(--r-pill); margin: 14px 0 6px; background: linear-gradient(90deg, #FECACA 0%, #FECACA 30%, #A7F3D0 30%, #A7F3D0 70%, #FECACA 70%, #FECACA 100%); }
   .medidor i { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; background: var(--marino); box-shadow: 0 0 0 3px #fff, var(--sombra-1); transform: translate(-50%, -50%); }
   .medidor-escala { display: flex; justify-content: space-between; font-size: 11px; color: var(--texto-3); font-variant-numeric: tabular-nums; }
   .ficha { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; margin: 0; }
@@ -735,9 +736,21 @@
   .ficha dd { margin: 2px 0 0; font-weight: 500; }
   .caja-texto { padding: 14px; border-radius: var(--r-md); background: var(--superficie-2); }
   .fila-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .ficha-cond { margin-top: 8px; }
   #mini-mapa { height: 180px; margin-top: 12px; border-radius: var(--r-sm); overflow: hidden; background: var(--superficie-3); z-index: 0; }
   .fuente-clima { margin: 8px 0 0; font-size: 12px; color: var(--texto-2); }
+  /* Detalle: cada dato en su recuadro (como en la app), para leerlo de un vistazo */
+  .tres.dos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .caja-texto .tres div { background: var(--superficie); }
+  .tres.compacto div { padding: 10px 12px; }
+  .tres.compacto b { font-size: 20px; }
+  .cond-grupo { margin-top: 10px; }
+  .cond-tit { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--texto); margin-bottom: 6px; }
+  .cond-tit .ico { width: 16px; height: 16px; color: var(--acento-fuerte); }
+  .cond-ubic { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+  .cond-ubic .ico { width: 16px; height: 16px; color: var(--acento-fuerte); flex: none; }
+  .cond-ubic .que { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .cond-ubic b { font-weight: 700; }
+  .cond-ubic .coord { display: block; font-size: 12px; color: var(--texto-3); font-variant-numeric: tabular-nums; }
   .caja-texto small { display: block; font-size: 12px; color: var(--texto-2); font-weight: 600; margin-bottom: 4px; }
   .dictamen { display: grid; gap: 8px; padding: 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1.5px var(--linea); }
   .dictamen h3 { font-size: 15px; }
@@ -853,6 +866,8 @@
     .login-marca .ilustracion { height: 80%; opacity: .6; }
   }
   @media (max-width: 560px) {
+    /* En el celular los 4 recuadros del detalle no caben: 2 por fila para que no se corten los números */
+    .tres.cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpis { grid-template-columns: minmax(0, 1fr); }
     .proy-controles { grid-template-columns: minmax(0, 1fr); }
     .ficha { grid-template-columns: minmax(0, 1fr); }
@@ -1089,7 +1104,7 @@
   var PROFUNDIDADES = [1, 3, 5];
   function estrato(p) { return p <= 2 ? 'Superficie (0-2 m)' : p <= 4 ? 'Media (2-4 m)' : 'Fondo (4-6 m)'; }
   var HORA = 36e5, DIA = 864e5;
-  var COLOR = { PENDIENTE: '#F59E0B', VALIDADO: '#10B981', CORREGIDO: '#3B82F6', acento: '#0FB5A6', acento2: '#10B981', marino: '#0B1E33', texto2: '#475569', linea: '#EEF2F6', peligro: '#DC2626' };
+  var COLOR = { PENDIENTE: '#CE8509', VALIDADO: '#0EA472', CORREGIDO: '#3B82F6', acento: '#0FB5A6', acento2: '#10B981', marino: '#0B1E33', texto2: '#475569', linea: '#EEF2F6', peligro: '#DC2626' };
 
   var MODO_EJEMPLO = /(?:^|[?&])ejemplo=1(?:&|$)/.test(location.search.slice(1));
   var REDUCIR_MOVIMIENTO = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1220,23 +1235,30 @@
   // Ubicación, clima y alertas de la muestra
   function txtDistancia(mt) { return mt < 1000 ? n0(mt) + ' m' : n1(mt / 1000) + ' km'; }
   function txtPosicion(m) { return m.lat == null || m.lon == null ? 'No registrada' : m.lat.toFixed(4) + ', ' + m.lon.toFixed(4) + (m.precisionM == null ? '' : ' (±' + n0(m.precisionM) + ' m)'); }
-  function txtDistanciaCentro(m) { return m.distanciaCentroM == null ? 'No registrada' : txtDistancia(m.distanciaCentroM) + (m.distanciaCentroM > RADIO_AREA_M ? ' (fuera del área)' : ' (dentro del área)'); }
   function cardinal(g) { return g == null ? '' : ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'][Math.floor((((g % 360) + 360) % 360 + 22.5) / 45) % 8]; }
-  function txtTiempo(c) {
-    if (!c) return 'No registrado';
-    var p = [];
-    if (c.descripcion) p.push(c.descripcion);
-    if (c.tempAireC != null) p.push(n0(c.tempAireC) + ' °C');
-    if (c.vientoKn != null) p.push('viento ' + n0(c.vientoKn) + ' kn' + (c.vientoDir != null ? ' del ' + cardinal(c.vientoDir) : '') + (c.rachaKn != null ? ' (racha ' + n0(c.rachaKn) + ' kn)' : ''));
-    return p.join(' · ') || 'No registrado';
-  }
-  function txtMar(c) {
-    if (!c) return 'No registrado';
-    var p = [];
-    if (c.olaM != null) p.push('Ola ' + n1(c.olaM) + ' m');
-    if (c.tempAguaC != null) p.push('agua ' + n1(c.tempAguaC) + ' °C');
-    if (c.mareaM != null) p.push('marea ' + (c.mareaM < 0 ? '−' : '+') + Math.abs(c.mareaM).toFixed(2).replace('.', ',') + ' m');
-    return p.join(' · ') || 'No registrado';
+  // Recuadro con rótulo, número grande y unidad (mismo formato que Conteo, Calibre y Cholgas)
+  function recuadro(rotulo, valor, unidad) { return '<div><small>' + esc(rotulo) + '</small><b>' + valor + '</b><em>' + esc(unidad) + '</em></div>'; }
+  // Tiempo y mar en recuadros, y la ubicación con la distancia antes que las coordenadas
+  function condicionesHtml(m) {
+    var c = m.clima, h = '';
+    if (!c) h += '<p class="fuente-clima" style="margin-top:0">Tiempo y mar no registrados.</p>';
+    else {
+      h += '<div class="cond-grupo"><div class="cond-tit">Tiempo' + (c.descripcion ? ' · ' + esc(c.descripcion) : '') + '</div><div class="tres compacto">' +
+        recuadro('Aire', n0(c.tempAireC), '°C') +
+        recuadro('Viento', n0(c.vientoKn), c.vientoDir != null ? 'kn del ' + cardinal(c.vientoDir) : 'kn') +
+        recuadro('Racha', n0(c.rachaKn), 'kn') + '</div></div>';
+      if (c.olaM != null || c.tempAguaC != null || c.mareaM != null) {
+        h += '<div class="cond-grupo"><div class="cond-tit">' + ico('olas') + 'Mar</div><div class="tres compacto">' +
+          recuadro('Ola', n1(c.olaM), 'm') +
+          recuadro('Agua', n1(c.tempAguaC), '°C') +
+          recuadro('Marea', c.mareaM == null ? '—' : (c.mareaM < 0 ? '−' : '+') + Math.abs(c.mareaM).toFixed(2).replace('.', ','), 'm') + '</div></div>';
+      } else h += '<p class="fuente-clima">Mar: sin datos para este punto.</p>';
+    }
+    var dist = m.distanciaCentroM;
+    h += '<div class="cond-ubic"><div class="que">' + ico('pin') + '<div><b>' + (dist == null ? 'Ubicación no registrada' : esc(txtDistancia(dist)) + ' del centro') + '</b>' +
+      (m.lat != null && m.lon != null ? '<span class="coord">' + esc(txtPosicion(m)) + '</span>' : '') + '</div></div>' +
+      (dist == null ? '' : '<span class="chip ' + (dist > RADIO_AREA_M ? 'peligro">Fuera del área' : 'ok">Dentro del área') + '</span>') + '</div>';
+    return h;
   }
   function alertaCritica(m) { return m.alertas.some(function (a) { return ALERTAS[a].critica; }); }
   function txtAlertas(m) { return m.alertas.map(function (a) { return ALERTAS[a].t; }).join(', '); }
@@ -1917,16 +1939,15 @@
           '<div class="medidor" role="img" id="ed-medidor" aria-label="Desvío ' + signo(dv) + ' por ciento"><i id="ed-marca" style="left:' + pos + '%"></i></div>' +
           '<div class="medidor-escala"><span>−50 %</span><span>−20 %</span><span>0</span><span>+20 %</span><span>+50 %</span></div></div></div><div class="det-col">' +
         '<dl class="ficha">' +
-          '<div><dt>Centro</dt><dd>' + esc(centro(m)) + '</dd></div><div><dt>Operario</dt><dd>' + esc(m.operador) + '</dd></div>' +
-          '<div><dt>Registrada</dt><dd>' + esc(fecha(m.registradaEn)) + '</dd></div><div><dt>Estrato</dt><dd>' + n0(m.profundidadM) + ' m · ' + esc(estrato(m.profundidadM)) + '</dd></div>' +
-          '<div><dt>Tramo</dt><dd>' + (m.tramoCm == null ? 'No registrado' : n0(m.tramoCm) + ' cm') + '</dd></div>' +
-          '<div><dt>Tren</dt><dd>' + esc(m.tren) + (NOMBRE_TREN[m.tren] ? ' · ' + esc(NOMBRE_TREN[m.tren]) : '') + '</dd></div><div><dt>Línea</dt><dd>' + lineaTxt(m.linea) + '</dd></div>' +
+          '<div><dt>Operario</dt><dd>' + esc(m.operador) + '</dd></div><div><dt>Registrada</dt><dd>' + esc(fecha(m.registradaEn)) + '</dd></div>' +
         '</dl>' +
+        '<div class="tres dos">' +
+          recuadro('Estrato', n0(m.profundidadM), 'm · ' + estrato(m.profundidadM).replace(/ \(.*\)$/, '')) +
+          recuadro('Tramo', m.tramoCm == null ? '—' : n0(m.tramoCm), m.tramoCm == null ? 'sin registro' : 'cm') +
+        '</div>' +
         '<div class="caja-texto"><small>Observación del operario</small>' + esc(m.observacion || 'Sin observaciones de terreno.') + '</div>' +
         (m.alertas.length ? '<div class="caja-texto"><small>Alertas al registrar</small><div class="fila-chips">' + chipsAlertas(m) + '</div></div>' : '') +
-        '<div class="caja-texto"><small>Condiciones al muestrear</small><dl class="ficha ficha-cond">' +
-          '<div><dt>Ubicación</dt><dd>' + esc(txtPosicion(m)) + '</dd></div><div><dt>Distancia al centro</dt><dd>' + esc(txtDistanciaCentro(m)) + '</dd></div>' +
-          '<div><dt>Tiempo</dt><dd>' + esc(txtTiempo(m.clima)) + '</dd></div><div><dt>Mar</dt><dd>' + esc(txtMar(m.clima)) + '</dd></div></dl>' +
+        '<div class="caja-texto"><small>Condiciones al muestrear</small>' + condicionesHtml(m) +
           (m.lat != null && m.lon != null ? '<div id="mini-mapa" role="img" aria-label="Mapa con la posición de la muestra y el área del centro"></div>' : '') +
           (m.clima ? '<p class="fuente-clima">Clima: Open-Meteo (dato modelado' + (m.clima.obtenidoEn ? ', consultado el ' + esc(fecha(m.clima.obtenidoEn)) : '') + ').</p>' : '') + '</div>';
     var pie;
