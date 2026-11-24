@@ -45,7 +45,8 @@
     /* Estados (consistentes en toda la web y en los gráficos) */
     --pend: #D97706; --pend-graf: #CE8509; --pend-suave: #FEF3C7; --pend-texto: #92400E;
     --val: #059669;  --val-graf: #0EA472;  --val-suave: #D1FAE5;  --val-texto: #065F46;
-    --cor: #2563EB;  --cor-graf: #3B82F6;  --cor-suave: #DBEAFE;  --cor-texto: #1E40AF;
+    /* Corregido en ámbar, igual que en la app: comparte familia con Pendiente y se distingue por la etiqueta; en los gráficos va más oscuro */
+    --cor: #B45309;  --cor-graf: #92400E;  --cor-suave: #FEF3C7;  --cor-texto: #92400E;
     --peligro: #DC2626; --peligro-fuerte: #B91C1C; --peligro-suave: #FEE2E2; --peligro-texto: #991B1B;
     /* Radios */
     --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
@@ -99,8 +100,8 @@
   .btn-peligro:hover:not(:disabled) { background: var(--peligro-fuerte); color: #fff; }
   .btn-validar { background: #047857; color: #fff; box-shadow: 0 8px 20px rgba(4, 120, 87, .25); }
   .btn-validar:hover:not(:disabled) { background: #065F46; }
-  .btn-corregir { background: #1D4ED8; color: #fff; box-shadow: 0 8px 20px rgba(29, 78, 216, .22); }
-  .btn-corregir:hover:not(:disabled) { background: #1E40AF; }
+  .btn-corregir { background: #B45309; color: #fff; box-shadow: 0 8px 20px rgba(180, 83, 9, .22); }
+  .btn-corregir:hover:not(:disabled) { background: #92400E; }
   .btn-ch { height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
   .btn-icono { width: 40px; padding: 0; }
   .btn-icono.btn-ch { width: 32px; }
@@ -1104,7 +1105,7 @@
   var PROFUNDIDADES = [1, 3, 5];
   function estrato(p) { return p <= 2 ? 'Superficie (0-2 m)' : p <= 4 ? 'Media (2-4 m)' : 'Fondo (4-6 m)'; }
   var HORA = 36e5, DIA = 864e5;
-  var COLOR = { PENDIENTE: '#CE8509', VALIDADO: '#0EA472', CORREGIDO: '#3B82F6', acento: '#0FB5A6', acento2: '#10B981', marino: '#0B1E33', texto2: '#475569', linea: '#EEF2F6', peligro: '#DC2626' };
+  var COLOR = { PENDIENTE: '#CE8509', VALIDADO: '#0EA472', CORREGIDO: '#92400E', serie: '#3B82F6', acento: '#0FB5A6', acento2: '#10B981', marino: '#0B1E33', texto2: '#475569', linea: '#EEF2F6', peligro: '#DC2626' };
 
   var MODO_EJEMPLO = /(?:^|[?&])ejemplo=1(?:&|$)/.test(location.search.slice(1));
   var REDUCIR_MOVIMIENTO = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2412,7 +2413,7 @@
       // Tiempo medio de revisión
       $('d-tiempo').innerHTML = tRev == null ? '— <em>sin revisiones</em>' : n1(tRev) + ' <em>horas en promedio</em>';
       var tC = ids.map(function (id) { var l = rev.filter(function (m) { return m.centroId === id; }); return l.length ? Math.round(promedio(l, horasRevision) * 10) / 10 : null; });
-      grafico('g-tiempo', { type: 'bar', data: { labels: ids.map(centroCorto), datasets: [{ label: 'Horas', data: tC, backgroundColor: COLOR.CORREGIDO, borderRadius: 8, maxBarThickness: 34 }] },
+      grafico('g-tiempo', { type: 'bar', data: { labels: ids.map(centroCorto), datasets: [{ label: 'Horas', data: tC, backgroundColor: COLOR.serie, borderRadius: 8, maxBarThickness: 34 }] },
         options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (x) { return n1(x.parsed.y) + ' h'; } } } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, border: { display: false } } } } }, rev.length > 0);
 
       // Cobertura de líneas
@@ -2864,7 +2865,7 @@
       }
       grafico('g-hist', { type: 'line', data: { datasets: [
         { label: 'Talla (mm)', data: puntosT, borderColor: COLOR.acento, backgroundColor: COLOR.acento, yAxisID: 'y', cubicInterpolationMode: 'monotone', pointRadius: 3, borderWidth: 2.5 },
-        { label: 'Densidad (ind/m)', data: puntosD, borderColor: COLOR.CORREGIDO, backgroundColor: COLOR.CORREGIDO, yAxisID: 'y2', cubicInterpolationMode: 'monotone', pointRadius: 3, borderWidth: 2, borderDash: [5, 4] }
+        { label: 'Densidad (ind/m)', data: puntosD, borderColor: COLOR.serie, backgroundColor: COLOR.serie, yAxisID: 'y2', cubicInterpolationMode: 'monotone', pointRadius: 3, borderWidth: 2, borderDash: [5, 4] }
       ] }, options: { interaction: { mode: 'nearest', intersect: false }, plugins: { legend: { position: 'top', align: 'end' }, tooltip: { callbacks: { title: function (it) { return it.length ? fechaDia(it[0].parsed.x) : ''; } } } },
         scales: { x: ejeFecha(), y: { position: 'left', title: { display: true, text: 'mm' }, border: { display: false } }, y2: { position: 'right', grid: { display: false }, title: { display: true, text: 'ind/m' }, border: { display: false } } } } }, asc.length > 0);
 
