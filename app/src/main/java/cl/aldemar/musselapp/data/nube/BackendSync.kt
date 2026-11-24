@@ -27,6 +27,9 @@ import java.util.concurrent.TimeUnit
 /** Lo que el teléfono recuerda de cada servidor. Cada computador tiene su propia base, por eso la clave lleva el servidor. */
 interface AlmacenBackend {
     fun instalacion(): String
+    /** true si alguna vez se usó un backend desde este teléfono. */
+    fun yaRespondio(): Boolean
+    fun marcarRespuesta()
     /** Muestra local que se importó desde el servidor. */
     fun idLocalDe(idCliente: String): Long?
     fun idClienteDe(idLocal: Long): String?
@@ -44,6 +47,9 @@ class PreferenciasBackend(context: Context) : AlmacenBackend {
 
     override fun instalacion(): String = prefs.getString("instalacion", null)
         ?: UUID.randomUUID().toString().take(8).also { prefs.edit { putString("instalacion", it) } }
+
+    override fun yaRespondio(): Boolean = prefs.getBoolean("ya_respondio", false)
+    override fun marcarRespuesta() = prefs.edit { putBoolean("ya_respondio", true) }
 
     override fun idLocalDe(idCliente: String): Long? = prefs.getLong("local_$idCliente", 0L).takeIf { it > 0 }
     override fun idClienteDe(idLocal: Long): String? = prefs.getString("cliente_$idLocal", null)
@@ -76,8 +82,19 @@ class BackendSync(
     /** Las importadas conservan el identificador que les dio el servidor: así nunca se suben como nuevas. */
     private fun idClienteDe(idLocal: Long): String = almacen.idClienteDe(idLocal) ?: "$prefijoPropio$idLocal"
 
+    @Volatile
+    private var falloUltimo = false
+
+    // Solo se avisa a quien lo usó alguna vez: en los demás teléfonos que no haya backend es lo normal
+    override val sinRespuesta: Boolean get() = falloUltimo && almacen.yaRespondio()
+
     /** Identidad del servidor, o null si está apagado (lo normal fuera de la defensa). */
-    private suspend fun servidor(): String? = intentar("El backend no responde", null) { api.servidor().id }
+    private suspend fun servidor(): String? {
+        val id = intentar("El backend no responde", null) { api.servidor().id }
+        falloUltimo = id == null
+        if (id != null) almacen.marcarRespuesta()
+        return id
+    }
 
     private suspend fun <T> intentar(mensaje: String, siFalla: T, accion: suspend () -> T): T = try {
         accion()

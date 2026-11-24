@@ -11,6 +11,9 @@ import cl.aldemar.musselapp.data.model.ValoresOperario
  */
 interface ServicioBackend {
 
+    /** true si este teléfono ya usó el backend y en el último intento no respondió. */
+    val sinRespuesta: Boolean get() = false
+
     /** Muestras que cambiaron en el servidor desde la última vez; vacía si está apagado. Nunca lanza. */
     suspend fun cambios(): List<CambioBackend>
 

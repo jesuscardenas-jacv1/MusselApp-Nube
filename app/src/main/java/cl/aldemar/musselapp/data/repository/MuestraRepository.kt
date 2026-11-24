@@ -6,6 +6,16 @@ import cl.aldemar.musselapp.data.model.Usuario
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
+/** Qué pasó al sincronizar, para explicárselo al usuario. */
+data class ResultadoSincronizacion(
+    /** Muestras que llegaron a la nube. */
+    val enviadas: Int,
+    /** Muestras creadas o cambiadas en el backend que se trajeron al teléfono (también cuentan en [enviadas] al subirse). */
+    val recibidas: Int = 0,
+    /** El backend, que este teléfono ya había usado, ahora no responde. */
+    val backendSinRespuesta: Boolean = false,
+)
+
 /** Acceso a las muestras registradas en el dispositivo. */
 interface MuestraRepository {
     val muestras: StateFlow<List<Muestra>>
@@ -29,6 +39,9 @@ interface MuestraRepository {
 
     /** Envía al servidor las muestras guardadas localmente y devuelve cuántas se enviaron. */
     suspend fun sincronizar(): Int
+
+    /** Igual que [sincronizar], con el detalle para el mensaje del botón. */
+    suspend fun sincronizarConDetalle(): ResultadoSincronizacion = ResultadoSincronizacion(sincronizar())
 
     /** Cuántas muestras siguen sin subir a la nube. */
     suspend fun contarPendientes(): Int = muestras.value.count { !it.sincronizada }

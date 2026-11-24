@@ -13,6 +13,7 @@ import cl.aldemar.musselapp.data.nube.CambioBackend
 import cl.aldemar.musselapp.data.nube.ServicioBackend
 import cl.aldemar.musselapp.data.nube.ValoresCorregidos
 import cl.aldemar.musselapp.data.nube.VeredictoNube
+import cl.aldemar.musselapp.data.repository.ResultadoSincronizacion
 import cl.aldemar.musselapp.data.repository.RoomMuestraRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +89,8 @@ class SincronizacionBackendTest {
         repo.sincronizar()
         val m = pendiente()
         backend.pendientes = listOf(cambio(m, conteo = 381))
-        repo.sincronizar()
+        assertEquals(ResultadoSincronizacion(enviadas = 1, recibidas = 1), repo.sincronizarConDetalle())
+        assertEquals(ResultadoSincronizacion(enviadas = 0), repo.sincronizarConDetalle())
         assertEquals(381, muestra(m.id).conteoIndM)
         assertTrue(muestra(m.id).sincronizada)
         assertEquals(m.id, nube.idsSubidos().last())
@@ -101,7 +103,7 @@ class SincronizacionBackendTest {
         nube.emitir(VeredictoNube(m.id, EstadoMuestra.CORREGIDO, "Recuento", 50L, ValoresCorregidos(380, m.tallaMm, m.cholgasIndM)))
         withTimeout(5_000) { while (backend.enviadas.none { it.id == m.id && it.conteoIndM == 380 }) delay(50) }
         backend.pendientes = listOf(cambio(m))
-        repo.sincronizar()
+        assertEquals(0, repo.sincronizarConDetalle().recibidas)
         assertEquals(380, muestra(m.id).conteoIndM)
         assertEquals(EstadoMuestra.CORREGIDO, muestra(m.id).estado)
     }
