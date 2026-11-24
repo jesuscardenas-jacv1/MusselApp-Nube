@@ -41,6 +41,48 @@ service cloud.firestore {
               'conteoIndM', 'tallaMm', 'cholgasIndM', 'valoresOperario'];
     }
 
+    // ── Validación de lo que escribe el teléfono (sesión anónima) ──────────────────────
+    // Solo los campos que sube la app (NubeSync.subir), más fotoBase64, que la app borra en versiones antiguas.
+    function camposDelTelefono() {
+      return ['codigo', 'centroId', 'tren', 'linea', 'profundidadM', 'tallaMm', 'conteoIndM', 'cholgasIndM',
+              'tramoCm', 'observacion', 'estado', 'registradaEn', 'operador', 'operadorRut', 'lat', 'lon',
+              'precisionM', 'distanciaCentroM', 'clima', 'alertas', 'ownerUid', 'instalacion', 'tieneFoto',
+              'fotoBase64', 'revisadaPor', 'revisadaEn', 'comentarioSupervisor', 'valoresOperario'];
+    }
+
+    // Cada comprobación acepta que el campo falte o sea null (la app sube null cuando no hay dato).
+    // Los límites son holgados a propósito: frenan valores absurdos sin rechazar muestras antiguas válidas.
+    function texto(d, campo, max) {
+      return !(campo in d) || d[campo] == null || (d[campo] is string && d[campo].size() <= max);
+    }
+    function entero(d, campo, min, max) {
+      return !(campo in d) || d[campo] == null || (d[campo] is int && d[campo] >= min && d[campo] <= max);
+    }
+    function numero(d, campo) {
+      return !(campo in d) || d[campo] == null || d[campo] is number;
+    }
+
+    function muestraValida(d) {
+      return (!('estado' in d) || d.estado in ['PENDIENTE', 'VALIDADO', 'CORREGIDO'])
+        && texto(d, 'codigo', 40) && texto(d, 'centroId', 40) && texto(d, 'tren', 10)
+        && texto(d, 'observacion', 1000) && texto(d, 'operador', 100) && texto(d, 'operadorRut', 20)
+        && texto(d, 'instalacion', 40) && texto(d, 'revisadaPor', 100) && texto(d, 'comentarioSupervisor', 1000)
+        && entero(d, 'linea', 0, 1000) && entero(d, 'profundidadM', 0, 100) && entero(d, 'tallaMm', 0, 1000)
+        && entero(d, 'conteoIndM', 0, 100000) && entero(d, 'cholgasIndM', 0, 100000) && entero(d, 'tramoCm', 0, 10000)
+        && numero(d, 'registradaEn') && numero(d, 'revisadaEn') && numero(d, 'lat') && numero(d, 'lon')
+        && numero(d, 'precisionM') && numero(d, 'distanciaCentroM')
+        && (!('alertas' in d) || d.alertas == null || (d.alertas is list && d.alertas.size() <= 20))
+        && (!('clima' in d) || d.clima == null || d.clima is map)
+        && (!('valoresOperario' in d) || d.valoresOperario == null || d.valoresOperario is map)
+        && (!('tieneFoto' in d) || d.tieneFoto is bool);
+    }
+
+    // La fecha de registro y el código no cambian una vez en la nube
+    function inmutablesIntactos() {
+      return (!('registradaEn' in resource.data) || request.resource.data.registradaEn == resource.data.registradaEn)
+        && (!('codigo' in resource.data) || request.resource.data.codigo == resource.data.codigo);
+    }
+
     function sinDictamen() {
       return !('estado' in resource.data) || resource.data.estado == 'PENDIENTE';
     }
@@ -60,14 +102,19 @@ service cloud.firestore {
       // La escucha del teléfono debe filtrar por ownerUid; pedir la colección completa se rechaza
       allow list: if esSuyo();
 
-      allow create: if conSesion() && quedaSuyo();
+      allow create: if conSesion() && quedaSuyo()
+        && request.resource.data.keys().hasOnly(camposDelTelefono())
+        && muestraValida(request.resource.data);
 
       // El teléfono actualiza lo suyo (o reclama un documento antiguo sin dueño) y no puede pasarlo a otro.
       // Gana el primer dictamen: si la muestra ya tiene uno, el teléfono no puede tocar esos campos.
       allow update: if (esSuyo() || sinDueno())
         && quedaSuyo()
         && (sinDictamen()
-            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(camposDelDictamen()));
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(camposDelDictamen()))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(camposDelTelefono())
+        && muestraValida(request.resource.data)
+        && inmutablesIntactos();
 
       // Eliminar: solo el supervisor (no hay regla de delete para el teléfono)
     }
@@ -76,8 +123,14 @@ service cloud.firestore {
     match /fotos/{id} {
       allow read, write: if esSupervisor();
       allow get: if conSesion() && (resource == null || esSuyo() || sinDueno());
-      allow create: if conSesion() && quedaSuyo();
-      allow update: if (esSuyo() || sinDueno()) && quedaSuyo();
+      // Solo la foto y el dueño, como texto de hasta ~1 MB (el límite de un documento de Firestore)
+      allow create: if conSesion() && quedaSuyo()
+        && request.resource.data.keys().hasOnly(['fotoBase64', 'ownerUid'])
+        && request.resource.data.fotoBase64 is string && request.resource.data.fotoBase64.size() <= 1000000;
+      allow update: if (esSuyo() || sinDueno()) && quedaSuyo()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fotoBase64', 'ownerUid'])
+        && (!('fotoBase64' in request.resource.data) || (request.resource.data.fotoBase64 is string
+            && request.resource.data.fotoBase64.size() <= 1000000));
     }
   }
 }

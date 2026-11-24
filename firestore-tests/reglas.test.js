@@ -2,7 +2,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, deleteField, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 const TELEFONO_A = 'uid-telefono-a';
 const TELEFONO_B = 'uid-telefono-b';
@@ -169,4 +169,84 @@ test('cada cuenta solo puede comprobar si ella es supervisor, y nadie edita la l
   await assertFails(setDoc(doc(bd(OTRA_CUENTA), 'supervisores', OTRA_CUENTA), { nombre: 'Intruso' }));
   await assertFails(setDoc(doc(bd(SUPERVISOR), 'supervisores', OTRA_CUENTA), { nombre: 'Amigo' }));
   await assertFails(deleteDoc(doc(bd(SUPERVISOR), 'supervisores', SUPERVISOR)));
+});
+
+// ── Validación de datos (lo que escribe el teléfono) ─────────────────────
+
+// Subida completa, con los mismos campos y tipos que manda NubeSync.subir
+const subidaCompleta = (ownerUid, extra = {}) => ({
+  codigo: 'Muestra 020', centroId: 'quellon', tren: 'B', linea: 4, profundidadM: 6, tallaMm: 72,
+  conteoIndM: 450, cholgasIndM: null, tramoCm: 25, observacion: '', estado: 'PENDIENTE',
+  registradaEn: 1732400000000, operador: 'Carla Vera', operadorRut: '11.111.111-1',
+  lat: -42.401, lon: -73.622, precisionM: 12.5, distanciaCentroM: 140,
+  clima: { tempAireC: 12.1, vientoKn: 22.0, rachaKn: 30.0, vientoDir: 200, codigo: 63, descripcion: 'Lluvia',
+           olaM: 1.2, tempAguaC: 13.3, mareaM: 0.4, obtenidoEn: 1732400000000 },
+  alertas: ['VIENTO_FUERTE'], ownerUid, instalacion: 'aaaa1111', ...extra,
+});
+
+test('validación: pasan las subidas reales de la app (pendiente, sin datos opcionales, con foto y validada sin conexión)', async () => {
+  const a = bd(TELEFONO_A);
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_20'), subidaCompleta(TELEFONO_A), { merge: true }));
+  // Sin GPS, sin clima y sin tramo: la app sube null
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_21'),
+    subidaCompleta(TELEFONO_A, { codigo: 'Muestra 021', lat: null, lon: null, precisionM: null, distanciaCentroM: null,
+      clima: null, tallaMm: null, tramoCm: null, alertas: [] }), { merge: true }));
+  // Resubida con foto: marca tieneFoto y borra la foto antigua dentro de la muestra
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_20'),
+    subidaCompleta(TELEFONO_A, { tieneFoto: true, fotoBase64: deleteField() }), { merge: true }));
+  // Validada en el teléfono antes de tener conexión
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_22'),
+    subidaCompleta(TELEFONO_A, { codigo: 'Muestra 022', estado: 'VALIDADO', revisadaPor: 'Diego Muñoz', revisadaEn: 1732400100000,
+      comentarioSupervisor: null, valoresOperario: { conteoIndM: 410, tallaMm: 65, cholgasIndM: null } }), { merge: true }));
+});
+
+test('validación: una muestra antigua con campos que ya no se usan se sigue pudiendo actualizar', async () => {
+  await entorno.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'muestras', 'aaaa1111_30'), muestra(TELEFONO_A, { campoAntiguo: 'x', fotoBase64: 'data:...' }));
+  });
+  const a = bd(TELEFONO_A);
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_30'),
+    { observacion: 'Con clima', tieneFoto: true, fotoBase64: deleteField(), ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('ataque: el teléfono no puede agregar campos que la app no usa', async () => {
+  const a = bd(TELEFONO_A);
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_40'), subidaCompleta(TELEFONO_A, { esAdmin: true })));
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_1'), { rol: 'SUPERVISOR', ownerUid: TELEFONO_A }, { merge: true }));
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_1'), { demo: true, ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('ataque: el teléfono no puede guardar valores absurdos ni de otro tipo', async () => {
+  const a = bd(TELEFONO_A);
+  const malos = [
+    { conteoIndM: -5 }, { conteoIndM: 9999999 }, { conteoIndM: '410' }, { tallaMm: 65.5 }, { profundidadM: 500 },
+    { estado: 'APROBADO_POR_MI' }, { observacion: 'x'.repeat(5000) }, { codigo: 'y'.repeat(500) },
+    { lat: 'aquí' }, { registradaEn: 'ayer' }, { alertas: 'todas' }, { alertas: Array(50).fill('A') },
+    { clima: 'soleado' }, { tieneFoto: 'sí' },
+  ];
+  for (const [i, malo] of malos.entries()) {
+    await assertFails(setDoc(doc(a, 'muestras', `aaaa1111_5${i}`), subidaCompleta(TELEFONO_A, malo)));
+  }
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_1'), { conteoIndM: -1, ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('ataque: el teléfono no puede cambiar la fecha de registro ni el código de una muestra subida', async () => {
+  const a = bd(TELEFONO_A);
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_20'), subidaCompleta(TELEFONO_A)));
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_20'), { registradaEn: 1, ownerUid: TELEFONO_A }, { merge: true }));
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_20'), { codigo: 'Muestra 999', ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('ataque: en fotos solo van la foto y el dueño, con tamaño limitado', async () => {
+  const a = bd(TELEFONO_A);
+  await assertFails(setDoc(doc(a, 'fotos', 'aaaa1111_60'), { fotoBase64: 'data:image/jpeg;base64,BBBB', ownerUid: TELEFONO_A, extra: 1 }));
+  await assertFails(setDoc(doc(a, 'fotos', 'aaaa1111_61'), { fotoBase64: 123, ownerUid: TELEFONO_A }));
+  await assertFails(setDoc(doc(a, 'fotos', 'aaaa1111_62'), { fotoBase64: 'z'.repeat(1000001), ownerUid: TELEFONO_A }));
+  await assertFails(setDoc(doc(a, 'fotos', 'aaaa1111_1'), { nota: 'hola', ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('el supervisor no queda limitado por la validación del teléfono', async () => {
+  const s = bd(SUPERVISOR);
+  await assertSucceeds(setDoc(doc(s, 'muestras', 'demo-2'), { codigo: 'Demo', estado: 'PENDIENTE', demo: true, conteoIndM: 300 }));
+  await assertSucceeds(updateDoc(doc(s, 'muestras', 'aaaa1111_2'), { estado: 'CORREGIDO', conteoIndM: 380 }));
 });
