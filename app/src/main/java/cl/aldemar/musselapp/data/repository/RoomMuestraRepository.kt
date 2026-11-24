@@ -9,6 +9,8 @@ import cl.aldemar.musselapp.data.model.CentroCultivo
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.nube.ProteccionDictamen
+import cl.aldemar.musselapp.data.nube.CambioBackend
+import cl.aldemar.musselapp.data.nube.ServicioBackend
 import cl.aldemar.musselapp.data.nube.ServicioNube
 import cl.aldemar.musselapp.data.model.Muestra
 import cl.aldemar.musselapp.data.model.Usuario
@@ -43,6 +45,8 @@ class RoomMuestraRepository(
     /** Clima de la muestra; null en las pruebas que no usan red. */
     private val clima: FuenteClima? = null,
     private val reloj: () -> Long = System::currentTimeMillis,
+    /** Backend propio, opcional; null si no se usa. */
+    private val backend: ServicioBackend? = null,
 ) : MuestraRepository {
 
     private val muestraDao = db.muestraDao()
@@ -50,6 +54,9 @@ class RoomMuestraRepository(
 
     /** Los dictámenes de la nube se aplican uno a la vez. */
     private val aplicandoDictamen = Mutex()
+
+    /** El backend se consulta de a uno: dos sincronizaciones a la vez importarían dos veces lo mismo. */
+    private val conBackend = Mutex()
 
     /** Lista viva: Room vuelve a emitir cada vez que cambia una tabla de la consulta. */
     override val muestras: StateFlow<List<Muestra>> =
@@ -76,6 +83,7 @@ class RoomMuestraRepository(
                         muestraDao.marcarSincronizada(v.muestraId)
                         alRevisar(local, v.estado, v.comentario)
                     }
+                    enviarAlBackend()
                 } catch (e: Exception) {
                     android.util.Log.w("RoomMuestraRepo", "No se pudo aplicar el dictamen", e)
                 }
@@ -94,6 +102,7 @@ class RoomMuestraRepository(
                     val local = muestraDao.observarPorId(id).first()?.aModelo() ?: return@launch
                     if (muestraDao.eliminar(id) > 0) alEliminar(local)
                 }
+                backend?.eliminar(id)
             } catch (e: Exception) {
                 android.util.Log.w("RoomMuestraRepo", "No se pudo borrar la muestra eliminada en el portal", e)
             }
@@ -115,7 +124,7 @@ class RoomMuestraRepository(
         muestraDao.registrarRevision(id, nuevoEstado, comentario, supervisorRut, System.currentTimeMillis())
         // El dictamen hecho en el teléfono se sube de inmediato para que el portal lo vea y no acepte otro.
         // Igual que al guardar, no se espera a la red: si falla, la muestra queda pendiente para "Sincronizar"
-        if (nube != null) alcanceNube.launch { subirMuestra(id) }
+        if (nube != null) alcanceNube.launch { subirMuestra(id); enviarAlBackend() }
     }
 
     /** El id de [muestra] se ignora: lo genera la base al insertar. */
@@ -142,7 +151,7 @@ class RoomMuestraRepository(
         )
         // Guardar nunca espera a la red: el clima y el envío van en segundo plano.
         // Si fallan, la muestra queda pendiente para "Sincronizar"
-        if (nube != null || clima != null) alcanceNube.launch { subirMuestra(nuevoId) }
+        if (nube != null || clima != null) alcanceNube.launch { subirMuestra(nuevoId); enviarAlBackend() }
         return nuevoId
     }
 
@@ -178,7 +187,80 @@ class RoomMuestraRepository(
             delay(latenciaSincronizacionMs) // Sin nube: simula el envío por el enlace satelital
             return muestraDao.marcarSincronizadas()
         }
-        return muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
+        // Primero se trae lo del backend: si cambió algo, queda pendiente y se sube a Firestore enseguida
+        traerDelBackend()
+        val enviadas = muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
+        enviarAlBackend()
+        return enviadas
+    }
+
+    /** Le envía al backend lo que le falta. No afecta la cola: si está apagado, no pasa nada. */
+    private suspend fun enviarAlBackend() {
+        val servicio = backend ?: return
+        conBackend.withLock { servicio.enviar(muestraDao.observarTodas().first().map { it.aModelo() }) }
+    }
+
+    /** Aplica en Room lo que cambió en el backend (por ejemplo, un POST o un PUT hecho en Swagger). */
+    private suspend fun traerDelBackend() {
+        val servicio = backend ?: return
+        conBackend.withLock {
+            for (cambio in servicio.cambios()) {
+                val idLocal = aplicandoDictamen.withLock {
+                    if (cambio.idLocal == null) importar(cambio) else aplicarCambio(cambio, cambio.idLocal)
+                }
+                servicio.revisado(cambio, idLocal)
+            }
+        }
+    }
+
+    /** Muestra creada en el servidor. Queda pendiente para que también llegue a Firestore y al portal. */
+    private suspend fun importar(c: CambioBackend): Long? {
+        val lineaId = db.catalogoDao().buscarLineaId(c.centroId, c.tren, c.linea) ?: return null
+        val registro = c.valoresOperario
+        val id = muestraDao.insertar(
+            MuestraEntity(
+                lineaId = lineaId,
+                operadorRut = buscarRut(c.operadorRut) ?: DatosIniciales.RUT_OPERARIO,
+                profundidadM = c.profundidadM,
+                tallaMm = registro?.tallaMm ?: c.tallaMm,
+                conteoIndM = registro?.conteoIndM ?: c.conteoIndM,
+                cholgasIndM = if (registro != null) registro.cholgasIndM else c.cholgasIndM,
+                tramoCm = c.tramoCm,
+                observacion = c.observacion,
+                estado = EstadoMuestra.PENDIENTE,
+                registradaEn = c.registradaEn,
+                sincronizada = false,
+                fotoRuta = null,
+            ),
+        )
+        aplicarDictamen(c, id)
+        return id
+    }
+
+    /**
+     * Cambio en el servidor de una muestra de este teléfono. Solo se toca mientras siga pendiente: si ya
+     * tiene dictamen, vale el primero y lo que diga el backend no lo pisa.
+     */
+    private suspend fun aplicarCambio(c: CambioBackend, id: Long): Long? {
+        val local = muestraDao.observarPorId(id).first()?.aModelo() ?: return null
+        // Mismo id pero otra muestra (por ejemplo, si se borró la base del teléfono): no se toca
+        if (local.registradaEn != c.registradaEn || local.estado != EstadoMuestra.PENDIENTE) return id
+        val conteo = c.valoresOperario?.conteoIndM ?: c.conteoIndM
+        val talla = c.valoresOperario?.tallaMm ?: c.tallaMm
+        val cholgas = if (c.valoresOperario != null) c.valoresOperario.cholgasIndM else c.cholgasIndM
+        val cambia = local.conteoIndM != conteo || local.tallaMm != talla || local.cholgasIndM != cholgas ||
+            local.profundidadM != c.profundidadM || local.tramoCm != c.tramoCm || local.observacion != c.observacion
+        if (cambia) muestraDao.actualizarDesdeRemoto(id, c.profundidadM, talla, conteo, cholgas, c.tramoCm, c.observacion)
+        if (aplicarDictamen(c, id)) alRevisar(local, c.estado, c.comentario)
+        return id
+    }
+
+    private suspend fun aplicarDictamen(c: CambioBackend, id: Long): Boolean {
+        if (c.estado == EstadoMuestra.PENDIENTE) return false
+        // registrarRevision la deja sin sincronizar: el dictamen se sube a Firestore y el portal lo ve
+        muestraDao.registrarRevision(id, c.estado, c.comentario, DatosIniciales.RUT_SUPERVISOR, c.revisadaEn ?: reloj())
+        if (c.valoresOperario != null) muestraDao.aplicarCorreccion(id, c.conteoIndM, c.tallaMm, c.cholgasIndM)
+        return true
     }
 
     // Se consulta Room y no la lista en memoria, que puede ir un paso atrás de la base

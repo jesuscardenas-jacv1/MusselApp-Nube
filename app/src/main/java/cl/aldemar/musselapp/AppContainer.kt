@@ -1,10 +1,12 @@
 package cl.aldemar.musselapp
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import cl.aldemar.musselapp.data.clima.ClimaRepository
 import cl.aldemar.musselapp.data.local.MusselDatabase
 import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
 import cl.aldemar.musselapp.data.nube.AvisoRevision
+import cl.aldemar.musselapp.data.nube.BackendSync
 import cl.aldemar.musselapp.data.nube.Conectividad
 import cl.aldemar.musselapp.data.nube.EnvioPendientes
 import cl.aldemar.musselapp.data.nube.Notificador
@@ -46,6 +48,8 @@ class AppContainer(context: Context) {
     private val notificador by lazy { Notificador(appContext) }
 
     val muestraRepository: MuestraRepository by lazy { RoomMuestraRepository(database, alcanceApp, nube = NubeSync(appContext), clima = ClimaRepository(),
+            // Backend Spring Boot de la defensa: solo en la versión de depuración, y si está apagado no molesta
+            backend = if (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) BackendSync(appContext) else null,
             alRevisar = { muestra, estado, comentario ->
                 notificador.avisarRevision(muestra, estado, comentario)
                 avisos.update { it + AvisoRevision(muestra.codigo, muestra.codigoLinea, estado, comentario) }

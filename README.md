@@ -313,8 +313,8 @@ Las pautas EA4 y EA5 nombran algunas librerías como recomendadas. Donde el proy
 - **Dashboard con gráficos en el portal web, no en la app:** el supervisor analiza en el computador, con pantalla grande y los datos de todos los teléfonos; la app se enfoca en el trabajo en terreno.
 - **Sin rol analista:** el supervisor cumple sus funciones (filtra el historial, revisa el dashboard y exporta), así que un tercer rol solo duplicaría permisos.
 - **Sin estado "Observado":** los estados son Pendiente, Corregido y Validado. "Observar" es revisar la muestra antes de dictaminar, y Corregir incluye las observaciones al operario.
-- **Backend propio (Spring Boot + Swagger):** lo desarrollan otros integrantes. Para conectarlo basta una clase que implemente `ServicioNube` (`data/nube/ServicioNube.kt`) elegida en `AppContainer.kt`; las pantallas, el Repository y el reenvío automático ya trabajan contra esa interfaz.
-- **Modificación en vivo:** el procedimiento para ensayar la parte app está en [`docs/ensayo-modificacion-en-vivo.md`](docs/ensayo-modificacion-en-vivo.md).
+- **Backend propio (Spring Boot + Swagger):** implementado en [`backend/`](backend/README.md) con JPA + H2 persistente, permisos por rol (`X-Rol`), CRUD completo de muestras, fotos/metadatos, revisiones y reportes, y documentación OpenAPI en `/swagger-ui.html`. La app se conecta con **Retrofit** (`data/nube/BackendApi.kt` + `BackendSync.kt`) solo en la versión de depuración. Firestore sigue siendo la nube principal y el backend es **opcional**: si está apagado, ninguna muestra queda en cola. Cuando está disponible, el teléfono hace de puente entre ambos, y gana el primer dictamen. Detalle en [`backend/README.md`](backend/README.md).
+- **Modificación en vivo:** el procedimiento completo (Spring Boot + Android) está en [`docs/ensayo-modificacion-en-vivo.md`](docs/ensayo-modificacion-en-vivo.md).
 
 ## 9. Identidad visual
 
@@ -399,6 +399,11 @@ app/                         # código fuente de la app Android
     ├── main/                # código, recursos y AndroidManifest.xml
     ├── test/                # pruebas unitarias
     └── androidTest/         # pruebas instrumentadas (Room)
+backend/                     # backend propio Spring Boot + JPA (H2) + Swagger/OpenAPI
+├── pom.xml                  # proyecto Maven (Spring Boot 3.5 + springdoc)
+└── src/
+    ├── main/                # entidades, repositorios, DTOs, servicios y controladores REST
+    └── test/                # pruebas integradas con MockMvc
 docs/
 ├── base-de-datos.md         # modelo de datos
 ├── capturas/                # capturas de la app real

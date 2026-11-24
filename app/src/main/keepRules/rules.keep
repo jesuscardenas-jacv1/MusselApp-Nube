@@ -19,6 +19,13 @@
 -keep class cl.aldemar.musselapp.data.clima.RespuestaMar { *; }
 -keep class cl.aldemar.musselapp.data.clima.MarActual { *; }
 
+# DTOs del backend Spring Boot (Retrofit + Gson): evita que R8 renombre los campos en release
+-keep class cl.aldemar.musselapp.data.nube.MuestraEnviarDto { *; }
+-keep class cl.aldemar.musselapp.data.nube.MuestraRemotaDto { *; }
+-keep class cl.aldemar.musselapp.data.nube.FotoEnviarDto { *; }
+-keep class cl.aldemar.musselapp.data.nube.RevisionEnviarDto { *; }
+-keep class cl.aldemar.musselapp.data.nube.ServidorDto { *; }
+
 # Logs de depuración: en release R8 elimina las llamadas a Log.v/d/i (NubeSync escribe en
 # Logcat los ids de las muestras y de la instalación). Log.w y Log.e se mantienen para
 # poder diagnosticar fallos.

@@ -107,6 +107,26 @@ interface MuestraDao {
     @Query("UPDATE muestras SET sincronizada = 1 WHERE id = :id")
     suspend fun marcarSincronizada(id: Long)
 
+    /** Valores cambiados en el backend (por ejemplo, un PUT en Swagger). Queda pendiente para que también llegue a Firestore. */
+    @Query(
+        """
+        UPDATE muestras SET
+            profundidad_m = :profundidadM, talla_mm = :tallaMm, conteo_ind_m = :conteoIndM,
+            cholgas_ind_m = :cholgasIndM, tramo_cm = :tramoCm, observacion = :observacion,
+            sincronizada = 0
+        WHERE id = :id
+        """,
+    )
+    suspend fun actualizarDesdeRemoto(
+        id: Long,
+        profundidadM: Int,
+        tallaMm: Int,
+        conteoIndM: Int,
+        cholgasIndM: Int?,
+        tramoCm: Int?,
+        observacion: String,
+    )
+
     /** Borra la muestra; sus revisiones se borran en cascada. Devuelve cuántas filas se borraron. */
     @Query("DELETE FROM muestras WHERE id = :id")
     suspend fun eliminar(id: Long): Int
