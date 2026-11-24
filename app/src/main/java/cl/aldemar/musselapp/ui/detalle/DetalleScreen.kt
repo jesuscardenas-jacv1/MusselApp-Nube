@@ -80,6 +80,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import cl.aldemar.musselapp.ui.theme.Acento
+import cl.aldemar.musselapp.ui.theme.AcentoSuave
+import cl.aldemar.musselapp.ui.theme.AcentoTexto
 import cl.aldemar.musselapp.ui.theme.BordeDeCampo
 import cl.aldemar.musselapp.ui.theme.BordeDeTarjeta
 import cl.aldemar.musselapp.ui.theme.DatoMedido
@@ -106,7 +108,6 @@ import androidx.compose.ui.semantics.Role
 import cl.aldemar.musselapp.ui.componentes.VisorFoto
 import cl.aldemar.musselapp.ui.theme.AlertaFondo
 import cl.aldemar.musselapp.ui.theme.AlertaTexto
-import cl.aldemar.musselapp.ui.theme.EstadoValidadoFondo
 import cl.aldemar.musselapp.ui.theme.EstadoValidadoTexto
 import cl.aldemar.musselapp.ui.theme.colores
 import cl.aldemar.musselapp.util.Fechas
@@ -651,7 +652,8 @@ private fun CajaTexto(etiqueta: String, texto: String, colorBorde: Color) {
 @Composable
 private fun TarjetaResumenBiometrico(muestra: Muestra) {
     val esBajo = muestra.desvioDensidadPct < 0
-    val colorDesvio = if (esBajo) AlertaTexto else EstadoValidadoTexto
+    // Bajo la referencia es una alerta (rojo); sobre ella es información (acento suave), no un estado
+    val colorDesvio = if (esBajo) AlertaTexto else AcentoTexto
     val (desvioPct, desvioTexto) = FichaMuestra.desvioPartes(muestra)
 
     Surface(
@@ -694,7 +696,7 @@ private fun TarjetaResumenBiometrico(muestra: Muestra) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(FormaCampo)
-                            .background(if (esBajo) AlertaFondo else EstadoValidadoFondo)
+                            .background(if (esBajo) AlertaFondo else AcentoSuave)
                             .padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

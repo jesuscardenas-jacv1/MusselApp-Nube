@@ -58,7 +58,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Color de las marcas: ámbar con borde blanco, visible sobre choritos negros y fondo claro. */
-private val ColorMarca = Color(0xFFF59E0B)
+private val ColorMarca = Color(0xFFCE8509)
 
 /** Lo que muestra el conteo mientras lee la foto. */
 private sealed interface CargaConteo {

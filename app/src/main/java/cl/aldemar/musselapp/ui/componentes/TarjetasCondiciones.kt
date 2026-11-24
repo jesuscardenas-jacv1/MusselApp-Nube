@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Waves
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.ui.graphics.vector.ImageVector
 import cl.aldemar.musselapp.ui.theme.AcentoSuave
 import cl.aldemar.musselapp.ui.theme.AcentoTexto
@@ -93,6 +95,14 @@ fun TarjetaAlertas(muestra: Muestra, modifier: Modifier = Modifier) {
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    // Crítica o aviso también se distingue por el ícono, no solo por el color
+                    Icon(
+                        if (alerta.critica) Icons.Filled.Error else Icons.Filled.WarningAmber,
+                        contentDescription = if (alerta.critica) "Alerta crítica" else "Aviso",
+                        tint = texto,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         alerta.etiqueta,
                         style = MaterialTheme.typography.bodyMedium,

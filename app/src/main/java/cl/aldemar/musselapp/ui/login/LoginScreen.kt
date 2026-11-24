@@ -453,8 +453,9 @@ private fun BotonIngresar(cargando: Boolean, onClick: () -> Unit) {
         shape = FormaBoton,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            disabledContainerColor = MaterialTheme.colorScheme.secondary,
-            disabledContentColor = MaterialTheme.colorScheme.onSecondary,
+            // Igual que los demás botones deshabilitados de la app: campo claro con texto gris
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContentColor = MaterialTheme.colorScheme.secondary,
         ),
         modifier = Modifier
             .fillMaxWidth()
