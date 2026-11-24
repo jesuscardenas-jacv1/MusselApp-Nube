@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/muestras/{muestraId}/foto")
-@CrossOrigin(origins = "*")
 @Tag(name = "3. Fotos y metadatos", description = "Gestión de fotografías de evidencia asociadas a cada muestra")
 public class FotoController {
 
@@ -34,7 +33,7 @@ public class FotoController {
     public FotoResponse guardar(
             @PathVariable Long muestraId,
             @Parameter(description = "Rol del usuario (OPERARIO o SUPERVISOR)", example = "OPERARIO")
-            @RequestHeader(value = "X-Rol", defaultValue = "OPERARIO") String rol,
+            @RequestHeader(value = "X-Rol", required = false) String rol,
             @Valid @RequestBody FotoRequest request
     ) {
         PermisosRol.exigir(rol, "subir fotos", PermisosRol.OPERARIO, PermisosRol.SUPERVISOR);
@@ -47,7 +46,7 @@ public class FotoController {
     public void eliminar(
             @PathVariable Long muestraId,
             @Parameter(description = "Rol del usuario (solo SUPERVISOR)", example = "SUPERVISOR")
-            @RequestHeader(value = "X-Rol", defaultValue = "") String rol
+            @RequestHeader(value = "X-Rol", required = false) String rol
     ) {
         PermisosRol.exigir(rol, "eliminar fotos", PermisosRol.SUPERVISOR);
         servicio.eliminar(muestraId);

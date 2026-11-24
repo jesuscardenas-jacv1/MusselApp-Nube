@@ -15,7 +15,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/muestras/{muestraId}/revisiones")
-@CrossOrigin(origins = "*")
 @Tag(name = "4. Revisiones y estados", description = "Dictámenes del supervisor (VALIDADO / CORREGIDO) e historial")
 public class RevisionController {
 
@@ -36,7 +35,7 @@ public class RevisionController {
     public MuestraResponse dictaminar(
             @PathVariable Long muestraId,
             @Parameter(description = "Rol del usuario (solo SUPERVISOR)", example = "SUPERVISOR")
-            @RequestHeader(value = "X-Rol", defaultValue = "") String rol,
+            @RequestHeader(value = "X-Rol", required = false) String rol,
             @Valid @RequestBody RevisionRequest request
     ) {
         PermisosRol.exigir(rol, "dictaminar muestras", PermisosRol.SUPERVISOR);

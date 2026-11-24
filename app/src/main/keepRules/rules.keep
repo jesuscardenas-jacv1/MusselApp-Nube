@@ -23,9 +23,8 @@
 -keep class cl.aldemar.musselapp.data.nube.MuestraEnviarDto { *; }
 -keep class cl.aldemar.musselapp.data.nube.MuestraRemotaDto { *; }
 -keep class cl.aldemar.musselapp.data.nube.FotoEnviarDto { *; }
--keep class cl.aldemar.musselapp.data.nube.FotoRemotaDto { *; }
 -keep class cl.aldemar.musselapp.data.nube.RevisionEnviarDto { *; }
--keep class cl.aldemar.musselapp.data.nube.ReporteResumenDto { *; }
+-keep class cl.aldemar.musselapp.data.nube.ServidorDto { *; }
 
 # Logs de depuración: en release R8 elimina las llamadas a Log.v/d/i (NubeSync escribe en
 # Logcat los ids de las muestras y de la instalación). Log.w y Log.e se mantienen para

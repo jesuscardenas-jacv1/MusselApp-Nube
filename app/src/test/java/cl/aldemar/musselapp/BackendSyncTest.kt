@@ -2,208 +2,198 @@ package cl.aldemar.musselapp
 
 import cl.aldemar.musselapp.data.model.EstadoMuestra
 import cl.aldemar.musselapp.data.model.Muestra
-import cl.aldemar.musselapp.data.nube.AlmacenSyncBackend
+import cl.aldemar.musselapp.data.model.ValoresOperario
+import cl.aldemar.musselapp.data.nube.AlmacenBackend
 import cl.aldemar.musselapp.data.nube.BackendApi
 import cl.aldemar.musselapp.data.nube.BackendSync
-import cl.aldemar.musselapp.data.nube.CambioRemoto
 import cl.aldemar.musselapp.data.nube.FotoEnviarDto
-import cl.aldemar.musselapp.data.nube.FotoRemotaDto
 import cl.aldemar.musselapp.data.nube.MuestraEnviarDto
 import cl.aldemar.musselapp.data.nube.MuestraRemotaDto
-import cl.aldemar.musselapp.data.nube.NubeCompuesta
-import cl.aldemar.musselapp.data.nube.ReporteResumenDto
 import cl.aldemar.musselapp.data.nube.RevisionEnviarDto
-import cl.aldemar.musselapp.data.nube.ServicioNube
-import cl.aldemar.musselapp.data.nube.VeredictoNube
+import cl.aldemar.musselapp.data.nube.ServidorDto
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
+import java.io.IOException
 
 class BackendSyncTest {
 
-    private class AlmacenEnMemoria(private val idInstalacion: String = "tel01") : AlmacenSyncBackend {
-        val mapa = mutableMapOf<String, Long>()
-        override fun instalacion(): String = idInstalacion
-        override fun idLocalDe(idRemoto: String): Long? = mapa[idRemoto]
-        override fun guardarIdLocal(idRemoto: String, idLocal: Long) { mapa[idRemoto] = idLocal }
+    private class AlmacenEnMemoria : AlmacenBackend {
+        val locales = mutableMapOf<String, Long>()
+        val versiones = mutableMapOf<String, Long>()
+        val huellas = mutableMapOf<String, String>()
+        override fun instalacion() = "tel01"
+        override fun idLocalDe(idCliente: String) = locales[idCliente]
+        override fun idClienteDe(idLocal: Long) = locales.entries.find { it.value == idLocal }?.key
+        override fun asociar(idCliente: String, idLocal: Long) { locales[idCliente] = idLocal }
+        override fun versionVista(servidor: String, idCliente: String) = versiones["$servidor|$idCliente"] ?: 0L
+        override fun guardarVersion(servidor: String, idCliente: String, version: Long) { versiones["$servidor|$idCliente"] = version }
+        override fun huellaEnviada(servidor: String, idCliente: String) = huellas["$servidor|$idCliente"]
+        override fun guardarHuella(servidor: String, idCliente: String, huella: String) { huellas["$servidor|$idCliente"] = huella }
     }
 
-    private class BackendApiFalsa : BackendApi {
-        var fallar = false
-        val recibidas = mutableListOf<Pair<String, MuestraEnviarDto>>()
-        val fotos = mutableListOf<Triple<Long, String, FotoEnviarDto>>()
-        val revisiones = mutableListOf<Triple<Long, String, RevisionEnviarDto>>()
-        var listaRemota: List<MuestraRemotaDto> = emptyList()
-        var estadoRemotoAlCrear: String = EstadoMuestra.PENDIENTE.name
+    /** Servidor falso con las mismas reglas que el real: no duplica, no pisa y gana el primer dictamen. */
+    private class Servidor(var uuid: String = "mac-a") : BackendApi {
+        var apagado = false
+        var rechaza = emptySet<String>()
+        val filas = linkedMapOf<String, MuestraRemotaDto>()
+        val dictamenes = mutableListOf<RevisionEnviarDto>()
+        val fotos = mutableListOf<Long>()
+        val borradas = mutableListOf<Long>()
+        val posts = mutableListOf<String>()
+        private var reloj = 1000L
 
-        override suspend fun listarMuestras(): List<MuestraRemotaDto> {
-            if (fallar) error("servidor apagado")
-            return listaRemota
+        private fun responder() { if (apagado) throw IOException("apagado") }
+        override suspend fun servidor(): ServidorDto { responder(); return ServidorDto(uuid) }
+        override suspend fun listarMuestras(idCliente: String?): List<MuestraRemotaDto> {
+            responder()
+            return filas.values.filter { idCliente == null || it.idCliente == idCliente }
         }
-
-        override suspend fun crearOActualizarMuestra(rol: String, muestra: MuestraEnviarDto): MuestraRemotaDto {
-            if (fallar) error("servidor apagado")
-            recibidas += rol to muestra
-            return MuestraRemotaDto(
-                id = 100L + recibidas.size,
-                idCliente = muestra.idCliente,
-                codigo = muestra.codigo,
-                centroId = muestra.centroId,
-                tren = muestra.tren,
-                linea = muestra.linea,
-                profundidadM = muestra.profundidadM,
-                tallaMm = muestra.tallaMm,
-                conteoIndM = muestra.conteoIndM,
-                cholgasIndM = muestra.cholgasIndM,
-                tramoCm = muestra.tramoCm,
-                observacion = muestra.observacion,
-                estado = estadoRemotoAlCrear,
-                registradaEn = muestra.registradaEn,
-                operador = muestra.operador,
-                operadorRut = muestra.operadorRut,
-                revisadaPor = null,
-                revisadaEn = null,
-                comentarioSupervisor = null,
-                actualizadaEn = muestra.registradaEn,
-            )
+        override suspend fun crearMuestra(rol: String, muestra: MuestraEnviarDto): MuestraRemotaDto {
+            responder()
+            posts += muestra.idCliente
+            if (muestra.idCliente in rechaza) throw HttpException(Response.error<Any>(400, okhttp3.ResponseBody.create(null, "")))
+            return filas.getOrPut(muestra.idCliente) { fila(muestra.idCliente, muestra) }
         }
-
-        override suspend fun actualizarMuestra(id: Long, rol: String, muestra: MuestraEnviarDto): MuestraRemotaDto =
-            crearOActualizarMuestra(rol, muestra)
-
-        override suspend fun subirFoto(id: Long, rol: String, foto: FotoEnviarDto): FotoRemotaDto {
-            if (fallar) error("error foto")
-            fotos += Triple(id, rol, foto)
-            return FotoRemotaDto(1L, id, foto.nombreArchivo, foto.tipoMime, foto.contenidoBase64.length.toLong())
-        }
-
+        private fun fila(idCliente: String, m: MuestraEnviarDto) = MuestraRemotaDto(
+            filas.size + 1L, idCliente, m.centroId, m.tren, m.linea, m.profundidadM, m.tallaMm, m.conteoIndM, m.cholgasIndM,
+            m.tramoCm, m.observacion, "PENDIENTE", m.registradaEn, m.operadorRut, null, null, null, null, null, false, ++reloj,
+        )
+        override suspend fun subirFoto(id: Long, rol: String, foto: FotoEnviarDto) { fotos += id }
         override suspend fun dictaminar(id: Long, rol: String, revision: RevisionEnviarDto): MuestraRemotaDto {
-            if (fallar) error("error dictamen")
-            revisiones += Triple(id, rol, revision)
-            return MuestraRemotaDto(
-                id = id, idCliente = null, codigo = "Muestra 001", centroId = "dalcahue", tren = "A", linea = 1,
-                profundidadM = 3, tallaMm = 54, conteoIndM = 400, cholgasIndM = null, tramoCm = 100,
-                observacion = "", estado = revision.estado, registradaEn = 1000L, operador = "Carla Vera",
-                operadorRut = "111111111", revisadaPor = revision.supervisorNombre, revisadaEn = 2000L,
-                comentarioSupervisor = revision.comentario, actualizadaEn = 2000L,
-            )
+            assertEquals("SUPERVISOR", rol)
+            dictamenes += revision
+            return editar(id) { it.copy(estado = revision.estado, conteoIndM = revision.conteoIndM ?: it.conteoIndM, conteoOperario = it.conteoIndM, tallaOperario = it.tallaMm) }
         }
-
-        override suspend fun resumenReportes(): ReporteResumenDto =
-            ReporteResumenDto(0, 0, 0, 0, 0.0, 0.0)
+        override suspend fun eliminarMuestra(id: Long, rol: String): Response<Unit> {
+            borradas += id
+            filas.entries.removeIf { it.value.id == id }
+            return Response.success(Unit)
+        }
+        fun editar(id: Long, cambio: (MuestraRemotaDto) -> MuestraRemotaDto): MuestraRemotaDto {
+            val (clave, vieja) = filas.entries.first { it.value.id == id }.toPair()
+            return cambio(vieja).copy(actualizadaEn = ++reloj).also { filas[clave] = it }
+        }
+        fun agregar(idCliente: String) { filas[idCliente] = fila(idCliente, modelo(idCliente)) }
+        private fun modelo(id: String) = MuestraEnviarDto(
+            id, "Muestra", "dalcahue", "B", 8, 3, 62, 390, 6, 40, "swagger", 5000L, "Carla Vera", "111111111",
+            null, null, null, null, null, null, null, null, null,
+        )
     }
 
-    private fun muestraDemo(
-        id: Long = 15L,
-        estado: EstadoMuestra = EstadoMuestra.PENDIENTE,
-        fotoRuta: String? = null,
-        comentario: String? = null,
-    ) = Muestra(
-        id = id,
-        centroId = "dalcahue",
-        linea = 4,
-        tren = "B",
-        profundidadM = 3,
-        tallaMm = 55,
-        conteoIndM = 410,
-        observacion = "Fijación pareja",
-        estado = estado,
-        registradaEn = 10_000L,
-        sincronizada = false,
-        operador = "Carla Vera",
-        operadorRut = "111111111",
-        revisadaPor = if (estado != EstadoMuestra.PENDIENTE) "Diego Muñoz" else null,
-        comentarioSupervisor = comentario,
-        fotoRuta = fotoRuta,
-        cholgasIndM = 10,
-        tramoCm = 100,
+    private val servidor = Servidor()
+    private val almacen = AlmacenEnMemoria()
+    private val sync = BackendSync(servidor, almacen, codificarFoto = { ruta -> ruta?.let { "AAA" } }, log = { _, _ -> })
+
+    private fun muestra(id: Long = 15, estado: EstadoMuestra = EstadoMuestra.PENDIENTE, conteo: Int = 390, operario: ValoresOperario? = null, foto: String? = null) = Muestra(
+        id = id, centroId = "dalcahue", linea = 8, tren = "B", profundidadM = 3, tallaMm = 62, conteoIndM = conteo,
+        observacion = "", estado = estado, registradaEn = 10_000L, sincronizada = true, operador = "Carla Vera",
+        operadorRut = "111111111", revisadaPor = "Diego Muñoz", comentarioSupervisor = "Recuento", fotoRuta = foto,
+        cholgasIndM = 6, tramoCm = 40, valoresOperario = operario,
     )
 
     @Test
-    fun subir_enviaMuestraFotoYDictamenYGuardaMapa() = runTest {
-        val api = BackendApiFalsa()
-        val almacen = AlmacenEnMemoria("tel01")
-        val sync = BackendSync(api, almacen, codificarFoto = { if (it != null) "data:image/jpeg;base64,ABC" else null })
-
-        val ok = sync.subir(
-            muestraDemo(
-                id = 15L,
-                estado = EstadoMuestra.VALIDADO,
-                fotoRuta = "/fotos/m15.jpg",
-                comentario = "Correcto",
-            ),
-        )
-
-        assertTrue(ok)
-        assertEquals(1, api.recibidas.size)
-        assertEquals("OPERARIO", api.recibidas[0].first)
-        assertEquals("tel01_15", api.recibidas[0].second.idCliente)
-        assertEquals(15L, almacen.idLocalDe("101"))
-        assertEquals(1, api.fotos.size)
-        assertEquals("m15.jpg", api.fotos[0].third.nombreArchivo)
-        assertEquals(1, api.revisiones.size)
-        assertEquals("SUPERVISOR", api.revisiones[0].second)
-        assertEquals("VALIDADO", api.revisiones[0].third.estado)
+    fun apagado_noLanzaNiDejaNadaPendiente() = runTest {
+        servidor.apagado = true
+        sync.enviar(listOf(muestra()))
+        assertTrue(sync.cambios().isEmpty())
+        sync.eliminar(15)
+        assertTrue(almacen.huellas.isEmpty())
     }
 
     @Test
-    fun subir_sinServidor_devuelveFalseSinLanzar() = runTest {
-        val api = BackendApiFalsa().apply { fallar = true }
-        val sync = BackendSync(api, AlmacenEnMemoria(), codificarFoto = { null })
-
-        assertFalse(sync.subir(muestraDemo()))
+    fun enviar_mandaUnaVezYLaFoto_yNoRepiteSiNadaCambio() = runTest {
+        sync.enviar(listOf(muestra(foto = "/f/m.jpg")))
+        sync.enviar(listOf(muestra(foto = "/f/m.jpg")))
+        assertEquals(listOf("tel01_15"), servidor.posts)
+        assertEquals(1, servidor.fotos.size)
+        assertTrue(sync.cambios().isEmpty())
     }
 
     @Test
-    fun descargarCambios_filtraSemillasIntactasYResuelveIdsLocales() = runTest {
-        val api = BackendApiFalsa()
-        val almacen = AlmacenEnMemoria("tel01").apply { guardarIdLocal("50", 99L) }
-        api.listaRemota = listOf(
-            // Semilla sin editar: se ignora
-            MuestraRemotaDto(1L, "seed_001", "Muestra 001", "dalcahue", "A", 1, 3, 50, 380, null, 100, "", "PENDIENTE", 1000L, "Carla", "111111111", null, null, null, false, 1000L),
-            // Muestra propia del teléfono editada en Swagger
-            MuestraRemotaDto(2L, "tel01_15", "Muestra 015", "dalcahue", "B", 4, 3, 60, 450, 8, 100, "Editada en Swagger", "PENDIENTE", 2000L, "Carla", "111111111", null, null, null, false, 3000L),
-            // Muestra creada en Swagger ya mapeada antes
-            MuestraRemotaDto(50L, null, "Muestra 050", "calbuco", "A", 2, 1, 52, 390, null, 100, "Swagger", "VALIDADO", 4000L, "Carla", "111111111", "Diego Muñoz", 5000L, "Ok", false, 5000L),
-            // Muestra nueva creada en Swagger
-            MuestraRemotaDto(51L, null, "Muestra 051", "quellon", "C", 3, 5, 58, 415, 5, 100, "Nueva Swagger", "PENDIENTE", 6000L, "Carla", "111111111", null, null, null, false, 6000L),
-        )
-        val sync = BackendSync(api, almacen, codificarFoto = { null })
-
-        val cambios = sync.descargarCambios()
-
-        assertEquals(3, cambios.size)
-        assertEquals(15L, cambios[0].idLocalExistente)
-        assertEquals("Editada en Swagger", cambios[0].observacion)
-        assertEquals(99L, cambios[1].idLocalExistente)
-        assertEquals(EstadoMuestra.VALIDADO, cambios[1].estado)
-        assertNull(cambios[2].idLocalExistente)
-        assertEquals("51", cambios[2].idRemoto)
+    fun putEnSwagger_seEntregaUnaSolaVez() = runTest {
+        sync.enviar(listOf(muestra()))
+        servidor.editar(1) { it.copy(conteoIndM = 380) }
+        val cambio = sync.cambios().single()
+        assertEquals(15L, cambio.idLocal)
+        assertEquals(380, cambio.conteoIndM)
+        sync.revisado(cambio, 15)
+        assertTrue(sync.cambios().isEmpty())
     }
 
     @Test
-    fun nubeCompuesta_intentaAmbasYExigeConfirmacionDeAmbas() = runTest {
-        var llamadasPrimaria = 0
-        var llamadasSecundaria = 0
-        val okNube = object : ServicioNube {
-            override suspend fun subir(m: Muestra): Boolean { llamadasSecundaria++; return true }
-            override fun escucharVeredictos(alEliminar: (Long) -> Unit, alAplicar: (VeredictoNube) -> Unit) {}
-        }
-        val fallaNube = object : ServicioNube {
-            override suspend fun subir(m: Muestra): Boolean { llamadasPrimaria++; return false }
-            override fun escucharVeredictos(alEliminar: (Long) -> Unit, alAplicar: (VeredictoNube) -> Unit) {}
-            override suspend fun descargarCambios(): List<CambioRemoto> = listOf(
-                CambioRemoto("7", null, "dalcahue", "A", 1, 3, 55, 400, null, 100, "Swagger", EstadoMuestra.PENDIENTE, 1000L, "Carla", "111111111", null, null, null),
-            )
-        }
+    fun correccionDelPortal_llegaAlBackendYNoVuelveElValorViejo() = runTest {
+        sync.enviar(listOf(muestra()))
+        // El portal corrigió 390 → 380 y Room ya lo tiene
+        sync.enviar(listOf(muestra(estado = EstadoMuestra.CORREGIDO, conteo = 380, operario = ValoresOperario(390, 62, 6))))
+        val dictamen = servidor.dictamenes.single()
+        assertEquals("CORREGIDO", dictamen.estado)
+        assertEquals(380, dictamen.conteoIndM)
+        assertTrue(sync.cambios().isEmpty())
+    }
 
-        val compuesta = NubeCompuesta(primaria = fallaNube, secundaria = okNube)
-        assertFalse(compuesta.subir(muestraDemo()))
-        assertEquals(1, llamadasPrimaria)
-        assertEquals(1, llamadasSecundaria)
-        assertEquals(1, compuesta.descargarCambios().size)
+    @Test
+    fun reintentoTrasUnPutDeSwagger_noLoPisaNiLoDaPorVisto() = runTest {
+        sync.enviar(listOf(muestra()))
+        servidor.editar(1) { it.copy(conteoIndM = 380) }
+        sync.enviar(listOf(muestra(foto = "/f/m.jpg"))) // cambió la huella: vuelve a enviar
+        assertEquals(380, servidor.filas.getValue("tel01_15").conteoIndM)
+        assertEquals(380, sync.cambios().single().conteoIndM)
+    }
+
+    @Test
+    fun creadaEnSwagger_seImportaYAlDictaminarlaNoSeDuplica() = runTest {
+        servidor.agregar("api_abc")
+        val cambio = sync.cambios().single()
+        assertNull(cambio.idLocal)
+        sync.revisado(cambio, 40)
+        sync.enviar(listOf(muestra(id = 40, estado = EstadoMuestra.VALIDADO)))
+        assertEquals(setOf("api_abc"), servidor.filas.keys)
+        assertEquals("VALIDADO", servidor.filas.getValue("api_abc").estado)
+        assertNull(servidor.dictamenes.single().conteoIndM)
+    }
+
+    @Test
+    fun noTraeMuestrasDeOtrosTelefonosNiLasDeEjemplo() = runTest {
+        servidor.agregar("otroTel_3")
+        servidor.agregar("seed_001")
+        assertTrue(sync.cambios().isEmpty())
+    }
+
+    @Test
+    fun otroComputador_noConfundeLasMuestrasYRecibeLasPropias() = runTest {
+        servidor.agregar("api_abc")
+        sync.revisado(sync.cambios().single(), 40)
+        sync.enviar(listOf(muestra()))
+        // Otro Mac: los ids de la tabla vuelven a empezar y son otras muestras
+        servidor.uuid = "mac-b"
+        servidor.filas.clear()
+        servidor.agregar("otroTel_9")
+        servidor.agregar("api_xyz")
+        val cambio = sync.cambios().single()
+        assertEquals("api_xyz", cambio.idCliente)
+        assertNull(cambio.idLocal)
+        sync.enviar(listOf(muestra()))
+        assertTrue("tel01_15" in servidor.filas)
+    }
+
+    @Test
+    fun rechazada_noFrenaALasDemasNiSeRepite() = runTest {
+        servidor.rechaza = setOf("tel01_1")
+        sync.enviar(listOf(muestra(id = 1), muestra(id = 2)))
+        sync.enviar(listOf(muestra(id = 1), muestra(id = 2)))
+        assertEquals(listOf("tel01_1", "tel01_2"), servidor.posts)
+    }
+
+    @Test
+    fun eliminar_borraSoloLaMuestraPropia() = runTest {
+        servidor.agregar("otroTel_3")
+        sync.enviar(listOf(muestra()))
+        sync.eliminar(15)
+        assertEquals(setOf("otroTel_3"), servidor.filas.keys)
     }
 }

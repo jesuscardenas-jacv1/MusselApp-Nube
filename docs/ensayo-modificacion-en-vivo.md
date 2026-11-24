@@ -9,7 +9,7 @@ En la defensa EA5 (IE 3.1.3, **40 %**) se pide agregar en vivo un campo o regla 
 ```bash
 git checkout -b ensayo/peso-<nombre>
 # ... hacer los pasos ...
-git checkout feature/backend-springboot && git branch -D ensayo/peso-<nombre>
+git checkout main && git branch -D ensayo/peso-<nombre>
 ```
 
 > Referencia rápida: el campo `cholgasIndM` ya recorre todas las capas. Si te pierdes en la app o en el backend, busca `cholgasIndM` en el proyecto y repite cada aparición.
@@ -25,7 +25,7 @@ Con `spring.jpa.hibernate.ddl-auto=update`, Hibernate agrega la columna automát
 | 1 | `entidad/Muestra.java` | `@Column(name = "peso_g") private Integer pesoG;` + getter y setter (`getPesoG` / `setPesoG`) |
 | 2 | `dto/MuestraRequest.java` | `@Min(1) @Max(50000) Integer pesoG,` (con `@Schema(example = "450")`) |
 | 3 | `dto/MuestraResponse.java` | `Integer pesoG,` en el record y `m.getPesoG(),` en `MuestraResponse.desde(m)` |
-| 4 | `servicio/MuestraService.java` | `m.setPesoG(req.pesoG());` dentro de `aplicarCampos(...)` |
+| 4 | `servicio/MuestraService.java` | `if (req.pesoG() != null) m.setPesoG(req.pesoG());` dentro de `aplicarCampos(...)` |
 
 Reiniciar Spring Boot (`mvn -f backend/pom.xml spring-boot:run`) y comprobar en **http://localhost:8080/swagger-ui.html** que `POST /api/muestras` y `GET /api/muestras` ya muestran `pesoG`.
 
@@ -40,8 +40,8 @@ Reiniciar Spring Boot (`mvn -f backend/pom.xml spring-boot:run`) y comprobar en 
 | 3 | Migración | `data/local/Migraciones.kt` | `DE_7_A_8` con `ALTER TABLE muestras ADD COLUMN peso_g INTEGER` y agregarla a `TODAS` |
 | 4 | Modelo | `data/model/Muestra.kt` | `val pesoG: Int? = null,` |
 | 5 | Room → modelo | `data/local/Mapeos.kt` (`aModelo`) | `pesoG = muestra.pesoG,` |
-| 6 | Modelo → Room | `data/repository/RoomMuestraRepository.kt` (al insertar y en `actualizarDesdeRemoto`) | `pesoG = muestra.pesoG,` |
-| 7 | Retrofit DTOs | `data/nube/BackendApi.kt` y `data/nube/BackendSync.kt` | `val pesoG: Int? = null` en `MuestraEnviarDto`, `MuestraRemotaDto` y `CambioRemoto`, y pasarlo en `subir()` / `descargarCambios()` |
+| 6 | Modelo → Room | `data/repository/RoomMuestraRepository.kt` (`agregarMuestra`, `importar` y `aplicarCambio`) y `MuestraDao.actualizarDesdeRemoto` | `pesoG = muestra.pesoG,` |
+| 7 | Retrofit DTOs | `data/nube/BackendApi.kt`, `ServicioBackend.kt` y `BackendSync.kt` | `val pesoG: Int? = null` en `MuestraEnviarDto`, `MuestraRemotaDto` y `CambioBackend`, y pasarlo en `aDto()` y `cambios()` |
 | 8 | ViewModel | `ui/muestra/BorradorMuestra.kt` | `val pesoG: Int? = null`, `actualizarPeso(pesoG: Int?)` y `pesoG = actual.pesoG` en `confirmar` |
 | 9 | Compose (entrada) | `ui/muestra/VistaPreviaScreen.kt` | campo numérico junto a talla/cholgas llamando a `actualizarPeso` |
 | 10 | Compose (lectura) | `ui/detalle/DetalleScreen.kt` | mostrar `"Peso: ${muestra.pesoG} g"` si no es null |

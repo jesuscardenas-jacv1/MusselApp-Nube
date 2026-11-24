@@ -5,17 +5,20 @@ import cl.aldemar.musselapp.backend.entidad.EstadoMuestra;
 import cl.aldemar.musselapp.backend.entidad.Linea;
 import cl.aldemar.musselapp.backend.entidad.Muestra;
 import cl.aldemar.musselapp.backend.entidad.Revision;
+import cl.aldemar.musselapp.backend.entidad.Servidor;
 import cl.aldemar.musselapp.backend.entidad.Tren;
 import cl.aldemar.musselapp.backend.repositorio.CentroRepository;
 import cl.aldemar.musselapp.backend.repositorio.LineaRepository;
 import cl.aldemar.musselapp.backend.repositorio.MuestraRepository;
 import cl.aldemar.musselapp.backend.repositorio.RevisionRepository;
+import cl.aldemar.musselapp.backend.repositorio.ServidorRepository;
 import cl.aldemar.musselapp.backend.repositorio.TrenRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Pobla la base de datos con el mismo catálogo ficticio de la app Android (4 centros, trenes A–C, líneas 1–12)
@@ -30,9 +33,13 @@ public class DatosInicialesConfig {
             TrenRepository trenRepository,
             LineaRepository lineaRepository,
             MuestraRepository muestraRepository,
-            RevisionRepository revisionRepository
+            RevisionRepository revisionRepository,
+            ServidorRepository servidorRepository
     ) {
         return args -> {
+            if (servidorRepository.count() == 0) {
+                servidorRepository.save(new Servidor(UUID.randomUUID().toString()));
+            }
             if (centroRepository.count() == 0) {
                 List<Centro> centros = List.of(
                         new Centro("dalcahue", "Centro Canal Dalcahue - Mód. A (Chiloé Central)", -42.374, -73.622, 1500),

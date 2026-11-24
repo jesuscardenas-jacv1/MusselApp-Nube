@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reportes")
-@CrossOrigin(origins = "*")
 @Tag(name = "5. Reportes", description = "Indicadores agregados y comparación histórica por línea de cultivo")
 public class ReporteController {
 

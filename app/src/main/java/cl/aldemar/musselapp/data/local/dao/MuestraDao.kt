@@ -107,12 +107,13 @@ interface MuestraDao {
     @Query("UPDATE muestras SET sincronizada = 1 WHERE id = :id")
     suspend fun marcarSincronizada(id: Long)
 
-    /** Actualiza los datos de una muestra cuando fue modificada en el backend (ej. PUT en Swagger). */
+    /** Valores cambiados en el backend (por ejemplo, un PUT en Swagger). Queda pendiente para que también llegue a Firestore. */
     @Query(
         """
         UPDATE muestras SET
             profundidad_m = :profundidadM, talla_mm = :tallaMm, conteo_ind_m = :conteoIndM,
-            cholgas_ind_m = :cholgasIndM, tramo_cm = :tramoCm, observacion = :observacion
+            cholgas_ind_m = :cholgasIndM, tramo_cm = :tramoCm, observacion = :observacion,
+            sincronizada = 0
         WHERE id = :id
         """,
     )

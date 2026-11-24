@@ -7,12 +7,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /** Datos de entrada para registrar o actualizar una muestra de choritos. */
-@Schema(description = "Datos para crear o actualizar una muestra de choritos")
+@Schema(description = "Datos para crear o actualizar una muestra de choritos", example = """
+        {"centroId":"dalcahue","tren":"B","linea":8,"profundidadM":3,"tallaMm":62,"conteoIndM":390,\
+        "cholgasIndM":6,"tramoCm":40,"observacion":"Creada desde Swagger","operador":"Carla Vera","operadorRut":"111111111"}""")
 public record MuestraRequest(
-        @Schema(description = "ID idempotente generado por la app móvil (opcional desde Swagger)", example = "tel01_15")
+        @Size(max = 80, message = "El idCliente admite hasta 80 caracteres")
+        @Schema(description = "Identificador único que pone el teléfono. Desde Swagger se omite: el servidor genera uno", nullable = true)
         String idCliente,
 
-        @Schema(description = "Código visible de la muestra (si se omite, el servidor genera uno)", example = "Muestra 018")
+        @Size(max = 40, message = "El código admite hasta 40 caracteres")
+        @Schema(description = "Código visible (si se omite, el servidor genera uno)", nullable = true)
         String codigo,
 
         @NotBlank(message = "El centroId es obligatorio")
@@ -28,13 +32,13 @@ public record MuestraRequest(
         @Schema(description = "Número de línea dentro del tren (1 a 12)", example = "8")
         int linea,
 
-        @Min(value = 1, message = "La profundidad debe ser positiva")
-        @Max(value = 50, message = "La profundidad no puede superar 50 m")
+        @Min(value = 1, message = "La profundidad debe estar entre 1 y 6 m")
+        @Max(value = 6, message = "La profundidad debe estar entre 1 y 6 m")
         @Schema(description = "Profundidad o estrato en metros (1, 3 o 5)", example = "3")
         int profundidadM,
 
-        @Min(value = 1, message = "La talla debe estar entre 1 y 200 mm")
-        @Max(value = 200, message = "La talla debe estar entre 1 y 200 mm")
+        @Min(value = 1, message = "La talla debe estar entre 1 y 100 mm")
+        @Max(value = 100, message = "La talla debe estar entre 1 y 100 mm")
         @Schema(description = "Talla promedio en milímetros", example = "54")
         int tallaMm,
 
@@ -48,8 +52,8 @@ public record MuestraRequest(
         @Schema(description = "Cholgas acompañantes en ind/m (opcional)", example = "10")
         Integer cholgasIndM,
 
-        @Min(value = 10, message = "El tramo debe estar entre 10 y 500 cm")
-        @Max(value = 500, message = "El tramo debe estar entre 10 y 500 cm")
+        @Min(value = 1, message = "El tramo debe estar entre 1 y 500 cm")
+        @Max(value = 500, message = "El tramo debe estar entre 1 y 500 cm")
         @Schema(description = "Largo del tramo de cuerda muestreado en cm", example = "100")
         Integer tramoCm,
 
@@ -60,10 +64,12 @@ public record MuestraRequest(
         @Schema(description = "Marca temporal del registro en milisegundos (opcional, usa hora actual)")
         Long registradaEn,
 
-        @Schema(description = "Nombre del operario ficticio", example = "Carla Vera")
+        @Size(max = 100)
+        @Schema(description = "Nombre del operario ficticio (obligatorio al crear)", example = "Carla Vera")
         String operador,
 
-        @Schema(description = "RUT normalizado del operario ficticio", example = "111111111")
+        @Size(max = 20)
+        @Schema(description = "RUT normalizado del operario ficticio (obligatorio al crear)", example = "111111111")
         String operadorRut,
 
         @Schema(description = "Latitud GPS al muestrear (opcional)", example = "-42.3741")
@@ -90,6 +96,7 @@ public record MuestraRequest(
         @Schema(description = "Temperatura superficial del agua en °C (Open-Meteo Marine)", example = "11.2")
         Double climaTempAguaC,
 
+        @Size(max = 80)
         @Schema(description = "Descripción del tiempo (Open-Meteo)", example = "Parcialmente nublado")
         String climaDescripcion
 ) {

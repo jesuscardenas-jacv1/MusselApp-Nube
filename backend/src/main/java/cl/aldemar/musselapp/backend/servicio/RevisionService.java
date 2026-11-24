@@ -59,7 +59,13 @@ public class RevisionService {
             );
         }
 
+        boolean corrigeValores = req.conteoIndM() != null || req.tallaMm() != null || req.cholgasIndM() != null;
+        if (corrigeValores && req.estado() != EstadoMuestra.CORREGIDO) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los valores solo se cambian con estado CORREGIDO");
+        }
+
         Muestra muestra = muestraService.buscarEntidad(muestraId);
+        muestraService.exigirPendiente(muestra, "dictaminar");
         long ahora = System.currentTimeMillis();
         String supervisorNombre = req.supervisorNombre() != null && !req.supervisorNombre().isBlank()
                 ? req.supervisorNombre().trim()
@@ -77,11 +83,19 @@ public class RevisionService {
         revision.setRevisadaEn(ahora);
         revisionRepository.save(revision);
 
+        if (corrigeValores) {
+            muestra.setConteoOperario(muestra.getConteoIndM());
+            muestra.setTallaOperario(muestra.getTallaMm());
+            muestra.setCholgasOperario(muestra.getCholgasIndM());
+            if (req.conteoIndM() != null) muestra.setConteoIndM(req.conteoIndM());
+            if (req.tallaMm() != null) muestra.setTallaMm(req.tallaMm());
+            if (req.cholgasIndM() != null) muestra.setCholgasIndM(req.cholgasIndM());
+        }
         muestra.setEstado(req.estado());
         muestra.setRevisadaPor(supervisorNombre);
         muestra.setRevisadaEn(ahora);
         muestra.setComentarioSupervisor(comentario.isEmpty() ? null : comentario);
-        muestra.setActualizadaEn(ahora);
+        muestra.tocar();
 
         return MuestraResponse.desde(muestraRepository.save(muestra));
     }

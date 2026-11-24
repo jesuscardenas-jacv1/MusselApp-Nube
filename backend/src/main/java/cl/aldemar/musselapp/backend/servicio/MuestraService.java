@@ -15,12 +15,16 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Lógica de negocio y persistencia de muestras.
  */
 @Service
 public class MuestraService {
+
+    /** Prefijo del idCliente de las muestras creadas en el servidor (por ejemplo desde Swagger). */
+    public static final String PREFIJO_API = "api_";
 
     private final MuestraRepository muestraRepository;
     private final LineaRepository lineaRepository;
@@ -40,6 +44,7 @@ public class MuestraService {
     }
 
     public List<MuestraResponse> listar(
+            String idCliente,
             String centroId,
             String tren,
             Integer linea,
@@ -48,6 +53,7 @@ public class MuestraService {
             Long hasta
     ) {
         return muestraRepository.findAllByOrderByRegistradaEnDesc().stream()
+                .filter(m -> idCliente == null || idCliente.isBlank() || idCliente.trim().equals(m.getIdCliente()))
                 .filter(m -> centroId == null || centroId.isBlank() || m.getCentroId().equalsIgnoreCase(centroId.trim()))
                 .filter(m -> tren == null || tren.isBlank() || m.getTren().equalsIgnoreCase(tren.trim()))
                 .filter(m -> linea == null || m.getLinea() == linea)
@@ -63,53 +69,69 @@ public class MuestraService {
     }
 
     /**
-     * Crea una muestra nueva. Si trae {@code idCliente} y ya existe en la BD, actualiza ese mismo registro
-     * sin crear duplicados (idempotencia para reintentos offline de WorkManager).
+     * Crea una muestra. Si trae un {@code idCliente} que ya existe es un reintento del teléfono: no se
+     * duplica ni se pisan los valores guardados (podrían haberse corregido en el servidor); solo se
+     * completan el GPS y el clima que faltaban.
      */
     @Transactional
-    public ResultadoCreacion crearOActualizarPorCliente(MuestraRequest req) {
+    public ResultadoCreacion crear(MuestraRequest req) {
         String centroId = req.centroId().trim().toLowerCase(Locale.ROOT);
         String tren = req.tren().trim().toUpperCase(Locale.ROOT);
         validarCatalogo(centroId, tren, req.linea());
 
-        long ahora = System.currentTimeMillis();
-        if (req.idCliente() != null && !req.idCliente().isBlank()) {
-            var existente = muestraRepository.findByIdCliente(req.idCliente().trim());
+        String idCliente = texto(req.idCliente());
+        if (idCliente != null) {
+            var existente = muestraRepository.findByIdCliente(idCliente);
             if (existente.isPresent()) {
                 Muestra m = existente.get();
-                aplicarCampos(m, req, centroId, tren, ahora);
+                if (completarFaltantes(m, req)) {
+                    m.tocar();
+                }
                 return new ResultadoCreacion(MuestraResponse.desde(muestraRepository.save(m)), false);
             }
         }
+        if (texto(req.operador()) == null || texto(req.operadorRut()) == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Al crear una muestra se exigen operador y operadorRut");
+        }
 
         Muestra nueva = new Muestra();
-        if (req.idCliente() != null && !req.idCliente().isBlank()) {
-            nueva.setIdCliente(req.idCliente().trim());
-        }
+        // Identificador único en cualquier computador: el teléfono se guía por él y no por el id de la tabla
+        nueva.setIdCliente(idCliente != null ? idCliente : PREFIJO_API + UUID.randomUUID());
         nueva.setEstado(EstadoMuestra.PENDIENTE);
-        nueva.setRegistradaEn(req.registradaEn() != null ? req.registradaEn() : ahora);
-        aplicarCampos(nueva, req, centroId, tren, ahora);
-
-        if (nueva.getCodigo() == null || nueva.getCodigo().isBlank()) {
-            nueva.setCodigo("Muestra 000");
-        }
+        nueva.setRegistradaEn(req.registradaEn() != null ? req.registradaEn() : System.currentTimeMillis());
+        nueva.setCodigo("Muestra 000");
+        aplicarCampos(nueva, req, centroId, tren);
+        completarFaltantes(nueva, req);
+        nueva.tocar();
         Muestra guardada = muestraRepository.save(nueva);
-        if (req.codigo() == null || req.codigo().isBlank()) {
+        if (texto(req.codigo()) == null) {
             guardada.setCodigo(String.format("Muestra %03d", guardada.getId()));
             guardada = muestraRepository.save(guardada);
         }
         return new ResultadoCreacion(MuestraResponse.desde(guardada), true);
     }
 
+    /** Edita una muestra pendiente. Los campos opcionales que no vienen se conservan. */
     @Transactional
     public MuestraResponse actualizar(Long id, MuestraRequest req) {
         Muestra m = buscarEntidad(id);
+        exigirPendiente(m, "modificar");
         String centroId = req.centroId().trim().toLowerCase(Locale.ROOT);
         String tren = req.tren().trim().toUpperCase(Locale.ROOT);
         validarCatalogo(centroId, tren, req.linea());
-
-        aplicarCampos(m, req, centroId, tren, System.currentTimeMillis());
+        aplicarCampos(m, req, centroId, tren);
+        m.tocar();
         return MuestraResponse.desde(muestraRepository.save(m));
+    }
+
+    /** Gana el primer dictamen: una muestra ya revisada no se cambia. */
+    void exigirPendiente(Muestra m, String accion) {
+        if (m.yaDictaminada()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "No se puede " + accion + ": la muestra " + m.getId() + " ya tiene dictamen (" + m.getEstado() + ")"
+            );
+        }
     }
 
     @Transactional
@@ -135,31 +157,48 @@ public class MuestraService {
         }
     }
 
-    private void aplicarCampos(Muestra m, MuestraRequest req, String centroId, String tren, long ahora) {
-        if (req.codigo() != null && !req.codigo().isBlank()) {
-            m.setCodigo(req.codigo().trim());
-        }
+    private void aplicarCampos(Muestra m, MuestraRequest req, String centroId, String tren) {
         m.setCentroId(centroId);
         m.setTren(tren);
         m.setLinea(req.linea());
         m.setProfundidadM(req.profundidadM());
         m.setTallaMm(req.tallaMm());
         m.setConteoIndM(req.conteoIndM());
-        m.setCholgasIndM(req.cholgasIndM());
-        m.setTramoCm(req.tramoCm());
-        m.setObservacion(req.observacion() != null ? req.observacion().trim() : "");
-        m.setOperador(req.operador() != null && !req.operador().isBlank() ? req.operador().trim() : "Carla Vera");
-        m.setOperadorRut(req.operadorRut() != null && !req.operadorRut().isBlank() ? req.operadorRut().trim() : "111111111");
-        m.setLat(req.lat());
-        m.setLon(req.lon());
-        m.setPrecisionM(req.precisionM());
-        m.setDistanciaCentroM(req.distanciaCentroM());
-        m.setClimaTempAireC(req.climaTempAireC());
-        m.setClimaVientoKn(req.climaVientoKn());
-        m.setClimaOlaM(req.climaOlaM());
-        m.setClimaTempAguaC(req.climaTempAguaC());
-        m.setClimaDescripcion(req.climaDescripcion());
-        m.setActualizadaEn(ahora);
+        if (texto(req.codigo()) != null) m.setCodigo(texto(req.codigo()));
+        if (req.cholgasIndM() != null) m.setCholgasIndM(req.cholgasIndM());
+        if (req.tramoCm() != null) m.setTramoCm(req.tramoCm());
+        if (req.observacion() != null) m.setObservacion(req.observacion().trim());
+        if (texto(req.operador()) != null) m.setOperador(texto(req.operador()));
+        if (texto(req.operadorRut()) != null) m.setOperadorRut(texto(req.operadorRut()));
+    }
+
+    /** Agrega el GPS y el clima solo si la muestra no los tenía. Devuelve true si cambió algo. */
+    private boolean completarFaltantes(Muestra m, MuestraRequest req) {
+        boolean cambio = false;
+        if (m.getLat() == null && req.lat() != null && req.lon() != null) {
+            m.setLat(req.lat());
+            m.setLon(req.lon());
+            m.setPrecisionM(req.precisionM());
+            m.setDistanciaCentroM(req.distanciaCentroM());
+            cambio = true;
+        }
+        boolean traeClima = req.climaTempAireC() != null || req.climaVientoKn() != null || req.climaOlaM() != null
+                || req.climaTempAguaC() != null || req.climaDescripcion() != null;
+        boolean tieneClima = m.getClimaTempAireC() != null || m.getClimaVientoKn() != null || m.getClimaOlaM() != null
+                || m.getClimaTempAguaC() != null || m.getClimaDescripcion() != null;
+        if (traeClima && !tieneClima) {
+            m.setClimaTempAireC(req.climaTempAireC());
+            m.setClimaVientoKn(req.climaVientoKn());
+            m.setClimaOlaM(req.climaOlaM());
+            m.setClimaTempAguaC(req.climaTempAguaC());
+            m.setClimaDescripcion(req.climaDescripcion());
+            cambio = true;
+        }
+        return cambio;
+    }
+
+    private static String texto(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
     public record ResultadoCreacion(MuestraResponse muestra, boolean creada) {

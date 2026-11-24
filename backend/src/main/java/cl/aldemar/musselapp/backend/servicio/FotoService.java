@@ -55,7 +55,7 @@ public class FotoService {
         FotoMuestra guardada = fotoRepository.save(foto);
         if (!muestra.isTieneFoto()) {
             muestra.setTieneFoto(true);
-            muestra.setActualizadaEn(System.currentTimeMillis());
+            muestra.tocar();
             muestraRepository.save(muestra);
         }
         return FotoResponse.desde(guardada);
@@ -66,7 +66,7 @@ public class FotoService {
         Muestra muestra = muestraService.buscarEntidad(muestraId);
         fotoRepository.deleteByMuestraId(muestraId);
         muestra.setTieneFoto(false);
-        muestra.setActualizadaEn(System.currentTimeMillis());
+        muestra.tocar();
         muestraRepository.save(muestra);
     }
 }

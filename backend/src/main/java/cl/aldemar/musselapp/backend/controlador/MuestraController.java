@@ -17,7 +17,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/muestras")
-@CrossOrigin(origins = "*")
 @Tag(name = "2. Muestras", description = "CRUD de muestras de choritos con idempotencia para sincronización móvil")
 public class MuestraController {
 
@@ -30,6 +29,7 @@ public class MuestraController {
     @GetMapping
     @Operation(summary = "Listar muestras", description = "Filtra por centro, tren, línea, estado o rango de fechas (epoch ms)")
     public List<MuestraResponse> listar(
+            @RequestParam(required = false) String idCliente,
             @RequestParam(required = false) String centroId,
             @RequestParam(required = false) String tren,
             @RequestParam(required = false) Integer linea,
@@ -37,7 +37,7 @@ public class MuestraController {
             @RequestParam(required = false) Long desde,
             @RequestParam(required = false) Long hasta
     ) {
-        return servicio.listar(centroId, tren, linea, estado, desde, hasta);
+        return servicio.listar(idCliente, centroId, tren, linea, estado, desde, hasta);
     }
 
     @GetMapping("/{id}")
@@ -47,24 +47,24 @@ public class MuestraController {
     }
 
     @PostMapping
-    @Operation(summary = "Crear muestra (o sincronizar sin duplicar por idCliente)")
+    @Operation(summary = "Crear muestra (un reintento con el mismo idCliente no duplica)")
     public ResponseEntity<MuestraResponse> crear(
             @Parameter(description = "Rol del usuario (OPERARIO o SUPERVISOR)", example = "OPERARIO")
-            @RequestHeader(value = "X-Rol", defaultValue = "OPERARIO") String rol,
+            @RequestHeader(value = "X-Rol", required = false) String rol,
             @Valid @RequestBody MuestraRequest request
     ) {
         PermisosRol.exigir(rol, "registrar muestras", PermisosRol.OPERARIO, PermisosRol.SUPERVISOR);
-        var resultado = servicio.crearOActualizarPorCliente(request);
+        var resultado = servicio.crear(request);
         HttpStatus estado = resultado.creada() ? HttpStatus.CREATED : HttpStatus.OK;
         return ResponseEntity.status(estado).body(resultado.muestra());
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar una muestra existente")
+    @Operation(summary = "Actualizar una muestra pendiente (409 si ya tiene dictamen)")
     public MuestraResponse actualizar(
             @PathVariable Long id,
             @Parameter(description = "Rol del usuario (OPERARIO o SUPERVISOR)", example = "SUPERVISOR")
-            @RequestHeader(value = "X-Rol", defaultValue = "SUPERVISOR") String rol,
+            @RequestHeader(value = "X-Rol", required = false) String rol,
             @Valid @RequestBody MuestraRequest request
     ) {
         PermisosRol.exigir(rol, "actualizar muestras", PermisosRol.OPERARIO, PermisosRol.SUPERVISOR);
@@ -77,7 +77,7 @@ public class MuestraController {
     public void eliminar(
             @PathVariable Long id,
             @Parameter(description = "Rol del usuario (solo SUPERVISOR)", example = "SUPERVISOR")
-            @RequestHeader(value = "X-Rol", defaultValue = "") String rol
+            @RequestHeader(value = "X-Rol", required = false) String rol
     ) {
         PermisosRol.exigir(rol, "eliminar muestras", PermisosRol.SUPERVISOR);
         servicio.eliminar(id);

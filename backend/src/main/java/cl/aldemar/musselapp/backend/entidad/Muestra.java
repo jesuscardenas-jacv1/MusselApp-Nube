@@ -101,6 +101,16 @@ public class Muestra {
     @Column(name = "comentario_supervisor", length = 500)
     private String comentarioSupervisor;
 
+    /** Lo que registró el operario, si el supervisor corrigió los valores; null si no se corrigieron. */
+    @Column(name = "conteo_operario")
+    private Integer conteoOperario;
+
+    @Column(name = "talla_operario")
+    private Integer tallaOperario;
+
+    @Column(name = "cholgas_operario")
+    private Integer cholgasOperario;
+
     @Column(name = "tiene_foto", nullable = false)
     private boolean tieneFoto = false;
 
@@ -194,9 +204,23 @@ public class Muestra {
     public String getComentarioSupervisor() { return comentarioSupervisor; }
     public void setComentarioSupervisor(String comentarioSupervisor) { this.comentarioSupervisor = comentarioSupervisor; }
 
+    public Integer getConteoOperario() { return conteoOperario; }
+    public void setConteoOperario(Integer conteoOperario) { this.conteoOperario = conteoOperario; }
+
+    public Integer getTallaOperario() { return tallaOperario; }
+    public void setTallaOperario(Integer tallaOperario) { this.tallaOperario = tallaOperario; }
+
+    public Integer getCholgasOperario() { return cholgasOperario; }
+    public void setCholgasOperario(Integer cholgasOperario) { this.cholgasOperario = cholgasOperario; }
+
     public boolean isTieneFoto() { return tieneFoto; }
     public void setTieneFoto(boolean tieneFoto) { this.tieneFoto = tieneFoto; }
 
     public long getActualizadaEn() { return actualizadaEn; }
     public void setActualizadaEn(long actualizadaEn) { this.actualizadaEn = actualizadaEn; }
+
+    /** Marca el cambio con la hora actual; siempre crece, aunque dos cambios caigan en el mismo milisegundo. */
+    public void tocar() { this.actualizadaEn = Math.max(System.currentTimeMillis(), actualizadaEn + 1); }
+
+    public boolean yaDictaminada() { return estado != EstadoMuestra.PENDIENTE; }
 }

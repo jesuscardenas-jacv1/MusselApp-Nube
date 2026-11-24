@@ -184,6 +184,10 @@ class NubeSync(context: Context) : ServicioNube {
                 datos["revisadaPor"] = m.revisadaPor
                 datos["revisadaEn"] = m.revisadaEn
                 datos["comentarioSupervisor"] = m.comentarioSupervisor
+                // Corrección hecha en el backend: el portal la muestra igual que las suyas
+                m.valoresOperario?.let {
+                    datos["valoresOperario"] = mapOf("conteoIndM" to it.conteoIndM, "tallaMm" to it.tallaMm, "cholgasIndM" to it.cholgasIndM)
+                }
             }
             withTimeout(TIMEOUT_MS) {
                 suspendCancellableCoroutine { cont ->

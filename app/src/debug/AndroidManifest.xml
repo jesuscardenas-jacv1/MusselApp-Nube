@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El backend Spring Boot se usa en la defensa con el teléfono por USB; la versión release no habla HTTP. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:networkSecurityConfig="@xml/seguridad_red" />
+</manifest>

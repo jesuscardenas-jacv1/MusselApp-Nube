@@ -35,6 +35,9 @@ public record MuestraResponse(
         String revisadaPor,
         Long revisadaEn,
         String comentarioSupervisor,
+        Integer conteoOperario,
+        Integer tallaOperario,
+        Integer cholgasOperario,
         boolean tieneFoto,
         long actualizadaEn
 ) {
@@ -68,6 +71,9 @@ public record MuestraResponse(
                 m.getRevisadaPor(),
                 m.getRevisadaEn(),
                 m.getComentarioSupervisor(),
+                m.getConteoOperario(),
+                m.getTallaOperario(),
+                m.getCholgasOperario(),
                 m.isTieneFoto(),
                 m.getActualizadaEn()
         );
