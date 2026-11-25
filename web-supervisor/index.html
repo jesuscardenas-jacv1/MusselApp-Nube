@@ -734,6 +734,28 @@
   .ficha { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; margin: 0; }
   .ficha dt { font-size: 12px; color: var(--texto-2); font-weight: 600; }
   .ficha dd { margin: 2px 0 0; font-weight: 500; }
+  /* Conteo automático (fase ML): chorito en verde y cholga en ámbar, como en las etiquetas del modelo */
+  .caja-ml { padding: 14px; border-radius: var(--r-md); background: var(--superficie-2); display: flex; flex-direction: column; gap: 10px; }
+  .caja-ml .ml-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .caja-ml .ml-cab span { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: var(--texto); }
+  .caja-ml .ml-cab small { font-size: 12px; color: var(--texto-2); font-weight: 600; }
+  .caja-ml .tres div { background: var(--superficie); }
+  .caja-ml .tres small { display: flex; align-items: center; gap: 6px; }
+  .ml-pt { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .ml-pt.c { background: #0F766E; }
+  .ml-pt.k { background: #C76C05; }
+  .ml-barra { height: 8px; border-radius: 99px; background: #C76C05; overflow: hidden; }
+  .ml-barra i { display: block; height: 100%; background: #0F766E; }
+  .ml-cal { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .ml-cal caption { text-align: left; font-size: 12px; font-weight: 600; color: var(--texto-2); padding-bottom: 6px; }
+  .ml-cal th, .ml-cal td { padding: 6px 4px; text-align: right; border-top: 1px solid var(--linea); }
+  .ml-cal thead th { font-size: 11px; font-weight: 600; color: var(--texto-3); border-top: 0; }
+  .ml-cal tbody th { text-align: left; font-weight: 600; white-space: nowrap; }
+  .ml-cal tbody th .ml-pt { margin-right: 6px; vertical-align: -1px; }
+  .ml-cal .ml-sin { color: var(--texto-3); text-align: left; }
+  .ml-nota { margin: 0; font-size: 12px; color: var(--texto-2); }
+  .ml-aviso { margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: var(--r-sm); background: var(--pend-suave); color: var(--pend-texto); font-size: 13px; }
+  .ml-ver { margin: 0; font-size: 11px; color: var(--texto-3); }
   .caja-texto { padding: 14px; border-radius: var(--r-md); background: var(--superficie-2); }
   .fila-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   #mini-mapa { height: 180px; margin-top: 12px; border-radius: var(--r-sm); overflow: hidden; background: var(--superficie-3); z-index: 0; }
@@ -1196,6 +1218,26 @@
   function normalizarRut(r) { return String(r || '').toUpperCase().replace(/[^0-9K]/g, ''); }
   function num(v, def) { v = Number(v); return isFinite(v) ? v : def; }
   function numN(v) { return v == null || v === '' ? null : num(v, null); }
+  // Conteo automático: lo que el teléfono sube en ml y detecciones (contrato en docs/plan-fase-final.md §5).
+  // Todo se valida aquí: un dato raro se descarta en vez de romper el detalle.
+  function normalizarMl(o) {
+    if (!o || typeof o !== 'object') return null;
+    return { version: o.version ? String(o.version) : '', total: num(o.total, 0), choritos: num(o.choritos, 0), cholgas: num(o.cholgas, 0),
+      mmPorPx: numN(o.mmPorPx), tallaChoritoMm: numN(o.tallaChoritoMm), tallaCholgaMm: numN(o.tallaCholgaMm), editado: o.editado === true };
+  }
+  function normalizarDetecciones(a) {
+    if (!Array.isArray(a)) return [];
+    var fuera = [];
+    for (var i = 0; i < a.length && fuera.length < 2000; i++) {
+      var d = a[i];
+      if (!d || (d.e !== 'C' && d.e !== 'K')) continue;
+      var x = numN(d.x), y = numN(d.y), w = numN(d.w), h = numN(d.h);
+      if (x == null || y == null || w == null || h == null || w <= 0 || h <= 0) continue;
+      var mm = numN(d.mm);
+      fuera.push({ e: d.e, p: numN(d.p), x: x, y: y, w: w, h: h, mm: mm != null && mm > 0 ? mm : null, o: d.o === 'O' ? 'O' : 'M' });
+    }
+    return fuera;
+  }
   function normalizar(id, d) {
     var estado = ETIQUETA[d.estado] ? d.estado : 'PENDIENTE';
     return {
@@ -1229,7 +1271,10 @@
       alertas: Array.isArray(d.alertas) ? d.alertas.filter(function (a) { return ALERTAS[a]; }) : [],
       demo: d.demo === true,
       historico: d.historico === true,
-      valoresOperario: d.valoresOperario && typeof d.valoresOperario === 'object' ? { conteoIndM: num(d.valoresOperario.conteoIndM, 0), tallaMm: num(d.valoresOperario.tallaMm, 0), cholgasIndM: d.valoresOperario.cholgasIndM == null ? null : num(d.valoresOperario.cholgasIndM, null) } : null
+      valoresOperario: d.valoresOperario && typeof d.valoresOperario === 'object' ? { conteoIndM: num(d.valoresOperario.conteoIndM, 0), tallaMm: num(d.valoresOperario.tallaMm, 0), cholgasIndM: d.valoresOperario.cholgasIndM == null ? null : num(d.valoresOperario.cholgasIndM, null) } : null,
+      // Conteo automático (fase ML): resumen del modelo y recuadros. null y [] en las muestras sin conteo automático
+      ml: normalizarMl(d.ml),
+      detecciones: normalizarDetecciones(d.detecciones)
     };
   }
   // Ubicación, clima y alertas de la muestra
@@ -1852,6 +1897,42 @@
   }
 
   // ── Detalle (panel lateral) y dictamen ────────────────────────────────
+  // Tarjeta "Conteo automático" del detalle: solo aparece si la muestra trae ml (fase ML)
+  function statsMm(lista) {
+    var v = lista.map(function (d) { return d.mm; }).filter(function (x) { return x != null; });
+    if (!v.length) return null;
+    var suma = v.reduce(function (a, b) { return a + b; }, 0);
+    return { n: v.length, prom: suma / v.length, min: Math.min.apply(null, v), max: Math.max.apply(null, v) };
+  }
+  function conteoMlHtml(m) {
+    var ml = m.ml;
+    if (!ml) return '';
+    var ch = Math.max(0, ml.choritos), co = Math.max(0, ml.cholgas), tot = ml.total > 0 ? ml.total : ch + co;
+    var pct = function (x) { return tot > 0 ? Math.round(x * 100 / tot) : 0; };
+    var dets = m.detecciones;
+    var sc = statsMm(dets.filter(function (d) { return d.e === 'C'; })), sk = statsMm(dets.filter(function (d) { return d.e === 'K'; }));
+    var agregadas = dets.filter(function (d) { return d.o === 'O'; }).length;
+    var fila = function (nombre, clase, st) {
+      return '<tr><th scope="row"><i class="ml-pt ' + clase + '"></i>' + nombre + '</th>' +
+        (st ? '<td>' + n1(st.prom) + '</td><td>' + n0(st.min) + '</td><td>' + n0(st.max) + '</td><td>' + n0(st.n) + '</td>'
+          : '<td colspan="4" class="ml-sin">Sin medidas</td>') + '</tr>';
+    };
+    return '<section class="caja-ml" aria-label="Conteo automático">' +
+      '<div class="ml-cab"><span>' + ico('check', 'ch') + 'Conteo automático</span><small>' + esc(n0(tot)) + ' individuos detectados</small></div>' +
+      '<div class="tres dos compacto">' +
+        '<div><small><i class="ml-pt c"></i>Choritos</small><b>' + n0(ch) + '</b><em>' + pct(ch) + ' % del total</em></div>' +
+        '<div><small><i class="ml-pt k"></i>Cholgas</small><b>' + n0(co) + '</b><em>' + pct(co) + ' % del total</em></div>' +
+      '</div>' +
+      '<div class="ml-barra" role="img" aria-label="' + pct(ch) + ' % choritos y ' + pct(co) + ' % cholgas"><i style="width:' + pct(ch) + '%"></i></div>' +
+      (sc || sk
+        ? '<table class="ml-cal"><caption>Calibre por especie (mm)</caption><thead><tr><th></th><th>Promedio</th><th>Mín.</th><th>Máx.</th><th>Medidos</th></tr></thead><tbody>' +
+            fila('Choritos', 'c', sc) + fila('Cholgas', 'k', sk) + '</tbody></table>'
+        : '<p class="ml-nota">Sin calibre: la foto no traía el cuadrado de referencia de 40 mm.</p>') +
+      (ml.editado ? '<p class="ml-aviso">' + ico('lapiz', 'ch') + '<span>El operario corrigió el conteo automático' +
+        (agregadas ? ' y agregó <b>' + n0(agregadas) + '</b> ' + (agregadas === 1 ? 'individuo' : 'individuos') + ' a mano' : '') + '.</span></p>' : '') +
+      '<p class="ml-ver">Modelo ' + esc(ml.version || 'sin versión') + '</p>' +
+    '</section>';
+  }
   var focoPrevio = null;
   function abrirDetalle(id) {
     if (!porId[id]) return;
@@ -1942,7 +2023,7 @@
         '<div class="desvio-caja"><div class="dc-cab"><span>Desvío de densidad vs. estándar (' + DENSIDAD_ESTANDAR + ' ind/m)</span>' +
           '<span class="chip ' + (fuera ? 'peligro' : 'ok') + '" id="ed-desvio">' + signo(dv) + ' %' + (fuera ? ' · fuera de ±20 %' : ' · dentro de rango') + '</span></div>' +
           '<div class="medidor" role="img" id="ed-medidor" aria-label="Desvío ' + signo(dv) + ' por ciento"><i id="ed-marca" style="left:' + pos + '%"></i></div>' +
-          '<div class="medidor-escala"><span>−50 %</span><span>−20 %</span><span>0</span><span>+20 %</span><span>+50 %</span></div></div></div><div class="det-col">' +
+          '<div class="medidor-escala"><span>−50 %</span><span>−20 %</span><span>0</span><span>+20 %</span><span>+50 %</span></div></div>' + conteoMlHtml(m) + '</div><div class="det-col">' +
         '<dl class="ficha">' +
           '<div><dt>Operario</dt><dd>' + esc(m.operador) + '</dd></div><div><dt>Registrada</dt><dd>' + esc(fecha(m.registradaEn)) + '</dd></div>' +
         '</dl>' +

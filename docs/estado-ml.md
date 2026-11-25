@@ -34,7 +34,7 @@
 | 8 | Reglas `ml`/`detecciones` + formato para Firestore | Lucas | **Hecho** (PR #55). Falta la subida en `NubeSync` (espera el paso 5) |
 | 9 | Entrenar `model_v1` y go/no-go | Lucas | Pipeline probado; espera las fotos etiquetadas |
 | 10 | `DetectorLiteRt` | Ramón | Se puede adelantar con `model-v0-sintetico` |
-| 11 | Portal: tarjeta, histograma y recuadros | Jesús | Empieza el 25-nov. Datos de prueba listos en el emulador |
+| 11 | Portal: tarjeta, histograma y recuadros | Jesús | **En curso** (`feature/ml-portal`): emulador, lectura de `ml`/`detecciones` y tarjeta "Conteo automático" hechos. Faltan histograma y recuadros |
 | 12 | Prueba final, `main` y `v2.0.0` | Los 3 | Jue 3 dic |
 
 ## 3. Piezas ya hechas que los demás usan (PR #55)
@@ -101,3 +101,14 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - **Sorpresa 2:** RF-DETR lee las fotos sin aplicar la rotación EXIF, pero Label Studio etiqueta la foto ya girada:
   con fotos verticales del celular las etiquetas quedarían corridas. El notebook ahora endereza cada foto al
   prepararla y avisa si un tamaño no calza. Lo mismo vale para la app (nota en `ramon.md`, paso 10).
+
+### 2026-11-25 · Jesús
+- Rama `feature/ml-portal` creada desde `feature/ml-conteo`.
+- Paso 1: el portal usa el emulador de Firestore (8080) y Auth (9099) solo en `localhost`/`127.0.0.1`. Probado con los
+  datos de Lucas: entra con el supervisor de prueba y muestra las 6.
+- Paso 3: `normalizar()` lee `ml` (por defecto `null`) y `detecciones` (por defecto `[]`). Se descartan detecciones con
+  especie distinta de `C`/`K` o recuadro inválido; `mm` ≤ 0 cuenta como sin medida.
+- Paso 4: tarjeta "Conteo automático" en el detalle (columna de la foto): choritos y cholgas con %, barra de proporción,
+  calibre promedio, mínimo, máximo y cantidad medida por especie (desde `detecciones[].mm`), aviso si `ml.editado` con las
+  agregadas a mano (`o: "O"`) y versión del modelo. Sin `mm` dice que faltó la referencia. Una muestra sin `ml` no cambia.
+- Pendiente: paso 5 (histograma) y paso 6 (recuadros, ojo con `object-fit: cover`).
