@@ -20,7 +20,7 @@ y su **portal web del supervisor** (`web-supervisor/index.html`). Proyecto de 3 
 
 ## Reglas obligatorias
 
-- **No trabajar en `main`.** La rama base de la fase es `feature/ml-conteo`; cada persona trabaja en su rama (`feature/ml-app`, `feature/ml-portal`, `feature/ml-reglas`) y abre el PR hacia `feature/ml-conteo`.
+- **No trabajar en `main`.** La rama base de la fase es `feature/ml-conteo`; cada persona trabaja en su rama (`feature/ml-app`, `feature/ml-portal`, `feature/ml-reglas`) y abre el PR hacia `feature/ml-conteo`. **Nunca abrir ni fusionar un PR hacia `main`** (al crear el PR, revisar que la base sea `feature/ml-conteo`); eso se hace solo en el paso 12, con el OK de los tres.
 - **Commits en español y sin coautor de IA**: nada de líneas `Co-Authored-By` ni firmas de asistentes en commits o PR.
 - **La app no se puede romper:** `./gradlew assembleDebug testDebugUnitTest` debe seguir en verde (200 pruebas al empezar la fase). Cambios mínimos; nada de refactorizaciones ni renombres.
 - **Room es obligatorio** (requisito del ramo): no quitarlo ni reemplazarlo. La migración 7 → 8 solo agrega columnas y tablas, y se prueba con `MigrationTestHelper`.

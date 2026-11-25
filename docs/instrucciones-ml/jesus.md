@@ -53,7 +53,7 @@ detecciones: [
 // mm: largo en mm (puede faltar) · o: "M" modelo, "O" agregado por el operario
 ```
 
-Detalles que ya fija el código del teléfono (`ResultadoMlNube.kt`, PR #55):
+Detalles que ya fija el código del teléfono (`ResultadoMlNube.kt`, PR #55 ya fusionado):
 - Las detecciones agregadas por el operario (`o: "O"`) **no traen `p`**.
 - `mm`, `ml.mmPorPx`, `ml.tallaChoritoMm` y `ml.tallaCholgaMm` faltan si la foto no tenía la referencia.
 - Las reglas aceptan hasta **600** detecciones y conteos de hasta 2000. Las eliminadas por el operario no se suben.

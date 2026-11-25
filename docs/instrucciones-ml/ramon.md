@@ -2,8 +2,8 @@
 
 Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y el estado actual en [`estado-ml.md`](../estado-ml.md). Reglas para tu asistente: [`CLAUDE.md`](../../CLAUDE.md).
 
-> **Ya hecho por Lucas (PR #55):** `SalidaRfDetr.kt` (lee la salida del modelo) y `Calibre.kt` (mm). Si el PR aún no
-> está fusionado cuando los necesites: `git merge origin/feature/ml-reglas`. No los modifiques; si algo no calza, avísale a Lucas.
+> **Ya hecho por Lucas (PR #55, ya fusionado):** `SalidaRfDetr.kt` (lee la salida del modelo) y `Calibre.kt` (mm).
+> Están en `feature/ml-conteo`: `git merge origin/feature/ml-conteo`. No los modifiques; si algo no calza, avísale a Lucas.
 
 > **Tu misión:** que la app pueda **recibir las detecciones de un modelo**, guardarlas en Room y mostrarlas en la pantalla de conteo para que el operario las corrija. Empiezas con un **detector simulado**, sin esperar al modelo real.
 
@@ -112,8 +112,11 @@ Con `CONTEO_ML = false`, la app debe quedar **idéntica a la v1.3.2**. Extiende 
    - **Endereza la foto según su EXIF antes de detectar** (`ExifInterface`, `TAG_ORIENTATION`): el modelo se entrena
      con fotos derechas, y si la foto llega girada las cajas no calzan con lo que ve el operario.
 4. En `AppContainer.kt`, `DetectorSimulado()` pasa a ser `DetectorLiteRt(context)`.
-5. Prueba con `foto_prueba_sintetica.jpg`: deben salir 28 detecciones. Meta de tiempo: **≤ 1,5 s** en gama media
-   (en un PC tarda ~5 s con 4 hilos; en el teléfono probar con 4 hilos y, si es lento, con el delegado de GPU).
+5. Prueba con `foto_prueba_sintetica.jpg`: deben salir 28 detecciones. Meta de tiempo: **≤ 1,5 s** en gama media.
+   Con `Interpreter.Options().setNumThreads(4)` y **XNNPACK activo** (viene activo por defecto en LiteRT: no lo
+   apagues), el INT8 tarda ~0,22 s en un PC; en el teléfono se espera menos de 1 s. Mide sin contar la primera
+   inferencia (calienta el intérprete). Si pasa de 1,5 s, prueba con el delegado de GPU.
+   *Corrección del 25-nov:* antes decía ~5 s; esa medición se hizo sin XNNPACK y no sirve.
 6. Tamaño: el `.tflite` INT8 pesa ~30 MB, así que el APK crece eso.
 
 ## Lo que no te toca
