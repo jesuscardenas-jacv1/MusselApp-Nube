@@ -27,17 +27,23 @@ object ProteccionDictamen {
         "conteoIndM", "tallaMm", "cholgasIndM", "valoresOperario",
     )
 
+    /**
+     * Resultado del conteo automático (fase final). Una vez dictaminada la muestra, queda fijo: lo que vio el
+     * supervisor no puede cambiar por detrás (las reglas de Firestore también lo impiden, ver firestore.rules).
+     */
+    val CAMPOS_DEL_MODELO: Set<String> = setOf("ml", "detecciones")
+
     /** true si en la nube la muestra ya tiene un dictamen (cualquier estado distinto de PENDIENTE). */
     fun yaDictaminada(estadoRemoto: String?): Boolean =
         estadoRemoto != null && estadoRemoto != EstadoMuestra.PENDIENTE.name
 
     /**
      * Datos que el teléfono puede escribir. Si en la nube la muestra ya tiene dictamen, se quitan los
-     * campos del supervisor (el primer dictamen no se pisa); si no, se escriben todos, incluido el
+     * campos del supervisor (el primer dictamen no se pisa) y el resultado del conteo automático; si no, se escriben todos, incluido el
      * dictamen que se haya hecho en el teléfono.
      */
     fun filtrar(datos: Map<String, Any?>, estadoRemoto: String?): Map<String, Any?> =
-        if (yaDictaminada(estadoRemoto)) datos - CAMPOS_DEL_SUPERVISOR else datos
+        if (yaDictaminada(estadoRemoto)) datos - CAMPOS_DEL_SUPERVISOR - CAMPOS_DEL_MODELO else datos
 
     /**
      * true si el teléfono quiere subir un dictamen y la nube ya tiene otro distinto. En ese caso el de la
