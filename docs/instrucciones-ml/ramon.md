@@ -125,6 +125,11 @@ Con `CONTEO_ML = false`, la app debe quedar **idéntica a la v1.3.2**. Extiende 
    inferencia (calienta el intérprete). Si pasa de 1,5 s, prueba con el delegado de GPU.
    *Corrección del 25-nov:* antes decía ~5 s; esa medición se hizo sin XNNPACK y no sirve.
 6. Tamaño: el `.tflite` INT8 pesa ~30 MB, así que el APK crece eso.
+7. **Muestras densas (importante, decidir con Lucas el mié 2):** la muestra real de ALDEMAR son ~200–300 choritos
+   juntos en una bandeja. El modelo ve la foto a 384 px y, así, no encuentra casi ninguno (probado: 0 de ~200). Partiendo
+   la foto en 3×3 trozos solapados + la foto completa encontró 150. En el teléfono eso son 10 inferencias (~0,2 s c/u
+   en PC): hay que medir si cabe en la meta o usar 2×2. La lógica de referencia está en `src/preetiquetar.py` de
+   MusselApp-ML (`teselas()` y `limpiar()`, que además descarta pedazos de conchas cortadas por el borde de un trozo).
 
 ## Lo que no te toca
 

@@ -166,6 +166,10 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | Error del calibre contra pie de metro | ≤ 3 mm |
 | Inferencia en gama media | ≤ 1,5 s |
 
+**Hallazgo (25-nov):** en las fotos reales del caso, la muestra completa (~200+ choritos juntos) necesita **teselado**:
+sin él el modelo no detecta casi nada (0), con 3×3 + foto completa detecta 150. Afecta el tiempo en el teléfono (meta
+≤ 1,5 s): se decide en el go/no-go entre 1×1, 2×2 y 3×3 según precisión y tiempo.
+
 **Prueba externa:** además del conjunto de prueba, el modelo se mide en las 14 fotos reales de muestras de ALDEMAR
 (carpeta del caso, 150–200 choritos encimados sobre mesa metálica). Es el caso más difícil y el más honesto para la demo:
 se muestra su error contra el conteo a mano (regla del caso: el conteo con ML es **experimental**).

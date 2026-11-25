@@ -21,6 +21,7 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 | **Todos** | **Pre-etiquetado:** la sección 3b del notebook dibuja los recuadros con el modelo pre-entrenado; en Label Studio solo se corrigen. Bandejas: 2 de 3 de una sola especie y 1 de 3 mezclada (`equipo.md` §3) | Usarlo antes de etiquetar (README de MusselApp-ML) |
 | **Todos** | Informe técnico y atlas de chorito/cholga en Drive `MusselApp-ML/referencias/` | Hojear el atlas antes de etiquetar |
 | **Jesús** | Datos de prueba del emulador corregidos (las detecciones no se subían; conchas ahora 45–75 mm). Revisión de tu rama | `git merge origin/feature/ml-conteo`, `npm run cargar` otra vez y ver "Revisión de Lucas" en `jesus.md` |
+| **Ramón** | **Muestras densas necesitan teselado** (foto real de ALDEMAR: 0 detecciones sin teselas, 150 con 3×3). Afecta el tiempo en el teléfono | Ver `ramon.md` paso 10, punto 7 |
 | **Ramón** | El modelo tarda ~0,22 s en un PC con XNNPACK (antes decía ~5 s: estaba mal medido). No apagar XNNPACK | Ver `ramon.md` paso 10, punto 5 |
 | **Ramón y Jesús** | PR #55 fusionado: `Calibre.kt`, `SalidaRfDetr.kt` y `ResultadoMlNube.kt` ya están en la rama base | `git merge origin/feature/ml-conteo` en tu rama |
 
@@ -181,3 +182,14 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - El muestreo real es un tramo de ~20 cm de cuerda esparcido en una mesa (en las fotos del caso, metálica) con 100–200
   choritos encimados. El protocolo ahora pide algunas bandejas densas. Las **14 fotos reales** de la carpeta del
   profesor serán la **prueba externa** (paso 9a de Lucas); no están en el Drive del equipo todavía.
+
+### 2026-11-25 (noche, más tarde) · Lucas
+- Las **14 fotos reales del caso ALDEMAR** ya están en Drive `dataset_v1/aldemar_terreno/`. Qué son:
+  1 muestra completa amontonada sobre bandeja blanca (~200+ choritos), 2 fotos de los **30 medidos en filas** (una con
+  regla), 9 de un chorito en el **pie de metro**, 1 con 2 choritos y 1 del **cuaderno de terreno**:
+  "Línea PT=2 = 207 · N choros = 282 · medidos 30 · N cholgas = 10" y 30 largos (≈ 29–44 mm, promedio ≈ 35 mm; lectura
+  a mano de la letra, revisar). O sea: cuentan todo, separan cholgas, y miden 30 en fila: igual a nuestra foto `_cal`.
+- Pre-etiquetado sobre ellas: los 30 en fila salen exactos; la muestra densa da **0 sin teselas y 150 con 3×3**.
+  Agregado `--teselas` (con la foto completa y descarte de pedazos de conchas cortadas). Ver README de MusselApp-ML.
+- **Riesgo nuevo:** el teléfono también necesitará teselar las muestras densas (más tiempo). Se decide el mié 2.
+- Los choritos del caso son chicos (≈ 29–44 mm): el histograma del portal (30–95 mm) igual sirve; el `<30` existe.
