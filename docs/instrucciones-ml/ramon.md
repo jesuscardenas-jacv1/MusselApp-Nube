@@ -82,6 +82,8 @@ Con `CONTEO_ML = false`, la app debe quedar **idéntica a la v1.3.2**. Extiende 
 3. En `AppContainer.kt`, `DetectorSimulado()` pasa a ser `DetectorLiteRt(context)`.
 4. Meta: **≤ 1,5 s** en un teléfono de gama media.
 
+> **Ojo con la entrada del modelo (RF-DETR Nano):** float32 normalizado estilo ImageNet, no uint8. Detalle en `CONTRATO.md` del repo `MusselApp-ML`.
+
 ## Lo que no te toca
 
 `NubeSync.kt` y `firestore.rules` son de Lucas · `web-supervisor/` es de Jesús.

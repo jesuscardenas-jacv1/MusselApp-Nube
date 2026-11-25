@@ -74,19 +74,22 @@
 
 ## 5. Contrato de integración del modelo
 
+Modelo elegido: **RF-DETR Nano** (Apache 2.0, `rfdetr==1.12.0`). Contrato vigente y detallado: [`CONTRATO.md`](https://github.com/lucsaldivia-ux/MusselApp-ML/blob/main/CONTRATO.md) del repo de entrenamiento.
+
 ```json
 {
   "version": "model_v1",
+  "arquitectura": "RF-DETR Nano (Apache 2.0)",
   "archivo": "model_v1.tflite",
-  "entrada": { "ancho": 384, "alto": 384, "canales": "RGB", "tipo": "uint8", "normalizacion": "0-255" },
+  "entrada": { "formato": "NHWC float32", "normalizacion": "ImageNet (media 0.485,0.456,0.406; desv. 0.229,0.224,0.225)" },
   "etiquetas": ["chorito", "cholga", "referencia"],
-  "salida": "cajas [N,4] (ymin,xmin,ymax,xmax normalizadas 0-1), clases [N], confianzas [N], N <= 300",
   "umbral_confianza": 0.40,
-  "nms_iou": 0.50,
   "referencia_mm": 40.0
 }
 ```
 
+- Las salidas del `.tflite` no tienen nombre: cajas = tensor de rango 3 con última dimensión 4 (cx, cy, w, h normalizados); puntajes = el otro tensor de rango 3 (con sigmoide). El orden se confirma con el `.rfdetr.json` del modelo real (paso 9).
+- La exportación a TFLite de RF-DETR es experimental; la alternativa es ONNX Runtime para Android (MIT).
 - Archivos en la app: `app/src/main/assets/ml/model_vN.tflite`, `labels.txt` y `modelo.json`.
 - Para actualizar el modelo: reemplazar los 3 archivos y subir `versionCode`. Cada muestra guarda `modelo_version`.
 
@@ -139,12 +142,12 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | [ ] | 0 | Respaldo de Firestore a JSON (script listo en `scripts/respaldo-firestore/`; falta ejecutarlo) + `.gitignore` de llaves (hecho) | Lucas | 2 | JSON guardado fuera de git |
 | [ ] | 1 | Recolectar 150 fotos con la referencia de 40 mm (protocolo del documento de equipo) | Los 3 | 10 | Fotos en Drive + planilla completa |
 | [ ] | 2 | Etiquetado en Label Studio (COCO) + revisión cruzada | Los 3 (Jesús +20 fotos) | 12 | ≥ 500 instancias por especie |
-| [ ] | 3 | Split sin fuga (por bandeja) + notebook de entrenamiento con checkpoints | Lucas | 8 | El notebook corre de punta a punta |
+| [ ] | 3 | Split sin fuga (por bandeja) + notebook de entrenamiento con checkpoints (listos en `MusselApp-ML`; falta correrlo con fotos reales) | Lucas | 8 | El notebook corre de punta a punta |
 | [ ] | 4 | `DetectorMuestra` + `DetectorSimulado` + flag `CONTEO_ML` | Ramón | 5 | Pruebas unitarias del simulado |
 | [ ] | 5 | Room 7→8 + `DeteccionEntity` / `DeteccionDao` + prueba de migración | Ramón | 5 | La migración conserva las muestras |
 | [ ] | 6 | Revisión con especie sobre `ConteoSobreFoto` | Ramón | 8 | Cambiar especie, agregar y eliminar funcionan |
-| [ ] | 7 | `Calibre.kt` (mm por píxel y largo por PCA) + validaciones de foto | Lucas | 6 | Pruebas unitarias en verde |
-| [ ] | 8 | Reglas para `ml` / `detecciones` + pruebas + subida en `NubeSync` | Lucas | 5 | Pruebas de reglas en verde (emulador) |
+| [x] | 7 | `Calibre.kt` (mm por píxel y largo por PCA) + validaciones de foto (rama `feature/ml-reglas`, 10 pruebas) | Lucas | 6 | Pruebas unitarias en verde |
+| [ ] | 8 | Reglas para `ml` / `detecciones` + pruebas (listas en `feature/ml-reglas`, 27 pruebas) + subida en `NubeSync` (espera Room v8 de Ramón) | Lucas | 5 | Pruebas de reglas en verde (emulador) |
 | [ ] | 9 | Entrenar, evaluar, exportar int8 → **go/no-go** | Lucas | 8 | Métricas del §8 |
 | [ ] | 10 | `DetectorLiteRt` con `model_v1` + medición de tiempos | Ramón | 6 | ≤ 1,5 s en gama media |
 | [ ] | 11 | Portal: tarjeta de conteo, histograma y recuadros | Jesús | 8 | Se ve en el emulador |
@@ -200,3 +203,4 @@ Si algo falla en vivo: apagar el flag y mostrar el conteo manual.
 |---|---|---|
 | 2026-11-25 | Versión inicial | Aprobación del plan |
 | 2026-11-25 | Calendario por días hasta el 4-dic; pre-entrenamiento con datasets públicos CC BY 4.0/CC0; repo `MusselApp-ML` y carpeta de Drive creados | Fecha de entrega confirmada por el equipo |
+| 2026-11-25 | Modelo: RF-DETR Nano en vez de MediaPipe Model Maker; entrada float32 normalizada ImageNet; reglas de `ml` livianas | Model Maker no instala en el Python 3.12 de Colab; Firestore limita cada petición a 1.000 expresiones |
