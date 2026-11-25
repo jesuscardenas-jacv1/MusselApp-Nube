@@ -47,7 +47,33 @@ service cloud.firestore {
       return ['codigo', 'centroId', 'tren', 'linea', 'profundidadM', 'tallaMm', 'conteoIndM', 'cholgasIndM',
               'tramoCm', 'observacion', 'estado', 'registradaEn', 'operador', 'operadorRut', 'lat', 'lon',
               'precisionM', 'distanciaCentroM', 'clima', 'alertas', 'ownerUid', 'instalacion', 'tieneFoto',
-              'fotoBase64', 'revisadaPor', 'revisadaEn', 'comentarioSupervisor', 'valoresOperario'];
+              'fotoBase64', 'revisadaPor', 'revisadaEn', 'comentarioSupervisor', 'valoresOperario',
+              'ml', 'detecciones'];
+    }
+
+    // Resultado del conteo automático (fase final): lo calcula el modelo en el teléfono
+    function camposDelModelo() {
+      return ['ml', 'detecciones'];
+    }
+
+    // Validación liviana a propósito: Firestore corta cada petición en 1.000 expresiones evaluadas,
+    // y la muestra completa ya usa buena parte. Se controlan los campos permitidos y los conteos.
+    function mlValido(d) {
+      return !('ml' in d) || d.ml == null || (d.ml is map
+        && d.ml.keys().hasOnly(['version', 'total', 'choritos', 'cholgas', 'mmPorPx',
+                                'tallaChoritoMm', 'tallaCholgaMm', 'editado'])
+        && conteoMl(d.ml.get('total', 0)) && conteoMl(d.ml.get('choritos', 0)) && conteoMl(d.ml.get('cholgas', 0))
+        && d.ml.get('version', '') is string && d.ml.get('version', '').size() <= 40
+        && d.ml.get('editado', false) is bool);
+    }
+    function conteoMl(v) {
+      return v is int && v >= 0 && v <= 2000;
+    }
+
+    // Cada detección ocupa ~70 bytes: 600 son ~42 KB, lejos del límite de 1 MB por documento
+    function deteccionesValidas(d) {
+      return !('detecciones' in d) || d.detecciones == null
+        || (d.detecciones is list && d.detecciones.size() <= 600);
     }
 
     // Cada comprobación acepta que el campo falte o sea null (la app sube null cuando no hay dato).
@@ -74,13 +100,20 @@ service cloud.firestore {
         && (!('alertas' in d) || d.alertas == null || (d.alertas is list && d.alertas.size() <= 20))
         && (!('clima' in d) || d.clima == null || d.clima is map)
         && (!('valoresOperario' in d) || d.valoresOperario == null || d.valoresOperario is map)
-        && (!('tieneFoto' in d) || d.tieneFoto is bool);
+        && (!('tieneFoto' in d) || d.tieneFoto is bool)
+        && mlValido(d) && deteccionesValidas(d);
     }
 
     // La fecha de registro y el código no cambian una vez en la nube
     function inmutablesIntactos() {
       return (!('registradaEn' in resource.data) || request.resource.data.registradaEn == resource.data.registradaEn)
         && (!('codigo' in resource.data) || request.resource.data.codigo == resource.data.codigo);
+    }
+
+    // Los cambios se calculan una sola vez (Firestore limita cada petición a 1.000 expresiones evaluadas)
+    function cambiosDelTelefonoPermitidos(cambios) {
+      return cambios.hasOnly(camposDelTelefono())
+        && (sinDictamen() || !cambios.hasAny(camposDelDictamen().concat(camposDelModelo())));
     }
 
     function sinDictamen() {
@@ -110,9 +143,7 @@ service cloud.firestore {
       // Gana el primer dictamen: si la muestra ya tiene uno, el teléfono no puede tocar esos campos.
       allow update: if (esSuyo() || sinDueno())
         && quedaSuyo()
-        && (sinDictamen()
-            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(camposDelDictamen()))
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(camposDelTelefono())
+        && cambiosDelTelefonoPermitidos(request.resource.data.diff(resource.data).affectedKeys())
         && muestraValida(request.resource.data)
         && inmutablesIntactos();
 
