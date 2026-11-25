@@ -68,15 +68,17 @@ object Calibre {
     /**
      * Largo del eje mayor, en píxeles, de los píxeles oscuros del recorte (la concha sobre fondo claro).
      * Usa el análisis de componentes principales: la dirección en que los píxeles están más repartidos es el
-     * largo de la valva, aunque esté girada. Devuelve null si hay muy pocos píxeles oscuros.
+     * largo de la valva, aunque esté girada. Solo mide la mancha oscura más grande del recorte: si una concha
+     * vecina asoma por el borde del recuadro, no se suma al largo. Devuelve null si hay muy pocos píxeles oscuros.
      */
     fun largoEjeMayorPx(luminancia: IntArray, ancho: Int, alto: Int, umbral: Int = umbralOtsu(luminancia)): Double? {
         require(luminancia.size == ancho * alto) { "El recorte debe tener ancho × alto píxeles" }
+        val concha = manchaMayor(BooleanArray(luminancia.size) { luminancia[it] <= umbral }, ancho)
         var n = 0
         var sx = 0.0
         var sy = 0.0
         for (y in 0 until alto) for (x in 0 until ancho) {
-            if (luminancia[y * ancho + x] <= umbral) { n++; sx += x; sy += y }
+            if (concha[y * ancho + x]) { n++; sx += x; sy += y }
         }
         if (n < PIXELES_MINIMOS) return null
         val mx = sx / n
@@ -85,7 +87,7 @@ object Calibre {
         var cyy = 0.0
         var cxy = 0.0
         for (y in 0 until alto) for (x in 0 until ancho) {
-            if (luminancia[y * ancho + x] <= umbral) {
+            if (concha[y * ancho + x]) {
                 val dx = x - mx
                 val dy = y - my
                 cxx += dx * dx; cyy += dy * dy; cxy += dx * dy
@@ -103,13 +105,43 @@ object Calibre {
         var min = Double.MAX_VALUE
         var max = -Double.MAX_VALUE
         for (y in 0 until alto) for (x in 0 until ancho) {
-            if (luminancia[y * ancho + x] <= umbral) {
+            if (concha[y * ancho + x]) {
                 val p = (x - mx) * vx + (y - my) * vy
                 if (p < min) min = p
                 if (p > max) max = p
             }
         }
         return max - min + 1 // +1: un píxel tiene ancho
+    }
+
+    /** Deja solo la mancha conectada más grande (4 vecinos) de la máscara: descarta trozos de conchas vecinas. */
+    internal fun manchaMayor(mascara: BooleanArray, ancho: Int): BooleanArray {
+        val etiqueta = IntArray(mascara.size)
+        val pila = IntArray(mascara.size)
+        var actual = 0
+        var mejor = 0
+        var mejorTamano = 0
+        for (inicio in mascara.indices) {
+            if (!mascara[inicio] || etiqueta[inicio] != 0) continue
+            actual++
+            etiqueta[inicio] = actual
+            var tope = 0
+            pila[tope++] = inicio
+            var tamano = 0
+            while (tope > 0) {
+                val i = pila[--tope]
+                tamano++
+                val x = i % ancho
+                for (j in intArrayOf(i - ancho, i + ancho, if (x > 0) i - 1 else -1, if (x < ancho - 1) i + 1 else -1)) {
+                    if (j >= 0 && j < mascara.size && mascara[j] && etiqueta[j] == 0) {
+                        etiqueta[j] = actual
+                        pila[tope++] = j
+                    }
+                }
+            }
+            if (tamano > mejorTamano) { mejorTamano = tamano; mejor = actual }
+        }
+        return BooleanArray(mascara.size) { mejor != 0 && etiqueta[it] == mejor }
     }
 
     /** Largo en mm de la concha del recorte, o null si no se puede medir. */

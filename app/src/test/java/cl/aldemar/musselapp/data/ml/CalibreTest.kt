@@ -46,6 +46,16 @@ class CalibreTest {
         }
     }
 
+    @Test fun `no suma una concha vecina que asoma por el borde del recuadro`() {
+        val ancho = 200
+        val alto = 120
+        val img = concha(ancho, alto, 100.0, 30.0, 0.0)
+        // Trozo de otra concha pegado al borde derecho, separado de la principal por fondo claro
+        for (y in 50 until 70) for (x in 185 until ancho) img[y * ancho + x] = 20
+        val largo = Calibre.largoEjeMayorPx(img, ancho, alto)!!
+        assertEquals(100.0, largo, 2.0)
+    }
+
     @Test fun `convierte el largo a milimetros con la referencia`() {
         val mm = Calibre.largoMm(concha(200, 120, 100.0, 30.0, 0.0), 200, 120, mmPorPixel = 0.5)!!
         assertEquals(50.0, mm, 1.0)
