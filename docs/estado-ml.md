@@ -98,5 +98,6 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   Autoprueba con fotos dibujadas: error máximo 0,3 mm.
 - **Sorpresa:** si una concha vecina asoma en el recuadro, el largo salía inflado (+3,1 mm). `Calibre.kt` ahora mide
   solo la mancha oscura más grande (commit en `feature/ml-reglas`, PR #55; 225 pruebas en verde).
-- Pendiente revisar con las primeras fotos reales: que la rotación EXIF de los celulares no desalinee las etiquetas
-  (el script lo comprueba; falta mirarlo en el entrenamiento).
+- **Sorpresa 2:** RF-DETR lee las fotos sin aplicar la rotación EXIF, pero Label Studio etiqueta la foto ya girada:
+  con fotos verticales del celular las etiquetas quedarían corridas. El notebook ahora endereza cada foto al
+  prepararla y avisa si un tamaño no calza. Lo mismo vale para la app (nota en `ramon.md`, paso 10).
