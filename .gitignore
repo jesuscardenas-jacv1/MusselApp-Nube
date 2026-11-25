@@ -40,4 +40,5 @@ backend/data/
 # Llaves de cuentas de servicio de Firebase (respaldo y scripts locales): nunca al repositorio
 *firebase-adminsdk*.json
 clave-admin*.json
-respaldo-*/
+/respaldo-2*/
+scripts/respaldo-firestore/node_modules/
