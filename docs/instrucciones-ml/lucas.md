@@ -22,7 +22,7 @@ Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y e
 | 7 | ✅ `Calibre.kt`: mm por píxel con el cuadrado de 40 mm y largo de cada concha por PCA (PR #55) | Sáb 28 – Dom 29 |
 | 8 | ✅ Reglas para `ml` y `detecciones` + 27 pruebas + `ResultadoMlNube` (PR #55). **Falta:** la subida en `NubeSync` cuando esté la base v8 de Ramón | Dom 29 – Lun 30 |
 | 7b | ✅ `src/validar_calibre.py` en MusselApp-ML: mide el error del calibre con las fotos `_cal` (mismo cálculo que `Calibre.kt`) | Mié 25 |
-| 9b | ✅ `src/evaluar_tflite.py` en MusselApp-ML: mide el `.tflite` INT8 (lo que corre en el teléfono) contra las metas | Jue 26 |
+| 9b | ✅ `src/evaluar_tflite.py` en MusselApp-ML: mide el `.tflite` INT8 (lo que corre en el teléfono) contra las metas | Mié 25 |
 | 9 | Entrenamiento final, métricas (notebook + `evaluar_tflite.py` + `validar_calibre.py`) y **go/no-go**; entregar `model_v1.tflite`, `labels.txt` y `modelo.json` a Ramón | Mar 1 – Mié 2 |
 | 12 | Prueba final, PR a `main`, publicar reglas y `v2.0.0` | Jue 3 |
 

@@ -4,7 +4,7 @@
 > Al terminar una sesión de trabajo, **agrega una entrada al final** (fecha, quién, qué hiciste, qué quedó pendiente)
 > y actualiza las tablas si cambió algo. El plan completo está en [`plan-fase-final.md`](plan-fase-final.md).
 
-**Última actualización:** 2026-11-26 tarde (Lucas)
+**Última actualización:** 2026-11-25, después de mediodía (Lucas)
 
 ## 1. Dónde está cada cosa
 
@@ -106,7 +106,7 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   con fotos verticales del celular las etiquetas quedarían corridas. El notebook ahora endereza cada foto al
   prepararla y avisa si un tamaño no calza. Lo mismo vale para la app (nota en `ramon.md`, paso 10).
 
-### 2026-11-26 · Lucas
+### 2026-11-25 (después de mediodía) · Lucas
 - Jesús encontró un error en `scripts/datos-prueba-emulador/cargar.mjs`: `detecciones` había quedado dentro de un
   comentario y no se subía (por eso su portal decía "Sin calibre"). Corregido. Además, las conchas dibujadas medían
   ~27 mm y quedaban fuera del histograma (30–95 mm): ahora miden 45–75 mm, cada foto tiene su escala (como en la
