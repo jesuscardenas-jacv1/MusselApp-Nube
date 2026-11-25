@@ -148,7 +148,7 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | [ ] | 6 | Revisión con especie sobre `ConteoSobreFoto` | Ramón | 8 | Cambiar especie, agregar y eliminar funcionan |
 | [x] | 7 | `Calibre.kt` (mm por píxel y largo por PCA) + validaciones de foto (rama `feature/ml-reglas`, 10 pruebas) | Lucas | 6 | Pruebas unitarias en verde |
 | [ ] | 8 | Reglas para `ml` / `detecciones` + pruebas (listas en `feature/ml-reglas`, 27 pruebas) + subida en `NubeSync` (espera Room v8 de Ramón) | Lucas | 5 | Pruebas de reglas en verde (emulador) |
-| [ ] | 9 | Entrenar, evaluar, exportar int8 → **go/no-go** | Lucas | 8 | Métricas del §8 |
+| [ ] | 9 | Entrenar, evaluar, exportar int8 → **go/no-go** (pipeline probado con datos sintéticos; modelo de prueba `model-v0-sintetico` publicado) | Lucas | 8 | Métricas del §8 |
 | [ ] | 10 | `DetectorLiteRt` con `model_v1` + medición de tiempos | Ramón | 6 | ≤ 1,5 s en gama media |
 | [ ] | 11 | Portal: tarjeta de conteo, histograma y recuadros | Jesús | 8 | Se ve en el emulador |
 | [ ] | 12 | Prueba de punta a punta + PR a `main` + publicar reglas + `v2.0.0` | Los 3 | 4 | Checklist de merge completo |
@@ -204,3 +204,4 @@ Si algo falla en vivo: apagar el flag y mostrar el conteo manual.
 | 2026-11-25 | Versión inicial | Aprobación del plan |
 | 2026-11-25 | Calendario por días hasta el 4-dic; pre-entrenamiento con datasets públicos CC BY 4.0/CC0; repo `MusselApp-ML` y carpeta de Drive creados | Fecha de entrega confirmada por el equipo |
 | 2026-11-25 | Modelo: RF-DETR Nano en vez de MediaPipe Model Maker; entrada float32 normalizada ImageNet; reglas de `ml` livianas | Model Maker no instala en el Python 3.12 de Colab; Firestore limita cada petición a 1.000 expresiones |
+| 2026-11-25 | Columnas de clase del .tflite verificadas (0 = chorito, 1 = cholga, 2 = referencia, 3 sin uso); modelo de prueba sintético publicado para integrar la app; INT8 pesa ~30 MB | Prueba real de entrenamiento y exportación con rfdetr 1.12.0 |

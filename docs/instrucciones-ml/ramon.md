@@ -77,12 +77,23 @@ Con `CONTEO_ML = false`, la app debe quedar **idéntica a la v1.3.2**. Extiende 
 
 ## Paso 10 · Modelo real (≈6 h) · Mar 1 – Mié 2 dic
 
-1. Lucas te entrega `model_v1.tflite`, `labels.txt` y `modelo.json` → van en `app/src/main/assets/ml/`.
-2. `DetectorLiteRt.kt` implementa `DetectorMuestra`. Lucas te confirma la librería (LiteRT o MediaPipe Tasks) y su versión.
-3. En `AppContainer.kt`, `DetectorSimulado()` pasa a ser `DetectorLiteRt(context)`.
-4. Meta: **≤ 1,5 s** en un teléfono de gama media.
+> **Puedes adelantarlo ya:** hay un modelo de prueba con el mismo formato que tendrá el real, entrenado con fotos
+> dibujadas: https://github.com/lucsaldivia-ux/MusselApp-ML/releases/tag/model-v0-sintetico
+> (`model_v0_sintetico.tflite`, `labels.txt`, `modelo.json` y una foto de prueba). No cuenta choritos reales: es solo para integrar.
 
-> **Ojo con la entrada del modelo (RF-DETR Nano):** float32 normalizado estilo ImageNet, no uint8. Detalle en `CONTRATO.md` del repo `MusselApp-ML`.
+1. Copia los archivos a `app/src/main/assets/ml/`. Cuando Lucas entregue `model_v1`, solo se reemplazan.
+2. Agrega LiteRT al proyecto (`com.google.ai.edge.litert:litert`, última versión estable con al menos dos semanas).
+3. `DetectorLiteRt.kt` implementa `DetectorMuestra`:
+   - **Entrada** `[1, 384, 384, 3]` **float32**: la foto en RGB redimensionada a 384×384, cada canal `/255` y luego
+     `(x − [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]`. **No** es uint8.
+   - **Salidas por posición** (en INT8 no tienen nombre y las dos miden `[1, 300, 4]`): salida 0 = puntajes, salida 1 = cajas.
+   - Convierte con **`SalidaRfDetr.decodificar(cajas, puntajes, columnas = 4)`** (ya está hecho y probado, en `data/ml/`,
+     PR #55). La especie sale de `SalidaRfDetr.etiqueta(clase, labels)`: 0 = chorito, 1 = cholga, 2 = referencia.
+   - Las cajas vienen normalizadas 0..1, igual que `Deteccion`.
+4. En `AppContainer.kt`, `DetectorSimulado()` pasa a ser `DetectorLiteRt(context)`.
+5. Prueba con `foto_prueba_sintetica.jpg`: deben salir 28 detecciones. Meta de tiempo: **≤ 1,5 s** en gama media
+   (en un PC tarda ~5 s con 4 hilos; en el teléfono probar con 4 hilos y, si es lento, con el delegado de GPU).
+6. Tamaño: el `.tflite` INT8 pesa ~30 MB, así que el APK crece eso.
 
 ## Lo que no te toca
 
