@@ -4,6 +4,8 @@
 **Equipo:** Jesús Cárdenas (Front-end) · Ramón Osorio (UI/UX & Mobile Developer) · Lucas Saldivia (QA & Data Engineer)
 **Fecha de aprobación:** 2026-11-25 (aprobado por Lucas Saldivia; pendiente de confirmación del equipo)
 **Rama de trabajo:** `feature/ml-conteo` · **Punto seguro de retorno:** release `v1.3.2`
+**Entrega:** viernes 4 de diciembre de 2026 (podría extenderse)
+**Entrenamiento:** [lucsaldivia-ux/MusselApp-ML](https://github.com/lucsaldivia-ux/MusselApp-ML) · dataset en Google Drive (`MusselApp-ML/dataset_v1/`)
 
 ---
 
@@ -118,11 +120,23 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
   - Un APK v1.3.2 no se instala sobre la base v8 sin desinstalar.
 - **Release final:** `v2.0.0`.
 
-## 7. Plan paso a paso
+## 7. Calendario (entrega el 4 de diciembre)
+
+| Fechas | App (Ramón) | Portal (Jesús) | Datos y modelo (Lucas) | Los 3 |
+|---|---|---|---|---|
+| Mié 25 – Vie 27 nov | Pasos 4 y 5 | Pasos 1 a 3 del portal | Paso 0 · pre-entrenamiento con datos públicos · notebook | **Fotos (viernes 27)** |
+| Sáb 28 – Lun 30 nov | Paso 6 | Tarjeta y gráfico | Pasos 7 y 8 | **Etiquetado (lunes 30)** |
+| Mar 1 – Mié 2 dic | Paso 10 | Recuadros sobre la foto | Paso 9 · **go/no-go (miércoles 2)** | — |
+| Jue 3 dic | — | — | — | Paso 12: prueba final, PR a `main`, `v2.0.0` |
+| Vie 4 dic | — | — | — | Presentación |
+
+**Datos de internet:** solo para pre-entrenar la detección de "individuo", con licencia CC BY 4.0 o CC0, registrados en `DATOS_EXTERNOS.md` del repo de entrenamiento. No reemplazan las fotos propias, que son las únicas que enseñan a distinguir chorito de cholga.
+
+## 8. Plan paso a paso
 
 | Estado | # | Paso | Responsable | h | Listo cuando |
 |---|---|---|---|---|---|
-| [ ] | 0 | Respaldo de Firestore a JSON (script local con Admin SDK) + `.gitignore` de llaves | Lucas | 2 | JSON guardado fuera de git |
+| [ ] | 0 | Respaldo de Firestore a JSON (script listo en `scripts/respaldo-firestore/`; falta ejecutarlo) + `.gitignore` de llaves (hecho) | Lucas | 2 | JSON guardado fuera de git |
 | [ ] | 1 | Recolectar 150 fotos con la referencia de 40 mm (protocolo del documento de equipo) | Los 3 | 10 | Fotos en Drive + planilla completa |
 | [ ] | 2 | Etiquetado en Label Studio (COCO) + revisión cruzada | Los 3 (Jesús +20 fotos) | 12 | ≥ 500 instancias por especie |
 | [ ] | 3 | Split sin fuga (por bandeja) + notebook de entrenamiento con checkpoints | Lucas | 8 | El notebook corre de punta a punta |
@@ -136,7 +150,7 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | [ ] | 11 | Portal: tarjeta de conteo, histograma y recuadros | Jesús | 8 | Se ve en el emulador |
 | [ ] | 12 | Prueba de punta a punta + PR a `main` + publicar reglas + `v2.0.0` | Los 3 | 4 | Checklist de merge completo |
 
-## 8. Go/no-go, pruebas, demo y plan B
+## 9. Go/no-go, pruebas, demo y plan B
 
 **Métricas mínimas** (conjunto de prueba, fotos nunca vistas):
 
@@ -168,10 +182,11 @@ Si algo falla en vivo: apagar el flag y mostrar el conteo manual.
 
 **Plan B:** conteo asistido. El operario marca y elige la especie, y el calibre se calcula con la referencia. Se reutilizan la pantalla de revisión, Room v8, las reglas y el portal, y se presentan las métricas reales del notebook.
 
-## 9. Pendientes por definir
+## 10. Pendientes por definir
 
-- [ ] Fecha de entrega y pauta de la fase final (¿un solo repositorio?).
-- [ ] Acceso a choritos y cholgas reales.
+- [x] Fecha de entrega: viernes 4 de diciembre (podría extenderse).
+- [ ] Pauta de la fase final (¿un solo repositorio?).
+- [x] Choritos y cholgas reales: los reúne el equipo.
 - [ ] ¿Distinguir también el choro zapato?
 - [ ] Teléfonos de prueba.
 - [ ] Condiciones reales de captura.
@@ -179,8 +194,9 @@ Si algo falla en vivo: apagar el flag y mostrar el conteo manual.
 - [ ] ¿Supervisor de la app con cuenta propia y Custom Claims en esta fase?
 - [ ] Horas por semana de cada integrante.
 
-## 10. Registro de cambios al plan
+## 11. Registro de cambios al plan
 
 | Fecha | Cambio | Motivo |
 |---|---|---|
 | 2026-11-25 | Versión inicial | Aprobación del plan |
+| 2026-11-25 | Calendario por días hasta el 4-dic; pre-entrenamiento con datasets públicos CC BY 4.0/CC0; repo `MusselApp-ML` y carpeta de Drive creados | Fecha de entrega confirmada por el equipo |
