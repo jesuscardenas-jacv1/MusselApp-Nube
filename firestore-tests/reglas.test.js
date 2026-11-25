@@ -250,3 +250,70 @@ test('el supervisor no queda limitado por la validación del teléfono', async (
   await assertSucceeds(setDoc(doc(s, 'muestras', 'demo-2'), { codigo: 'Demo', estado: 'PENDIENTE', demo: true, conteoIndM: 300 }));
   await assertSucceeds(updateDoc(doc(s, 'muestras', 'aaaa1111_2'), { estado: 'CORREGIDO', conteoIndM: 380 }));
 });
+
+// ── Conteo automático (fase final): campos ml y detecciones ──────────────
+
+const resultadoMl = {
+  ml: { version: 'model_v1', total: 3, choritos: 2, cholgas: 1, mmPorPx: 0.21,
+        tallaChoritoMm: 54.2, tallaCholgaMm: 71.0, editado: true },
+  detecciones: [
+    { e: 'C', p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: 'M' },
+    { e: 'C', p: 0.88, x: 300, y: 410, w: 58, h: 27, mm: 53, o: 'M' },
+    { e: 'K', p: 0.81, x: 610, y: 205, w: 75, h: 33, mm: 71, o: 'O' },
+  ],
+};
+
+test('conteo ML: el teléfono sube el resultado del modelo con la muestra', async () => {
+  const a = bd(TELEFONO_A);
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_70'), subidaCompleta(TELEFONO_A, resultadoMl), { merge: true }));
+  // Sin conteo automático (flag apagado) sigue funcionando igual
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_71'), subidaCompleta(TELEFONO_A, { codigo: 'Muestra 071' }), { merge: true }));
+  // Validada sin conexión, con resultado del modelo, en la misma subida
+  await assertSucceeds(setDoc(doc(a, 'muestras', 'aaaa1111_72'),
+    subidaCompleta(TELEFONO_A, { ...resultadoMl, codigo: 'Muestra 072', estado: 'VALIDADO', revisadaPor: 'Diego Muñoz', revisadaEn: 1732400100000 }),
+    { merge: true }));
+});
+
+test('conteo ML: una resubida con el mismo resultado pasa aunque la muestra ya tenga dictamen', async () => {
+  await entorno.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'muestras', 'aaaa1111_73'),
+      subidaCompleta(TELEFONO_A, { ...resultadoMl, codigo: 'Muestra 073', estado: 'VALIDADO', revisadaPor: 'Diego Muñoz' }));
+  });
+  await assertSucceeds(setDoc(doc(bd(TELEFONO_A), 'muestras', 'aaaa1111_73'),
+    { ...resultadoMl, observacion: 'Con clima', ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('ataque: el teléfono no puede cambiar el resultado del modelo de una muestra con dictamen', async () => {
+  await entorno.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'muestras', 'aaaa1111_74'),
+      subidaCompleta(TELEFONO_A, { ...resultadoMl, codigo: 'Muestra 074', estado: 'VALIDADO', revisadaPor: 'Diego Muñoz' }));
+  });
+  const a = bd(TELEFONO_A);
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_74'),
+    { ml: { ...resultadoMl.ml, choritos: 99, total: 100 }, ownerUid: TELEFONO_A }, { merge: true }));
+  await assertFails(setDoc(doc(a, 'muestras', 'aaaa1111_74'), { detecciones: [], ownerUid: TELEFONO_A }, { merge: true }));
+});
+
+test('ataque: resultado del modelo con campos extra, valores absurdos o demasiadas detecciones', async () => {
+  const a = bd(TELEFONO_A);
+  const malos = [
+    { ml: { ...resultadoMl.ml, esAdmin: true } },
+    { ml: { ...resultadoMl.ml, total: -1 } },
+    { ml: { ...resultadoMl.ml, choritos: 5000 } },
+    { ml: { ...resultadoMl.ml, version: 'v'.repeat(100) } },
+    { ml: { ...resultadoMl.ml, editado: 'sí' } },
+    { ml: 'muchos' },
+    { detecciones: 'todas' },
+    { detecciones: Array(601).fill({ e: 'C', p: 0.9, x: 1, y: 1, w: 1, h: 1, o: 'M' }) },
+  ];
+  for (const [i, malo] of malos.entries()) {
+    await assertFails(setDoc(doc(a, 'muestras', `aaaa1111_8${i}`), subidaCompleta(TELEFONO_A, { ...resultadoMl, ...malo })));
+  }
+});
+
+test('conteo ML: el supervisor puede corregir el resultado del modelo', async () => {
+  await entorno.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'muestras', 'aaaa1111_75'), subidaCompleta(TELEFONO_A, { ...resultadoMl, codigo: 'Muestra 075' }));
+  });
+  await assertSucceeds(updateDoc(doc(bd(SUPERVISOR), 'muestras', 'aaaa1111_75'), { 'ml.cholgas': 2, 'ml.choritos': 1 }));
+});
