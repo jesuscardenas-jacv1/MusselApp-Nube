@@ -90,6 +90,23 @@ Chart.js (cerca de la línea 1731): histograma por rangos de 5 mm (30–35 … 9
 
 **Opcional:** "% de cholgas por centro" en el Dashboard; columnas `choritos`, `cholgas` y calibre promedio en la exportación.
 
+## Revisión de Lucas a `feature/ml-portal` (25-nov)
+
+Probado con los datos de prueba corregidos en el emulador: la tarjeta, los porcentajes, la tabla de calibres, el
+histograma, el aviso de corrección y "Ver detecciones" (también en "Ampliar" y en la bandeja de 159) funcionan, y el
+formato calza con el contrato y con `ResultadoMlNube.kt` (`o: "O"` = solo los que **agregó** el operario; un cambio
+de especie no cambia `o`, solo pone `ml.editado = true`). Lo que queda:
+
+1. **Plan B (importante si el modelo no pasa el go/no-go):** en el conteo asistido todas las detecciones vienen con
+   `o: "O"` y sin `p`. Hoy la tarjeta diría "Conteo automático" y "agregó 57 individuos a mano". Si **todas** son
+   `o: "O"`, mejor titular "Conteo asistido" y no mostrar ese aviso.
+2. **Opcional (del informe técnico de Lucas):** marcar la talla mínima legal en el histograma (50 mm chorito, 70 mm
+   cholga) o mostrar "% bajo talla legal" por especie. Le sirve al supervisor; solo si sobra tiempo.
+3. **Cosmético:** los dos porcentajes redondeados pueden sumar 99 % o 101 %. Se arregla calculando uno y restando
+   el otro de 100.
+4. Trae `feature/ml-conteo` y vuelve a correr `npm run cargar`: tus datos de prueba tenían el error de las
+   detecciones (ya corregido) y las conchas ahora miden 45–75 mm, con la referencia arriba a la derecha.
+
 ## Lo que no te toca
 
 `app/` es de Ramón · `firestore.rules` y la subida desde el teléfono son de Lucas.

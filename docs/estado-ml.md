@@ -4,7 +4,23 @@
 > Al terminar una sesión de trabajo, **agrega una entrada al final** (fecha, quién, qué hiciste, qué quedó pendiente)
 > y actualiza las tablas si cambió algo. El plan completo está en [`plan-fase-final.md`](plan-fase-final.md).
 
-**Última actualización:** 2026-11-25, después de mediodía (Lucas)
+**Última actualización:** 2026-11-25, tarde (Lucas)
+
+## Novedades (léelas antes de empezar)
+
+Lo que cambió el 25-nov y qué hace cada uno. Cuando lo hayas hecho, no hace falta borrarlo: la próxima persona que
+cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda en la bitácora, §6).
+
+| Para | Qué cambió | Qué hacer |
+|---|---|---|
+| **Todos** | **Protocolo de fotos nuevo** (`instrucciones-ml/equipo.md` §3): luz difusa **desde los dos costados**, nunca solo la del techo; fondo blanco o blanco hueso mate; ninguna concha cortada en el borde; escurrir las mojadas. Imita el montaje que propuso el profesor para Aldemar. También hay una tabla para distinguir chorito y cholga y cuándo usar `duda` | Leer §3 **antes de sacar fotos**. Los PDF de instrucciones que se enviaron antes tienen el protocolo antiguo |
+| **Todos** | Foto `_cal` del set de calibre: los 5 medidos en fila, en el orden de la planilla | Ver `equipo.md` §3 |
+| **Todos** | `src/revisar_etiquetas.py` (MusselApp-ML) revisa tu lote contra la planilla | Correrlo antes de entregar cada lote (`equipo.md` §4) |
+| **Todos** | Lista de la prueba final del 3-dic: [`prueba-final-ml.md`](prueba-final-ml.md) | Revisar qué filas te tocan |
+| **Todos** | Informe técnico y atlas de chorito/cholga en Drive `MusselApp-ML/referencias/` | Hojear el atlas antes de etiquetar |
+| **Jesús** | Datos de prueba del emulador corregidos (las detecciones no se subían; conchas ahora 45–75 mm). Revisión de tu rama | `git merge origin/feature/ml-conteo`, `npm run cargar` otra vez y ver "Revisión de Lucas" en `jesus.md` |
+| **Ramón** | El modelo tarda ~0,22 s en un PC con XNNPACK (antes decía ~5 s: estaba mal medido). No apagar XNNPACK | Ver `ramon.md` paso 10, punto 5 |
+| **Ramón y Jesús** | PR #55 fusionado: `Calibre.kt`, `SalidaRfDetr.kt` y `ResultadoMlNube.kt` ya están en la rama base | `git merge origin/feature/ml-conteo` en tu rama |
 
 ## 1. Dónde está cada cosa
 
@@ -120,3 +136,17 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - **Sorpresa:** en Windows, el intérprete de `ai-edge-litert` corre sin XNNPACK: 2,5–5 s por foto en vez de 0,22 s, y
   con el FP16 daba resultados erróneos. El "~5 s en PC" que decía `ramon.md` venía de ahí; corregido. En Android
   XNNPACK viene activo por defecto (no apagarlo).
+
+### 2026-11-25 (tarde) · Lucas
+- Protocolo de fotos y etiquetado actualizado en `equipo.md` con el montaje que propuso el profesor (cámara a 90°,
+  luz difusa a ambos lados, fondo blanco mate, borde libre, separadas) y con el informe técnico y el atlas de Lucas
+  (luz de costado para ver las costillas, color de la cholga chica, contorno, casos para `duda`). PDF en Drive
+  `MusselApp-ML/referencias/`.
+- En Aldemar se acordó bandeja blanco hueso y muestreo **por kilo**. Contar por kilo sería un campo nuevo: queda para
+  después de esta fase (anotado en `plan-fase-final.md` §10).
+- MusselApp-ML: `src/revisar_etiquetas.py` (compara cada lote con la planilla: faltantes, sin referencia, duplicados,
+  exceso de `duda`, nombres, fotos `_cal`). Autoprueba OK. Licencia del dataset de Stephen confirmada: CC BY 4.0.
+- `docs/prueba-final-ml.md`: lista de la prueba del 3-dic por bloques (app sana, conteo, sincronización, portal,
+  demo, publicación) con responsable.
+- Revisada la rama `feature/ml-portal`: funciona con los datos de prueba; notas para Jesús en `jesus.md`.
+- Nueva sección "Novedades" al inicio de este archivo y `CLAUDE.md` pide leerla primero.

@@ -5,7 +5,8 @@ y su **portal web del supervisor** (`web-supervisor/index.html`). Proyecto de 3 
 
 ## Antes de hacer nada
 
-1. Lee el estado actual: `docs/estado-ml.md` (qué está hecho, dónde está cada cosa y qué sigue).
+1. Lee el estado actual: `docs/estado-ml.md` (qué está hecho, dónde está cada cosa y qué sigue). **Empieza por su
+   sección "Novedades"**: dice qué cambió desde la última vez y qué debe hacer cada persona.
 2. Lee el plan: `docs/plan-fase-final.md`.
 3. Lee las instrucciones de la persona con la que trabajas: `docs/instrucciones-ml/` (`ramon.md`, `jesus.md`, `lucas.md`; para todos, `equipo.md`).
 4. Trae lo último: `git fetch origin` y `git merge origin/feature/ml-conteo` en tu rama.
@@ -15,7 +16,10 @@ y su **portal web del supervisor** (`web-supervisor/index.html`). Proyecto de 3 
 
 - Agrega una entrada a la bitácora de `docs/estado-ml.md` (fecha, quién, qué se hizo, qué quedó pendiente, sorpresas)
   y actualiza su tabla de estado. Marca los pasos terminados en `docs/plan-fase-final.md` §8.
-- Si cambiaste algo que usa otra persona (formato, nombres, archivos), anótalo también en sus instrucciones.
+- Si cambiaste algo que usa otra persona (formato, nombres, archivos), anótalo también en sus instrucciones y en la
+  sección "Novedades" de `docs/estado-ml.md`.
+- Antes de abrir un PR, vuelve a hacer `git fetch origin` y `git merge origin/feature/ml-conteo`, y corre las pruebas:
+  así se ve si lo nuevo de otro rompió algo tuyo antes de que llegue a la rama base.
 - Así el asistente del siguiente integrante sabe en qué quedó todo sin preguntar.
 
 ## Reglas obligatorias
