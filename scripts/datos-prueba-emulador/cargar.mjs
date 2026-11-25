@@ -48,8 +48,7 @@ function azar(semilla) {
 }
 
 const ANCHO = 1600, ALTO = 1200;          // tamaño de la "foto"
-const LADO_REF_PX = 160;                  // la referencia de 40 mm mide 160 px → 0,25 mm por píxel
-const MM_POR_PX = 40 / LADO_REF_PX;
+const LARGO_MAX_MM = 75;                  // las conchas miden entre 45 y 75 mm (rango del histograma del portal)
 
 /**
  * Dibuja una bandeja (SVG) y devuelve sus detecciones con el formato del contrato.
@@ -61,17 +60,21 @@ function bandeja({ semilla, choritos, cholgas, conReferencia = true, agregadas =
   const cols = Math.ceil(Math.sqrt(especies.length * ANCHO / ALTO));
   const filas = Math.ceil(especies.length / cols);
   const celdaX = (ANCHO - 120) / cols, celdaY = (ALTO - 120) / filas;
+  // Escala de esta foto: la concha más larga (75 mm) cabe en su celda. Como en la realidad, cada foto
+  // tiene su propia escala (según la distancia de la cámara) y la referencia de 40 mm la delata.
+  const mmPorPx = LARGO_MAX_MM / (Math.min(celdaX, celdaY) * 0.95);
+  const ladoRef = 40 / mmPorPx;
+  const refX = ANCHO - 60 - ladoRef;
   const conchas = [];
   const dets = [];
   especies.forEach((e, i) => {
-    const largoMm = e === 'C' ? 38 + r() * 32 : 55 + r() * 35;
-    // Achica si la celda es chica, para que no se encimen
-    const largo = Math.min(largoMm / MM_POR_PX, Math.min(celdaX, celdaY) * 1.1);
+    const largoMm = e === 'C' ? 45 + r() * 20 : 55 + r() * 20;   // choritos 45–65 mm, cholgas 55–75 mm
+    const largo = largoMm / mmPorPx;
     const ancho = largo * (e === 'C' ? 0.45 : 0.55);
     const cx = 60 + celdaX * (i % cols + 0.5) + (r() - 0.5) * celdaX * 0.2;
     const cy = 60 + celdaY * (Math.floor(i / cols) + 0.5) + (r() - 0.5) * celdaY * 0.2;
-    // La referencia va en la esquina superior izquierda: deja libre ese espacio
-    if (conReferencia && cx < 60 + LADO_REF_PX + 40 && cy < 60 + LADO_REF_PX + 40) return;
+    // La referencia va en la esquina superior derecha (la izquierda la tapa el botón "Ver detecciones")
+    if (conReferencia && cx > refX - 40 && cy < 60 + ladoRef + 40) return;
     const ang = r() * Math.PI;
     const ex = Math.sqrt((largo / 2 * Math.cos(ang)) ** 2 + (ancho / 2 * Math.sin(ang)) ** 2);
     const ey = Math.sqrt((largo / 2 * Math.sin(ang)) ** 2 + (ancho / 2 * Math.cos(ang)) ** 2);
@@ -91,7 +94,7 @@ function bandeja({ semilla, choritos, cholgas, conReferencia = true, agregadas =
       w: Math.round(2 * ex / ANCHO * 1000), h: Math.round(2 * ey / ALTO * 1000),
       o: 'M',
     };
-    if (conReferencia) det.mm = Math.round(largo * MM_POR_PX);
+    if (conReferencia) det.mm = Math.round(largoMm);
     dets.push(det);
   });
   // El operario quitó algunas (no se suben) y agregó otras que el modelo no vio (sin "p")
@@ -101,12 +104,12 @@ function bandeja({ semilla, choritos, cholgas, conReferencia = true, agregadas =
     delete d.p; d.o = 'O';
   }
   const ref = conReferencia
-    ? `<rect x="60" y="60" width="${LADO_REF_PX}" height="${LADO_REF_PX}" fill="#000"/>` +
-      `<text x="60" y="${60 + LADO_REF_PX + 28}" font-size="22" font-family="sans-serif" fill="#333">40 mm</text>`
+    ? `<rect x="${refX.toFixed(1)}" y="60" width="${ladoRef.toFixed(1)}" height="${ladoRef.toFixed(1)}" fill="#000"/>` +
+      `<text x="${refX.toFixed(1)}" y="${(60 + ladoRef + 28).toFixed(1)}" font-size="22" font-family="sans-serif" fill="#333">40 mm</text>`
     : '';
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ANCHO}" height="${ALTO}" viewBox="0 0 ${ANCHO} ${ALTO}">` +
     `<rect width="100%" height="100%" fill="#f4f1ea"/>${ref}${conchas.join('')}</svg>`;
-  return { dets, quitadas, foto: 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64') };
+  return { dets, quitadas, mmPorPx, foto: 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64') };
 }
 
 function promedio(lista) {
@@ -114,11 +117,11 @@ function promedio(lista) {
 }
 
 /** `ml` con el mismo formato y redondeos que ResultadoMlNube.aCampos en la app. */
-function resumenMl(dets, { version = 'model_v1', conReferencia = true, editado = false }) {
+function resumenMl(dets, { version = 'model_v1', mmPorPx = null, editado = false }) {
   const ch = dets.filter(d => d.e === 'C'), ko = dets.filter(d => d.e === 'K');
   const ml = { version, total: dets.length, choritos: ch.length, cholgas: ko.length, editado };
-  if (conReferencia) {
-    ml.mmPorPx = Math.round(MM_POR_PX * 10000) / 10000;
+  if (mmPorPx != null) {
+    ml.mmPorPx = Math.round(mmPorPx * 10000) / 10000;
     const tc = promedio(ch.map(d => d.mm).filter(Boolean)), tk = promedio(ko.map(d => d.mm).filter(Boolean));
     if (tc != null) ml.tallaChoritoMm = tc;
     if (tk != null) ml.tallaCholgaMm = tk;
@@ -158,12 +161,14 @@ for (const c of CASOS) {
     const b = bandeja({ semilla: n * 97, choritos: c.choritos, cholgas: c.cholgas, conReferencia: !c.sinReferencia,
       agregadas: c.agregadas || 0, eliminadas: c.eliminadas || 0 });
     const editado = (c.agregadas || 0) + b.quitadas > 0;
-    const ml = resumenMl(b.dets, { conReferencia: !c.sinReferencia, editado });
+    const ml = resumenMl(b.dets, { mmPorPx: c.sinReferencia ? null : b.mmPorPx, editado });
     foto = b.foto;
     // Los campos de siempre salen del conteo, por metro (tramo de 100 cm)
     Object.assign(base, {
       conteoIndM: Math.round(ml.choritos * 100 / tramoCm), cholgasIndM: Math.round(ml.cholgas * 100 / tramoCm),
-      tallaMm: Math.round(ml.tallaChoritoMm || 52), ml,   // sin referencia, la talla la midió el operario detecciones: b.dets,
+      tallaMm: Math.round(ml.tallaChoritoMm || 52),   // sin referencia, la talla la midió el operario
+      ml,
+      detecciones: b.dets,
     });
   }
   await db.collection('muestras').doc(c.id).set(base);

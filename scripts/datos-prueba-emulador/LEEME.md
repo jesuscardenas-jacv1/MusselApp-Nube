@@ -49,7 +49,9 @@ Abre `http://127.0.0.1:5000` y entra con **RUT `22.222.222-2` y PIN `1234`**. Es
 | `prueba-06` | Pendiente | **Sin `ml`**: debe verse igual que hoy |
 
 Las fotos son dibujos (SVG de 1600 × 1200) y los recuadros de `detecciones` calzan con las conchas dibujadas, así
-que sirven para probar "Ver detecciones". La referencia de 40 mm mide 160 px (0,25 mm por píxel).
+que sirven para probar "Ver detecciones". Las conchas miden entre 45 y 75 mm (choritos 45–65, cholgas 55–75), dentro
+del rango del histograma. Como en las fotos reales, cada foto tiene su propia escala: la referencia de 40 mm va en la
+esquina superior derecha y su tamaño en píxeles cambia de una foto a otra (`ml.mmPorPx` entre 0,44 y 0,80).
 
 Ojo: la foto del detalle usa `object-fit: cover`. Si la foto tiene otra proporción que su recuadro, hay que
 calcular el área que realmente se ve antes de dibujar las detecciones (o dibujarlas en la vista "Ampliar").
