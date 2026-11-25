@@ -1,0 +1,8 @@
+{
+  "name": "datos-prueba-emulador",
+  "private": true,
+  "type": "module",
+  "description": "Muestras de prueba con conteo automático para el emulador de Firebase (nunca la base real)",
+  "scripts": { "cargar": "node cargar.mjs" },
+  "dependencies": { "firebase-admin": "14.4.0" }
+}

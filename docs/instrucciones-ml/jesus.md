@@ -17,10 +17,13 @@ Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y e
 Necesitas Java 21 o superior y Node.
 
 ```
-npx firebase-tools emulators:start --only firestore,auth,hosting --project demo-musselapp
+npx firebase-tools emulators:start --only firestore,auth,hosting --project musselapp-demo
 ```
 
-En `iniciarFirebase()` (cerca de la línea 1449), después de crear `db`:
+Usa `musselapp-demo`, el mismo `projectId` del portal: el emulador separa los datos por proyecto. `firebase.json` ya
+trae los puertos de Auth (9099) y Hosting (5000).
+
+En `iniciarFirebase()` (cerca de la línea 1449), justo después de `db = firebase.firestore();`:
 
 ```js
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
@@ -29,7 +32,13 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
 }
 ```
 
-El portal queda en `http://127.0.0.1:5000`. En la interfaz del emulador crea un supervisor (usuario + `supervisores/{uid}`) y muestras de prueba.
+El portal queda en `http://127.0.0.1:5000`.
+
+**Datos de prueba ya listos:** en otra terminal, `cd scripts/datos-prueba-emulador`, `npm install` y `npm run cargar`.
+Carga 6 muestras con `ml` y `detecciones` (con y sin correcciones, sin referencia, una grande de 156 y una sin `ml`),
+sus fotos dibujadas con los recuadros calzando, y un supervisor: **RUT `22.222.222-2`, PIN `1234`** (solo existe en el
+emulador). Detalle en [`scripts/datos-prueba-emulador/LEEME.md`](../../scripts/datos-prueba-emulador/LEEME.md).
+Probado el 2026-11-25: el portal entra y muestra las 6.
 
 ## Paso 2 · Formato de los datos
 
@@ -38,7 +47,7 @@ ml: { version: "model_v1", total: 64, choritos: 58, cholgas: 6, mmPorPx: 0.21,
       tallaChoritoMm: 54.2, tallaCholgaMm: 71.0, editado: true },
 detecciones: [
   { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" },
-  { e: "K", p: 0.81, x: 610, y: 205, w: 75, h: 33, mm: 71, o: "O" }
+  { e: "K", x: 610, y: 205, w: 75, h: 33, mm: 71, o: "O" }   // agregada por el operario: sin p
 ]
 // e: "C" chorito, "K" cholga · p: confianza 0-1 · x,y,w,h en escala 0-1000 (0,0 = arriba a la izquierda)
 // mm: largo en mm (puede faltar) · o: "M" modelo, "O" agregado por el operario
@@ -49,7 +58,10 @@ Detalles que ya fija el código del teléfono (`ResultadoMlNube.kt`, PR #55):
 - `mm`, `ml.mmPorPx`, `ml.tallaChoritoMm` y `ml.tallaCholgaMm` faltan si la foto no tenía la referencia.
 - Las reglas aceptan hasta **600** detecciones y conteos de hasta 2000. Las eliminadas por el operario no se suben.
 
-Crea 3 o 4 muestras de prueba con entre 20 y 60 detecciones inventadas. La foto va en `fotos/{mismo id}`.
+No hace falta crear muestras a mano: usa el script de arriba. La foto va en `fotos/{mismo id}`.
+
+Ojo en el paso 6: la foto del detalle usa `object-fit: cover`. Si la proporción de la foto no calza con su recuadro,
+calcula el área visible antes de dibujar los recuadros (o dibújalos en la vista "Ampliar").
 
 ## Paso 3 · Leer los campos nuevos (≈1 h)
 

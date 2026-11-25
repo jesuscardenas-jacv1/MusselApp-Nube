@@ -7,6 +7,15 @@ Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y e
 
 > **Tu misión:** que la app pueda **recibir las detecciones de un modelo**, guardarlas en Room y mostrarlas en la pantalla de conteo para que el operario las corrija. Empiezas con un **detector simulado**, sin esperar al modelo real.
 
+## Si tienes pocos tokens: por dónde partir
+
+1. **Pasos 4 y 5 primero** (detector simulado y Room v8): Lucas los necesita para la subida a Firestore, y Jesús no
+   depende de ti. El paso 6 (pantalla) puede esperar al fin de semana.
+2. Pídele a tu asistente que lea **solo** `CLAUDE.md`, `docs/estado-ml.md` y este archivo; no hace falta el plan entero.
+3. Una tarea por sesión ("haz el paso 5 y su prueba de migración"), y al cerrar, que anote en la bitácora en qué quedó:
+   así la próxima sesión parte sin releer todo.
+4. El código de este archivo ya trae el SQL y las clases listas para copiar; úsalas tal cual.
+
 ## Antes de empezar
 
 - [ ] `git fetch origin` y `git switch -c feature/ml-app origin/feature/ml-conteo`.

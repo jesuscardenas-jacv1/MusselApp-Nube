@@ -4,7 +4,7 @@
 > Al terminar una sesión de trabajo, **agrega una entrada al final** (fecha, quién, qué hiciste, qué quedó pendiente)
 > y actualiza las tablas si cambió algo. El plan completo está en [`plan-fase-final.md`](plan-fase-final.md).
 
-**Última actualización:** 2026-11-25 (Lucas)
+**Última actualización:** 2026-11-25 tarde (Lucas)
 
 ## 1. Dónde está cada cosa
 
@@ -16,6 +16,7 @@
 | Código ya hecho de Lucas (calibre, post-proceso del modelo, formato para Firestore, reglas) | Rama `feature/ml-reglas`, **PR #55** hacia `feature/ml-conteo` |
 | Entrenamiento (notebook, split, dataset sintético, contrato del `.tflite`) | https://github.com/lucsaldivia-ux/MusselApp-ML |
 | Modelo de prueba para integrar la app | Release `model-v0-sintetico` de MusselApp-ML |
+| Datos de prueba para el portal (emulador) | `scripts/datos-prueba-emulador/` (`npm run cargar`; supervisor RUT 22.222.222-2, PIN 1234, solo en el emulador) |
 | Fotos, etiquetas y checkpoints | Drive `MusselApp-ML` (`dataset_v1/crudas`, `dataset_v1/etiquetas`, `checkpoints`, planilla `planilla_fotos`) |
 
 ## 2. Estado por paso
@@ -33,7 +34,7 @@
 | 8 | Reglas `ml`/`detecciones` + formato para Firestore | Lucas | **Hecho** (PR #55). Falta la subida en `NubeSync` (espera el paso 5) |
 | 9 | Entrenar `model_v1` y go/no-go | Lucas | Pipeline probado; espera las fotos etiquetadas |
 | 10 | `DetectorLiteRt` | Ramón | Se puede adelantar con `model-v0-sintetico` |
-| 11 | Portal: tarjeta, histograma y recuadros | Jesús | Sin empezar |
+| 11 | Portal: tarjeta, histograma y recuadros | Jesús | Empieza el 25-nov. Datos de prueba listos en el emulador |
 | 12 | Prueba final, `main` y `v2.0.0` | Los 3 | Jue 3 dic |
 
 ## 3. Piezas ya hechas que los demás usan (PR #55)
@@ -80,3 +81,12 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - Pendiente: generar la clave y correr el respaldo; descargar el dataset público; subida en `NubeSync`.
 - Decisión: el PR #55 lo revisan y fusionan Jesús o Ramón cuando terminen su parte. Lo que sigue de Lucas
   (subida en `NubeSync`, `model_v1`) irá en PR nuevos.
+
+### 2026-11-25 (tarde) · Lucas
+- `scripts/datos-prueba-emulador/`: carga 6 muestras con `ml` y `detecciones`, fotos dibujadas con los recuadros
+  calzando y un supervisor de prueba. Probado: el portal (con `useEmulator`) entra y muestra las 6, y los recuadros
+  calzan con las conchas.
+- **Sorpresa:** `firebase.json` no tenía configurado el emulador de Auth, así que no arrancaba y el portal no podía
+  iniciar sesión. Agregados los puertos de Auth (9099) y Hosting (5000). Además, el emulador debe iniciarse con
+  `--project musselapp-demo` (el `projectId` del portal); `jesus.md` decía otro nombre.
+- `ramon.md`: orden sugerido si tiene pocos tokens (pasos 4 y 5 primero).
