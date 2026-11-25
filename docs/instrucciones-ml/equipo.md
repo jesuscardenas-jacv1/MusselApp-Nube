@@ -53,8 +53,12 @@ luz difusa a ambos lados, fondo blanco mate, borde libre y conchas separadas):
 6. Conchas mojadas: **escurridas**, sin agua libre en la bandeja (el agua hace brillos que tapan el relieve).
 7. 2 o 3 fotos por bandeja; después se cambian los individuos.
 
-**Variedad:** secas y escurridas; luz de día y artificial (siempre de costado); bandejas solo de choritos, solo de
-cholgas y mezcladas; distintos tamaños, incluidas cholgas chicas.
+**Variedad:** secas y escurridas; luz de día y artificial (siempre de costado); distintos tamaños, incluidas cholgas chicas.
+
+**Bandejas por especie (recomendado):** unas **2 de cada 3 bandejas con una sola especie** (solo choritos o solo
+cholgas) y **1 de cada 3 mezclada**. Las de una especie se pre-etiquetan solas con la especie correcta (ver §4); las
+mezcladas son necesarias para que el modelo aprenda a distinguirlas **dentro de la misma foto** y no por la luz o el
+día en que se tomó cada una. Usa el mismo montaje (luz, fondo, altura) para las dos especies.
 
 **Nombres y rangos:**
 - Nombre del archivo: `M<bandeja>_<iniciales>_<n>.jpg`, por ejemplo `M012_JC_02.jpg`.
@@ -122,6 +126,10 @@ Se abre `http://localhost:8080`.
 - Atajos: 1-4 para elegir la etiqueta y Ctrl+Enter para enviar.
 
 **Entrega:** Export en formato **COCO** → Drive `dataset_v1/etiquetas/<iniciales>_lote<n>.zip`. Revisión cruzada: cada uno revisa 5 fotos de otro.
+
+**Atajo: pre-etiquetado.** Antes de etiquetar, corre la sección 3b del notebook de entrenamiento: dibuja sola los
+recuadros de cada concha y de la referencia (y pone la especie si la bandeja es de una sola). En Label Studio solo
+revisas y corriges. Pasos en el README de MusselApp-ML, "Pre-etiquetado".
 
 **Antes de entregar, revisa tu lote** con `src/revisar_etiquetas.py` de MusselApp-ML (compara tus recuadros con el
 conteo a mano de la planilla y avisa fotos sin referencia, nombres mal puestos o fotos `_cal` incompletas):

@@ -17,6 +17,7 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 | **Todos** | Foto `_cal` del set de calibre: los 5 medidos en fila, en el orden de la planilla | Ver `equipo.md` §3 |
 | **Todos** | `src/revisar_etiquetas.py` (MusselApp-ML) revisa tu lote contra la planilla | Correrlo antes de entregar cada lote (`equipo.md` §4) |
 | **Todos** | Lista de la prueba final del 3-dic: [`prueba-final-ml.md`](prueba-final-ml.md) | Revisar qué filas te tocan |
+| **Todos** | **Pre-etiquetado:** la sección 3b del notebook dibuja los recuadros con el modelo pre-entrenado; en Label Studio solo se corrigen. Bandejas: 2 de 3 de una sola especie y 1 de 3 mezclada (`equipo.md` §3) | Usarlo antes de etiquetar (README de MusselApp-ML) |
 | **Todos** | Informe técnico y atlas de chorito/cholga en Drive `MusselApp-ML/referencias/` | Hojear el atlas antes de etiquetar |
 | **Jesús** | Datos de prueba del emulador corregidos (las detecciones no se subían; conchas ahora 45–75 mm). Revisión de tu rama | `git merge origin/feature/ml-conteo`, `npm run cargar` otra vez y ver "Revisión de Lucas" en `jesus.md` |
 | **Ramón** | El modelo tarda ~0,22 s en un PC con XNNPACK (antes decía ~5 s: estaba mal medido). No apagar XNNPACK | Ver `ramon.md` paso 10, punto 5 |
@@ -168,3 +169,8 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - No se usaron fotos de cholgas cocidas: el modelo debe aprender conchas crudas, cerradas y sueltas.
 - La pauta de la EFT (esta fase) aún no existe; las de las evaluaciones 4 y 5 pedían defensa individual y una
   modificación en vivo (ejemplo: campo "peso de muestra"). Conviene que cada uno pueda explicar la parte ML.
+- **Pre-etiquetado** (`src/preetiquetar.py` + sección 3b del notebook): el modelo pre-entrenado dibuja las conchas, un
+  detector clásico la referencia, y la especie sale de la planilla si la bandeja es de una sola especie. Exporta
+  tareas para Label Studio. Probado en Colab con 4 fotos reales de cholgas (en olla): acercamientos perfectos; en
+  montones propone ~10 de ~20 con umbral 0,15–0,20. **Falta probar** la importación en Label Studio.
+- Protocolo: 2 de cada 3 bandejas de una sola especie (se pre-etiquetan con especie) y 1 de 3 mezclada.
