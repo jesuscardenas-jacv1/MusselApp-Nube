@@ -1451,6 +1451,11 @@
     if (!db) {
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
+      // En el computador de desarrollo usa el emulador local; publicado en Hosting, nunca entra aquí
+      if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        db.useEmulator('127.0.0.1', 8080);
+        firebase.auth().useEmulator('http://127.0.0.1:9099');
+      }
       coleccion = db.collection('muestras');
       colFotos = db.collection('fotos');
     }
