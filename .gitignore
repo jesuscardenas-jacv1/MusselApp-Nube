@@ -36,3 +36,10 @@ backend/data/
 
 # Caché local de la CLI de Firebase Hosting (se regenera en cada deploy)
 .firebase/
+
+# Llaves de cuentas de servicio de Firebase (respaldo y scripts locales): nunca al repositorio
+*firebase-adminsdk*.json
+clave-admin*.json
+/respaldo-2*/
+scripts/respaldo-firestore/node_modules/
+scripts/datos-prueba-emulador/node_modules/

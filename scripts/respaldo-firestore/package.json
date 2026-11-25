@@ -1,0 +1,8 @@
+{
+  "name": "respaldo-firestore",
+  "private": true,
+  "type": "module",
+  "description": "Respaldo local de Firestore a JSON (gratis, sin plan Blaze)",
+  "scripts": { "respaldo": "node respaldo.mjs" },
+  "dependencies": { "firebase-admin": "14.4.0" }
+}
