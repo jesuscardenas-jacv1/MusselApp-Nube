@@ -756,6 +756,9 @@
   .ml-nota { margin: 0; font-size: 12px; color: var(--texto-2); }
   .ml-aviso { margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: var(--r-sm); background: var(--pend-suave); color: var(--pend-texto); font-size: 13px; }
   .ml-ver { margin: 0; font-size: 11px; color: var(--texto-3); }
+  .ml-hist { background: var(--superficie); border-radius: var(--r-sm); padding: 10px 10px 6px; }
+  .ml-hist > small { display: block; font-size: 12px; font-weight: 600; color: var(--texto-2); margin-bottom: 2px; }
+  .ml-hist .grafico.bajo { height: 190px; }
   .caja-texto { padding: 14px; border-radius: var(--r-md); background: var(--superficie-2); }
   .fila-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   #mini-mapa { height: 180px; margin-top: 12px; border-radius: var(--r-sm); overflow: hidden; background: var(--superficie-3); z-index: 0; }
@@ -1931,10 +1934,38 @@
         ? '<table class="ml-cal"><caption>Calibre por especie (mm)</caption><thead><tr><th></th><th>Promedio</th><th>Mín.</th><th>Máx.</th><th>Medidos</th></tr></thead><tbody>' +
             fila('Choritos', 'c', sc) + fila('Cholgas', 'k', sk) + '</tbody></table>'
         : '<p class="ml-nota">Sin calibre: la foto no traía el cuadrado de referencia de 40 mm.</p>') +
+      (dets.some(function (d) { return d.mm != null; })
+        ? '<div class="ml-hist"><small>Distribución de calibres</small><div class="grafico bajo"><canvas id="g-calibres" role="img" aria-label="Histograma de calibres por rangos de 5 mm, choritos y cholgas"></canvas></div></div>' : '') +
       (ml.editado ? '<p class="ml-aviso">' + ico('lapiz', 'ch') + '<span>El operario corrigió el conteo automático' +
         (agregadas ? ' y agregó <b>' + n0(agregadas) + '</b> ' + (agregadas === 1 ? 'individuo' : 'individuos') + ' a mano' : '') + '.</span></p>' : '') +
       '<p class="ml-ver">Modelo ' + esc(ml.version || 'sin versión') + '</p>' +
     '</section>';
+  }
+  // Histograma de calibres del detalle: rangos de 5 mm de 30 a 95; "<30" y "≥95" solo si hay individuos fuera
+  function dibujarHistograma(m, animar) {
+    if (!$('g-calibres')) return;
+    var medidas = m.detecciones.filter(function (d) { return d.mm != null; });
+    var bajo = medidas.some(function (d) { return d.mm < 30; }), alto = medidas.some(function (d) { return d.mm >= 95; });
+    var etiquetas = [], i;
+    if (bajo) etiquetas.push('<30');
+    for (i = 30; i < 95; i += 5) etiquetas.push(i + '–' + (i + 5));
+    if (alto) etiquetas.push('≥95');
+    var cuenta = function (esp) {
+      var c = etiquetas.map(function () { return 0; });
+      medidas.forEach(function (d) {
+        if (d.e !== esp) return;
+        var k = d.mm < 30 ? 0 : d.mm >= 95 ? etiquetas.length - 1 : Math.floor((d.mm - 30) / 5) + (bajo ? 1 : 0);
+        c[k]++;
+      });
+      return c;
+    };
+    grafico('g-calibres', { type: 'bar', data: { labels: etiquetas, datasets: [
+      { label: 'Choritos', data: cuenta('C'), backgroundColor: '#0F766E', borderRadius: 4, maxBarThickness: 22 },
+      { label: 'Cholgas', data: cuenta('K'), backgroundColor: '#C76C05', borderRadius: 4, maxBarThickness: 22 }
+    ] }, options: { animation: animar ? undefined : false,
+      plugins: { legend: { position: 'top', align: 'end' }, tooltip: { mode: 'index', intersect: false, callbacks: { title: function (it) { return it[0].label + ' mm'; } } } },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true }, title: { display: true, text: 'Largo (mm)' } },
+        y: { beginAtZero: true, ticks: { precision: 0 }, border: { display: false }, title: { display: true, text: 'Individuos' } } } } }, true);
   }
   var focoPrevio = null;
   function abrirDetalle(id) {
@@ -1954,7 +1985,7 @@
     $('drawer').classList.remove('abierto'); $('drawer').setAttribute('aria-hidden', 'true');
     $('modal-met').classList.remove('atras');
     if (!metricaAbierta) $('velo').classList.remove('visible');
-    setTimeout(function () { if (!detalleId) { quitarMiniMapa(); $('drawer').innerHTML = ''; } }, 220);
+    setTimeout(function () { if (!detalleId) { quitarMiniMapa(); if (graficos['g-calibres']) { graficos['g-calibres'].destroy(); delete graficos['g-calibres']; } $('drawer').innerHTML = ''; } }, 220);
     if (focoPrevio && document.body.contains(focoPrevio)) { try { focoPrevio.focus(); } catch (e) { /* sin foco previo */ } }
     focoPrevio = null;
     if (montada) VISTAS[vista].actualizar();
@@ -2060,6 +2091,7 @@
     quitarMiniMapa();
     dr.innerHTML = html;
     dibujarMiniMapa(m);
+    dibujarHistograma(m, nuevo);
     if ($('comentario')) $('comentario').value = previoComentario;
     if (dr.querySelector('.drawer-cuerpo')) dr.querySelector('.drawer-cuerpo').scrollTop = scroll;
     if (eraNueva && !$('panel-campana').classList.contains('oculto')) dibujarCampana();

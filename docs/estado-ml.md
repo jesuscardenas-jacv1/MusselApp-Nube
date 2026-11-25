@@ -34,7 +34,7 @@
 | 8 | Reglas `ml`/`detecciones` + formato para Firestore | Lucas | **Hecho** (PR #55). Falta la subida en `NubeSync` (espera el paso 5) |
 | 9 | Entrenar `model_v1` y go/no-go | Lucas | Pipeline probado; espera las fotos etiquetadas |
 | 10 | `DetectorLiteRt` | Ramón | Se puede adelantar con `model-v0-sintetico` |
-| 11 | Portal: tarjeta, histograma y recuadros | Jesús | **En curso** (`feature/ml-portal`): emulador, lectura de `ml`/`detecciones` y tarjeta "Conteo automático" hechos. Faltan histograma y recuadros |
+| 11 | Portal: tarjeta, histograma y recuadros | Jesús | **En curso** (`feature/ml-portal`): emulador, lectura de `ml`/`detecciones` y tarjeta "Conteo automático" e histograma de calibres hechos. Faltan los recuadros |
 | 12 | Prueba final, `main` y `v2.0.0` | Los 3 | Jue 3 dic |
 
 ## 3. Piezas ya hechas que los demás usan (PR #55)
@@ -111,4 +111,8 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - Paso 4: tarjeta "Conteo automático" en el detalle (columna de la foto): choritos y cholgas con %, barra de proporción,
   calibre promedio, mínimo, máximo y cantidad medida por especie (desde `detecciones[].mm`), aviso si `ml.editado` con las
   agregadas a mano (`o: "O"`) y versión del modelo. Sin `mm` dice que faltó la referencia. Una muestra sin `ml` no cambia.
-- Pendiente: paso 5 (histograma) y paso 6 (recuadros, ojo con `object-fit: cover`).
+- Paso 5: histograma de calibres dentro de la tarjeta (Chart.js, `g-calibres`): rangos de 5 mm de 30 a 95, choritos
+  `#0F766E` y cholgas `#C76C05`. Agrega "<30" y "≥95" solo si hay individuos fuera; no aparece si nada trae `mm`.
+- **Aviso para Lucas:** en `scripts/datos-prueba-emulador/cargar.mjs` (línea 166) `detecciones: b.dets` quedó dentro de
+  un comentario y no se sube; corregido solo en la copia local de Jesús, sin commit.
+- Pendiente: paso 6 (recuadros, ojo con `object-fit: cover`).
