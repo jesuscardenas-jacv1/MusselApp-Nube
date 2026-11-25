@@ -5,9 +5,18 @@ y su **portal web del supervisor** (`web-supervisor/index.html`). Proyecto de 3 
 
 ## Antes de hacer nada
 
-1. Lee el plan: `docs/plan-fase-final.md`.
-2. Lee las instrucciones de la persona con la que trabajas: `docs/instrucciones-ml/` (`ramon.md`, `jesus.md`, `lucas.md`; para todos, `equipo.md`).
-3. Muestra un plan corto y espera el OK antes de cambiar código.
+1. Lee el estado actual: `docs/estado-ml.md` (qué está hecho, dónde está cada cosa y qué sigue).
+2. Lee el plan: `docs/plan-fase-final.md`.
+3. Lee las instrucciones de la persona con la que trabajas: `docs/instrucciones-ml/` (`ramon.md`, `jesus.md`, `lucas.md`; para todos, `equipo.md`).
+4. Trae lo último: `git fetch origin` y `git merge origin/feature/ml-conteo` en tu rama.
+5. Muestra un plan corto y espera el OK antes de cambiar código.
+
+## Al terminar cada sesión de trabajo
+
+- Agrega una entrada a la bitácora de `docs/estado-ml.md` (fecha, quién, qué se hizo, qué quedó pendiente, sorpresas)
+  y actualiza su tabla de estado. Marca los pasos terminados en `docs/plan-fase-final.md` §8.
+- Si cambiaste algo que usa otra persona (formato, nombres, archivos), anótalo también en sus instrucciones.
+- Así el asistente del siguiente integrante sabe en qué quedó todo sin preguntar.
 
 ## Reglas obligatorias
 
@@ -28,9 +37,11 @@ y su **portal web del supervisor** (`web-supervisor/index.html`). Proyecto de 3 
 
 | Área | Archivos | Responsable |
 |---|---|---|
-| App: detector, Room, pantalla de revisión | `app/src/main/java/.../data/ml/`, `data/local/`, `ui/muestra/` | Ramón |
+| App: detector, Room, pantalla de revisión | `app/src/main/java/.../data/ml/` (salvo los de Lucas), `data/local/`, `ui/muestra/` | Ramón |
 | Portal web | `web-supervisor/index.html` | Jesús |
-| Reglas, sincronización, calibre, respaldo | `firestore.rules`, `firestore-tests/`, `data/nube/NubeSync.kt`, `data/ml/Calibre.kt`, `scripts/` | Lucas |
+| Reglas, sincronización, calibre, post-proceso del modelo, respaldo | `firestore.rules`, `firestore-tests/`, `data/nube/NubeSync.kt`, `data/nube/ResultadoMlNube.kt`, `data/nube/ProteccionDictamen.kt`, `data/ml/Calibre.kt`, `data/ml/SalidaRfDetr.kt`, `scripts/` | Lucas |
+
+Si necesitas cambiar un archivo de otra persona, avísale o pídeselo; no lo cambies por tu cuenta.
 
 ## Contrato de datos (no cambiar sin avisar)
 

@@ -6,6 +6,8 @@ MusselApp · conteo automático con ML · Para Jesús, Ramón y Lucas · Entrega
 
 Plan completo: [`docs/plan-fase-final.md`](../plan-fase-final.md) · Reglas para los asistentes de IA: [`CLAUDE.md`](../../CLAUDE.md)
 
+**Estado actual y bitácora:** [`docs/estado-ml.md`](../estado-ml.md). Léelo antes de empezar y agrega una entrada cuando termines algo.
+
 ## 1. Quién hace qué
 
 | Integrante | Su parte | Instrucciones |

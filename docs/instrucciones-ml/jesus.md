@@ -1,6 +1,6 @@
 # Instrucciones para Jesús Cárdenas · Front-end
 
-Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md). Reglas para tu asistente: [`CLAUDE.md`](../../CLAUDE.md).
+Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y el estado actual en [`estado-ml.md`](../estado-ml.md). Reglas para tu asistente: [`CLAUDE.md`](../../CLAUDE.md).
 
 > **Tu misión:** que el supervisor vea en el **portal web** lo que encontró el modelo: **cuántos choritos y cholgas**, sus **calibres** y los **recuadros sobre la foto**. Puedes empezar ya con datos inventados.
 
@@ -43,6 +43,11 @@ detecciones: [
 // e: "C" chorito, "K" cholga · p: confianza 0-1 · x,y,w,h en escala 0-1000 (0,0 = arriba a la izquierda)
 // mm: largo en mm (puede faltar) · o: "M" modelo, "O" agregado por el operario
 ```
+
+Detalles que ya fija el código del teléfono (`ResultadoMlNube.kt`, PR #55):
+- Las detecciones agregadas por el operario (`o: "O"`) **no traen `p`**.
+- `mm`, `ml.mmPorPx`, `ml.tallaChoritoMm` y `ml.tallaCholgaMm` faltan si la foto no tenía la referencia.
+- Las reglas aceptan hasta **600** detecciones y conteos de hasta 2000. Las eliminadas por el operario no se suben.
 
 Crea 3 o 4 muestras de prueba con entre 20 y 60 detecciones inventadas. La foto va en `fotos/{mismo id}`.
 

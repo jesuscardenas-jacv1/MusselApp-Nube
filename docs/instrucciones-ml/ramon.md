@@ -1,6 +1,9 @@
 # Instrucciones para Ramón Osorio · UI/UX & Mobile Developer
 
-Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md). Reglas para tu asistente: [`CLAUDE.md`](../../CLAUDE.md).
+Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y el estado actual en [`estado-ml.md`](../estado-ml.md). Reglas para tu asistente: [`CLAUDE.md`](../../CLAUDE.md).
+
+> **Ya hecho por Lucas (PR #55):** `SalidaRfDetr.kt` (lee la salida del modelo) y `Calibre.kt` (mm). Si el PR aún no
+> está fusionado cuando los necesites: `git merge origin/feature/ml-reglas`. No los modifiques; si algo no calza, avísale a Lucas.
 
 > **Tu misión:** que la app pueda **recibir las detecciones de un modelo**, guardarlas en Room y mostrarlas en la pantalla de conteo para que el operario las corrija. Empiezas con un **detector simulado**, sin esperar al modelo real.
 
@@ -71,7 +74,14 @@ Se reutiliza el conteo con marcas que ya existe (`ui/muestra/ConteoMarcas.kt` y 
 4. **Tocar** una marca: chorito → cholga → eliminar. **Mantener presionado**: agrega una marca de la especie elegida en los chips "Agregar: Chorito | Cholga".
 5. Resumen abajo: "58 choritos · 6 cholgas". "Usar el conteo" llena `conteoIndM` y `cholgasIndM` (por metro, con el tramo).
 6. Si la confianza promedio es menor a 0,55 o no se detectó la referencia: aviso **"Revisa el conteo"**.
-7. Al guardar la muestra, también se guardan las detecciones y el resumen en Room.
+7. **Calibre:** con el recuadro de la `REFERENCIA` (en píxeles de la foto original), `Calibre.mmPorPixel(anchoPx, altoPx)`
+   da los mm por píxel (null si no es un cuadrado: entonces no hay calibre y se muestra el aviso). Para cada chorito o
+   cholga, recorta su recuadro, pásalo a luminancia 0..255 (`0.299 R + 0.587 G + 0.114 B`) y llama a
+   `Calibre.largoMm(luminancia, anchoRecorte, altoRecorte, mmPorPx)`; el resultado va en `largo_mm`. Hazlo en
+   `Dispatchers.Default`. Si `Calibre.esBorrosa(...)` sobre la foto completa da `true`, muestra "La foto está borrosa".
+8. Al guardar la muestra, también se guardan las detecciones y el resumen en Room. Lucas las sube a Firestore desde
+   `NubeSync` con `ResultadoMlNube.aCampos(...)`: guarda `especie`, `confianza`, `x, y, ancho, alto` (0..1), `largo_mm`,
+   `origen` y `eliminada` tal como dice el paso 5, y con eso basta.
 
 Con `CONTEO_ML = false`, la app debe quedar **idéntica a la v1.3.2**. Extiende `ConteoSobreFotoUiTest.kt` con: cambiar especie, agregar y eliminar.
 
