@@ -53,7 +53,12 @@ Meta: **150 fotos entre los 3** (~50 cada uno), con al menos 500 choritos y 500 
 
 **Dónde:** Drive `MusselApp-ML / dataset_v1 / crudas /`. Cada bandeja se anota en la hoja `planilla_fotos`, con el **conteo a mano** de choritos y cholgas.
 
-**Set de calibre** (10 bandejas en total, ~3 cada uno): pon un papel numerado del 1 al 5 junto a 5 individuos, mide su largo con regla o pie de metro y anótalo en la planilla.
+**Set de calibre** (10 bandejas en total, ~3 cada uno). Sirve para medir si el calibre de la app se equivoca menos de 3 mm:
+1. Elige 5 individuos de la bandeja, mide el largo de cada uno con regla o pie de metro (de punta a punta de la concha) y anótalo en la planilla como `largo_1_mm` … `largo_5_mm`, con su especie, y `set_calibre = si`.
+2. Saca una **foto extra solo con esos 5**, puestos **en una fila de izquierda a derecha en el mismo orden 1 a 5** de la planilla, separados entre sí, y la referencia en la esquina. Mismas reglas de siempre (cenital, sin flash).
+3. Nómbrala terminada en `_cal`: por ejemplo `M002_JC_cal.jpg`, y etiquétala como las demás.
+
+Sin esa fila no se puede saber qué recuadro corresponde a cada medida.
 
 | Chorito (*Mytilus chilensis*) | Cholga (*Aulacomya atra*) |
 |---|---|

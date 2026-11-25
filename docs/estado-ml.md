@@ -4,7 +4,7 @@
 > Al terminar una sesión de trabajo, **agrega una entrada al final** (fecha, quién, qué hiciste, qué quedó pendiente)
 > y actualiza las tablas si cambió algo. El plan completo está en [`plan-fase-final.md`](plan-fase-final.md).
 
-**Última actualización:** 2026-11-25 tarde (Lucas)
+**Última actualización:** 2026-11-25 noche (Lucas)
 
 ## 1. Dónde está cada cosa
 
@@ -30,7 +30,7 @@
 | 4 | Detector simulado + `CONTEO_ML` | Ramón | Sin empezar |
 | 5 | Room 7 → 8 | Ramón | Sin empezar |
 | 6 | Pantalla de revisión | Ramón | Sin empezar |
-| 7 | `Calibre.kt` | Lucas | **Hecho** (PR #55) |
+| 7 | `Calibre.kt` + medición de su error | Lucas | **Hecho** (PR #55). `validar_calibre.py` listo; espera las fotos `_cal` |
 | 8 | Reglas `ml`/`detecciones` + formato para Firestore | Lucas | **Hecho** (PR #55). Falta la subida en `NubeSync` (espera el paso 5) |
 | 9 | Entrenar `model_v1` y go/no-go | Lucas | Pipeline probado; espera las fotos etiquetadas |
 | 10 | `DetectorLiteRt` | Ramón | Se puede adelantar con `model-v0-sintetico` |
@@ -90,3 +90,13 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   iniciar sesión. Agregados los puertos de Auth (9099) y Hosting (5000). Además, el emulador debe iniciarse con
   `--project musselapp-demo` (el `projectId` del portal); `jesus.md` decía otro nombre.
 - `ramon.md`: orden sugerido si tiene pocos tokens (pasos 4 y 5 primero).
+
+### 2026-11-25 (noche) · Lucas
+- **Cambio de protocolo (avisar a todos):** el set de calibre lleva una foto extra `_cal` con solo los 5 individuos
+  medidos, en fila de izquierda a derecha en el orden de la planilla. Ver `instrucciones-ml/equipo.md` §3.
+- MusselApp-ML: `src/validar_calibre.py` mide el error del calibre (meta ≤ 3 mm) con el mismo cálculo de la app.
+  Autoprueba con fotos dibujadas: error máximo 0,3 mm.
+- **Sorpresa:** si una concha vecina asoma en el recuadro, el largo salía inflado (+3,1 mm). `Calibre.kt` ahora mide
+  solo la mancha oscura más grande (commit en `feature/ml-reglas`, PR #55; 225 pruebas en verde).
+- Pendiente revisar con las primeras fotos reales: que la rotación EXIF de los celulares no desalinee las etiquetas
+  (el script lo comprueba; falta mirarlo en el entrenamiento).
