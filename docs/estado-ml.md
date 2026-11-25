@@ -42,7 +42,7 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 | 0 | Respaldo de Firestore | Lucas | Script listo; falta que Lucas genere la clave y lo ejecute |
 | 1–2 | Fotos y etiquetado | Los 3 | **Sin empezar.** Fotos listas el vie 27, etiquetas el lun 30 |
 | 3 | Split sin fuga + notebook | Lucas | Listo y probado con datos sintéticos. Falta correrlo con fotos reales |
-| 3a | Pre-entrenar con datos públicos | Lucas | Dataset elegido ("mussel" de Stephen, CC BY 4.0). Falta descargarlo (requiere cuenta de Roboflow) |
+| 3a | Pre-entrenar con datos públicos | Lucas | Notebook listo y probado (sección 3, independiente de nuestras fotos). Falta descargar el dataset de Stephen (cuenta de Roboflow) y correrlo en Colab |
 | 4 | Detector simulado + `CONTEO_ML` | Ramón | Sin empezar |
 | 5 | Room 7 → 8 | Ramón | Sin empezar |
 | 6 | Pantalla de revisión | Ramón | Sin empezar |
@@ -150,3 +150,12 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   demo, publicación) con responsable.
 - Revisada la rama `feature/ml-portal`: funciona con los datos de prueba; notas para Jesús en `jesus.md`.
 - Nueva sección "Novedades" al inicio de este archivo y `CLAUDE.md` pide leerla primero.
+
+### 2026-11-25 (atardecer) · Lucas
+- El pre-entrenamiento del notebook dependía de la sección 2 (que exige nuestras etiquetas) y usaba las 3 clases del
+  dataset de Stephen. Ahora la sección 3 corre sola y `src/preparar_externo.py` deja solo la clase mejillón.
+- Probado en CPU con un export falso al estilo Roboflow: pre-entreno de 1 clase → entrenamiento de 3 clases desde esos
+  pesos → predicción con chorito, cholga y referencia. RF-DETR amplía la capa de clases solo (avisa con un WARNING).
+- `lucas.md`: lista de lo que Lucas hace al llegar a casa (respaldo, dataset, pre-entreno en Colab, referencia, fotos).
+- Recomendado: un entrenamiento de ensayo el dom 29 o lun 30 con el primer lote etiquetado, para no descubrir
+  problemas recién el mar 1.
