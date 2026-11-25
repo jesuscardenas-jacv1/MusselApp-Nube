@@ -42,7 +42,7 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 | 0 | Respaldo de Firestore | Lucas | Script listo; falta que Lucas genere la clave y lo ejecute |
 | 1–2 | Fotos y etiquetado | Los 3 | **Sin empezar.** Fotos listas el vie 27, etiquetas el lun 30 |
 | 3 | Split sin fuga + notebook | Lucas | Listo y probado con datos sintéticos. Falta correrlo con fotos reales |
-| 3a | Pre-entrenar con datos públicos | Lucas | Notebook listo y probado (sección 3, independiente de nuestras fotos). Falta descargar el dataset de Stephen (cuenta de Roboflow) y correrlo en Colab |
+| 3a | Pre-entrenar con datos públicos | Lucas | **Hecho** (25-nov): pesos en Drive `checkpoints/preentreno_externo/checkpoint_best_total.pth`; la sección 4 los usa sola |
 | 4 | Detector simulado + `CONTEO_ML` | Ramón | Sin empezar |
 | 5 | Room 7 → 8 | Ramón | Sin empezar |
 | 6 | Pantalla de revisión | Ramón | Sin empezar |
@@ -159,3 +159,12 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
 - `lucas.md`: lista de lo que Lucas hace al llegar a casa (respaldo, dataset, pre-entreno en Colab, referencia, fotos).
 - Recomendado: un entrenamiento de ensayo el dom 29 o lun 30 con el primer lote etiquetado, para no descubrir
   problemas recién el mar 1.
+
+### 2026-11-25 (noche) · Lucas
+- **Pre-entrenamiento hecho** en Colab (T4) con el dataset "mussel" de Stephen (CC BY 4.0), solo la clase mejillón:
+  400 fotos de entrenamiento, 50 de validación, 51 de prueba. 15 épocas en ~13 minutos (no 1–2 horas).
+  Validación: mAP@50 0,97, mAP@50:95 0,88, mAR 0,96. Pesos en Drive `checkpoints/preentreno_externo/`.
+- **Sorpresa:** el export de Roboflow trae solo `train/`; `preparar_externo.py` ahora lo separa en 80/10/10.
+- No se usaron fotos de cholgas cocidas: el modelo debe aprender conchas crudas, cerradas y sueltas.
+- La pauta de la EFT (esta fase) aún no existe; las de las evaluaciones 4 y 5 pedían defensa individual y una
+  modificación en vivo (ejemplo: campo "peso de muestra"). Conviene que cada uno pueda explicar la parte ML.
