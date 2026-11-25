@@ -38,8 +38,9 @@
 
 ## 3. Piezas ya hechas que los demás usan (PR #55)
 
-Mientras el PR #55 no esté fusionado, estos archivos **no están** en `feature/ml-conteo`. Si los necesitas antes,
-trae la rama: `git fetch origin && git merge origin/feature/ml-reglas`.
+**Decisión (2026-11-25):** el PR #55 queda abierto y lo revisan y fusionan **Jesús o Ramón cuando terminen su parte**
+(es la primera entrega de Lucas; vendrán más PR). Mientras tanto, estos archivos **no están** en `feature/ml-conteo`.
+Si los necesitas antes, trae la rama: `git fetch origin && git merge origin/feature/ml-reglas`.
 
 | Archivo | Para qué sirve | Quién lo usa |
 |---|---|---|
@@ -60,7 +61,6 @@ trae la rama: `git fetch origin && git merge origin/feature/ml-reglas`.
 
 ## 5. Decisiones abiertas
 
-- ¿Quién revisa y fusiona el PR #55? (otro integrante, según el plan)
 - Teléfono de prueba para medir el tiempo de inferencia (meta ≤ 1,5 s).
 - Ver también `plan-fase-final.md` §10.
 
@@ -77,4 +77,6 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   Publicado `model-v0-sintetico` para que Ramón integre la app sin esperar el modelo real.
 - **Sorpresa:** al principio supuse que la columna 0 del modelo no se usaba; con un modelo exportado se vio que es
   chorito. Ya corregido en el código, el notebook y las instrucciones.
-- Pendiente: generar la clave y correr el respaldo; descargar el dataset público; revisión del PR #55; subida en `NubeSync`.
+- Pendiente: generar la clave y correr el respaldo; descargar el dataset público; subida en `NubeSync`.
+- Decisión: el PR #55 lo revisan y fusionan Jesús o Ramón cuando terminen su parte. Lo que sigue de Lucas
+  (subida en `NubeSync`, `model_v1`) irá en PR nuevos.
