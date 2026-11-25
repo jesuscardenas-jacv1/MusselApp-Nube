@@ -151,7 +151,7 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | [ ] | 9 | Entrenar, evaluar, exportar int8 → **go/no-go** (pipeline probado con datos sintéticos; modelo de prueba `model-v0-sintetico` publicado) | Lucas | 8 | Métricas del §8 |
 | [ ] | 10 | `DetectorLiteRt` con `model_v1` + medición de tiempos | Ramón | 6 | ≤ 1,5 s en gama media |
 | [ ] | 11 | Portal: tarjeta de conteo, histograma y recuadros | Jesús | 8 | Se ve en el emulador |
-| [ ] | 12 | Prueba de punta a punta + PR a `main` + publicar reglas + `v2.0.0` | Los 3 | 4 | Checklist de merge completo |
+| [ ] | 12 | Prueba de punta a punta + PR a `main` + publicar reglas + `v2.0.0` (lista en [`prueba-final-ml.md`](prueba-final-ml.md)) | Los 3 | 4 | Checklist de merge completo |
 
 ## 9. Go/no-go, pruebas, demo y plan B
 
@@ -192,7 +192,7 @@ Si algo falla en vivo: apagar el flag y mostrar el conteo manual.
 - [x] Choritos y cholgas reales: los reúne el equipo.
 - [ ] ¿Distinguir también el choro zapato?
 - [ ] Teléfonos de prueba.
-- [ ] Condiciones reales de captura.
+- [ ] Condiciones reales de captura. **Avance (25-nov):** en Aldemar se acordó bandeja blanco hueso y muestreo por kilo; el profesor propuso un montaje (cámara a 90°, luz difusa a ambos lados, fondo blanco mate, conchas separadas), aún sin confirmar. El protocolo de fotos de `equipo.md` ya lo imita. Contar por kilo sería un campo nuevo: queda para después de esta fase.
 - [ ] Bajar las fotos a ~200 KB y purgar las antiguas validadas.
 - [ ] ¿Supervisor de la app con cuenta propia y Custom Claims en esta fase?
 - [ ] Horas por semana de cada integrante.

@@ -33,19 +33,28 @@ Meta: **150 fotos entre los 3** (~50 cada uno), con al menos 500 choritos y 500 
 
 **Materiales:**
 - Choritos y cholgas reales, con la concha completa.
-- Cartulina blanca mate de tamaño A3 o más.
+- Cartulina **blanca o blanco hueso, mate** (sin brillo), de tamaño A3 o más. En Aldemar se usará una bandeja
+  blanco hueso: mientras más se parezca, mejor aprende el modelo.
+- Dos fuentes de luz para los costados (ventana + lámpara, o dos lámparas).
 - **Cuadrado de referencia de 40 mm** impreso al 100 %; la línea de control debe medir 100 mm.
 - Celular, con la cámara normal.
 
-**Cómo tomar cada foto:**
-1. Luz pareja: ventana sin sol directo o luz de techo. **Sin flash.**
-2. Entre **20 y 80 individuos sueltos**, mezclando especies y tamaños. En 1 de cada 5 fotos pueden tocarse un poco.
-3. La referencia, plana, en una esquina.
-4. Celular **paralelo a la mesa**, justo encima, a 30–40 cm.
+**Cómo tomar cada foto** (imita el montaje que propuso el profesor para Aldemar, aún por confirmar: cámara a 90°,
+luz difusa a ambos lados, fondo blanco mate, borde libre y conchas separadas):
+1. **Luz difusa desde los dos costados**, baja (30–45° sobre la mesa): ventana de un lado y lámpara del otro, o dos
+   lámparas. **Nunca solo la luz del techo ni flash**: la luz de arriba borra las costillas de la cholga, que son lo
+   que la distingue del chorito.
+2. Entre **20 y 80 individuos sueltos**, mezclando especies y tamaños. En 1 de cada 5 fotos pueden tocarse un poco
+   (en terreno no siempre quedarán perfectos). Los racimos pegados por el biso se separan antes.
+3. **Borde libre:** ninguna concha cortada en el borde de la foto. La referencia, plana, dentro de la foto y cerca de
+   una esquina.
+4. Celular **paralelo a la mesa (a 90°)**, justo encima, a 30–40 cm.
 5. Sin zoom, filtros ni modo retrato. Enfoca tocando la pantalla y revisa que no salga borrosa.
-6. 2 o 3 fotos por bandeja; después se cambian los individuos.
+6. Conchas mojadas: **escurridas**, sin agua libre en la bandeja (el agua hace brillos que tapan el relieve).
+7. 2 o 3 fotos por bandeja; después se cambian los individuos.
 
-**Variedad:** secas y mojadas; luz de día y artificial; bandejas solo de choritos, solo de cholgas y mezcladas; si se puede, alguna sobre superficie metálica o gris.
+**Variedad:** secas y escurridas; luz de día y artificial (siempre de costado); bandejas solo de choritos, solo de
+cholgas y mezcladas; distintos tamaños, incluidas cholgas chicas.
 
 **Nombres y rangos:**
 - Nombre del archivo: `M<bandeja>_<iniciales>_<n>.jpg`, por ejemplo `M012_JC_02.jpg`.
@@ -60,11 +69,23 @@ Meta: **150 fotos entre los 3** (~50 cada uno), con al menos 500 choritos y 500 
 
 Sin esa fila no se puede saber qué recuadro corresponde a cada medida.
 
-| Chorito (*Mytilus chilensis*) | Cholga (*Aulacomya atra*) |
-|---|---|
-| Concha **lisa**, con líneas de crecimiento en arco. Negro azulado o café. Más delgada. | **Costillas o estrías** que salen desde la punta. Negro o morado opaco. Más gruesa y suele ser más grande. |
+**Cómo distinguirlas** (resumen del informe técnico y el atlas de Lucas, Drive `MusselApp-ML/referencias/`):
 
-Si no estás seguro de la especie, usa la etiqueta `duda`.
+| | Chorito (*Mytilus chilensis*) | Cholga (*Aulacomya atra*) |
+|---|---|---|
+| **Superficie (lo que decide)** | **Lisa**, solo líneas de crecimiento en arco. Puede tener bandas de color radiales, pero **sin relieve** | **Costillas en relieve** que salen desde la punta (umbo) hacia el borde |
+| Contorno de costado | Dorso en ángulo, vientre casi recto | Dorso redondeado y "jorobado", vientre cóncavo |
+| Color | Negro pardo a violáceo | Adulta: negro brillante, negro violeta o azulado. **Chica (< 4 cm): amarillenta, café clara o rojiza** |
+| Tamaño | Hasta ~106 mm | Suele ser más grande (hasta 170 mm) |
+
+El color de un adulto **no** sirve para decidir: las dos son oscuras. Si las costillas no se ven, mira el borde de
+atrás (el más ancho), donde se conservan mejor.
+
+**Usa `duda` (no adivines)** cuando:
+- balanos, algas o desgaste tapan la superficie y no se puede decidir;
+- es un mejillón chico, negro y con costillas muy finas y apretadas (puede ser chorito maico, otra especie);
+- es liso y muy grande (más de ~11 cm): podría ser choro zapato;
+- la concha está quebrada y no se ve a qué especie pertenece.
 
 ## 4. Tarea común B · Etiquetar (Label Studio)
 
@@ -95,12 +116,19 @@ Se abre `http://localhost:8080`.
 **Reglas:**
 - El recuadro va justo al borde de la concha.
 - Un recuadro por individuo, aunque se crucen.
-- Si sale cortado en el borde de la foto, se etiqueta solo si se ve más de la mitad.
+- Si sale cortado en el borde de la foto (no debería: borde libre), se etiqueta solo si se ve más de la mitad.
 - La referencia: el recuadro va solo sobre el cuadrado negro.
 - No se salta ninguno.
 - Atajos: 1-4 para elegir la etiqueta y Ctrl+Enter para enviar.
 
 **Entrega:** Export en formato **COCO** → Drive `dataset_v1/etiquetas/<iniciales>_lote<n>.zip`. Revisión cruzada: cada uno revisa 5 fotos de otro.
+
+**Antes de entregar, revisa tu lote** con `src/revisar_etiquetas.py` de MusselApp-ML (compara tus recuadros con el
+conteo a mano de la planilla y avisa fotos sin referencia, nombres mal puestos o fotos `_cal` incompletas):
+
+```
+python src/revisar_etiquetas.py --coco result.json --planilla planilla_fotos.csv
+```
 
 ## 5. Reglas de Git y Firebase
 
