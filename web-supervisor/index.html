@@ -1911,6 +1911,9 @@
     var pct = function (x) { return tot > 0 ? Math.round(x * 100 / tot) : 0; };
     var dets = m.detecciones;
     var sc = statsMm(dets.filter(function (d) { return d.e === 'C'; })), sk = statsMm(dets.filter(function (d) { return d.e === 'K'; }));
+    // Si las detecciones no traen mm pero el resumen sí trae la talla promedio, se muestra al menos el promedio
+    if (!sc && ml.tallaChoritoMm != null && ml.choritos > 0) sc = { n: null, prom: ml.tallaChoritoMm, min: null, max: null };
+    if (!sk && ml.tallaCholgaMm != null && ml.cholgas > 0) sk = { n: null, prom: ml.tallaCholgaMm, min: null, max: null };
     var agregadas = dets.filter(function (d) { return d.o === 'O'; }).length;
     var fila = function (nombre, clase, st) {
       return '<tr><th scope="row"><i class="ml-pt ' + clase + '"></i>' + nombre + '</th>' +
