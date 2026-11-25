@@ -115,4 +115,9 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   `#0F766E` y cholgas `#C76C05`. Agrega "<30" y "≥95" solo si hay individuos fuera; no aparece si nada trae `mm`.
 - **Aviso para Lucas:** en `scripts/datos-prueba-emulador/cargar.mjs` (línea 166) `detecciones: b.dets` quedó dentro de
   un comentario y no se sube; corregido solo en la copia local de Jesús, sin commit.
-- Pendiente: paso 6 (recuadros, ojo con `object-fit: cover`).
+- Paso 6: interruptor "Ver detecciones" sobre la foto del detalle y `<canvas>` con los recuadros (chorito verde, cholga
+  ámbar, agregados por el operario con línea punteada). Con `object-fit: cover` se calcula la parte visible de la foto
+  (escala = máx(ancho/anchoNatural, alto/altoNatural) y centrado) antes de dibujar; en "Ampliar" se usa `contain` y la
+  foto se ve entera con los mismos recuadros. Se redibuja al cambiar el tamaño de la ventana. Probado con una foto
+  16:9 en el marco 4:3: los recuadros calzan en ambas vistas, en computador y celular.
+- Pendiente: probarlo en el emulador y abrir el PR hacia `feature/ml-conteo`.

@@ -150,7 +150,7 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | [ ] | 8 | Reglas para `ml` / `detecciones` + pruebas (listas en `feature/ml-reglas`, 27 pruebas) + subida en `NubeSync` (espera Room v8 de Ramón) | Lucas | 5 | Pruebas de reglas en verde (emulador) |
 | [ ] | 9 | Entrenar, evaluar, exportar int8 → **go/no-go** (pipeline probado con datos sintéticos; modelo de prueba `model-v0-sintetico` publicado) | Lucas | 8 | Métricas del §8 |
 | [ ] | 10 | `DetectorLiteRt` con `model_v1` + medición de tiempos | Ramón | 6 | ≤ 1,5 s en gama media |
-| [ ] | 11 | Portal: tarjeta de conteo, histograma y recuadros | Jesús | 8 | Se ve en el emulador |
+| [x] | 11 | Portal: tarjeta de conteo, histograma y recuadros | Jesús | 8 | Se ve en el emulador |
 | [ ] | 12 | Prueba de punta a punta + PR a `main` + publicar reglas + `v2.0.0` | Los 3 | 4 | Checklist de merge completo |
 
 ## 9. Go/no-go, pruebas, demo y plan B

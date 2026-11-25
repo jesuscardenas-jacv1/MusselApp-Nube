@@ -718,6 +718,12 @@
   .foto-detalle { position: relative; border: 0; padding: 0; width: 100%; border-radius: var(--r-md); overflow: hidden; background: #0B1E33; aspect-ratio: 16 / 9; display: block; cursor: zoom-in; }
   .foto-detalle img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--t-media) var(--curva); }
   .foto-detalle:hover img { transform: scale(1.02); }
+  .foto-detalle.con-det:hover img { transform: none; }
+  .foto-envoltura { position: relative; }
+  .foto-detalle .det-lienzo { position: absolute; left: 0; top: 0; pointer-events: none; display: none; }
+  .ver-det { position: absolute; left: 12px; top: 12px; display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; background: rgba(11, 30, 51, .72); color: #fff; padding: 6px 10px; border-radius: var(--r-pill); font-family: inherit; font-size: 12px; font-weight: 600; }
+  .ver-det[aria-pressed="true"] { background: #0F766E; }
+  .ver-det:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .foto-detalle .lupa { position: absolute; right: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px; background: rgba(11, 30, 51, .72); color: #fff; padding: 6px 10px; border-radius: var(--r-pill); font-size: 12px; font-weight: 600; }
   .sin-foto { border-radius: var(--r-md); background: var(--superficie-2); height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--texto-2); font-size: 13px; }
   .tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -785,7 +791,9 @@
   .dictamen-hecho p { color: var(--texto); margin-top: 4px; white-space: pre-line; }
 
   .visor { position: fixed; inset: 0; z-index: 80; background: rgba(5, 14, 26, .92); display: flex; align-items: center; justify-content: center; padding: 40px; animation: aparece var(--t-media); }
-  .visor img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
+  .visor-marco { position: relative; display: flex; max-width: 100%; max-height: 100%; }
+  .visor img { max-width: 100%; max-height: calc(100vh - 80px); object-fit: contain; border-radius: 12px; }
+  .visor .det-lienzo { position: absolute; left: 0; top: 0; pointer-events: none; }
   .visor .btn-icono { position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, .14); color: #fff; border-radius: 50%; width: 44px; height: 44px; }
   .visor .btn-icono:hover { background: rgba(255, 255, 255, .26); }
 
@@ -1967,6 +1975,49 @@
       scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true }, title: { display: true, text: 'Largo (mm)' } },
         y: { beginAtZero: true, ticks: { precision: 0 }, border: { display: false }, title: { display: true, text: 'Individuos' } } } } }, true);
   }
+  // Recuadros del modelo sobre la foto (fase ML). x, y, w, h vienen en escala 0-1000 respecto de la foto completa.
+  // modo 'cover' = la foto llena su marco y se recorta (detalle); 'contain' = se ve entera (visor "Ampliar").
+  var verDetecciones = false;
+  var COLOR_DET = { C: '#0F766E', K: '#C76C05' };
+  function dibujarRecuadros(lienzo, img, dets, modo) {
+    var W = img.clientWidth, H = img.clientHeight, nw = img.naturalWidth, nh = img.naturalHeight;
+    var ctx = lienzo.getContext && lienzo.getContext('2d');
+    if (!ctx || !W || !H || !nw || !nh) return;
+    var r = window.devicePixelRatio || 1;
+    lienzo.width = Math.round(W * r); lienzo.height = Math.round(H * r);
+    lienzo.style.width = W + 'px'; lienzo.style.height = H + 'px';
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    // Escala y desplazamiento de la parte visible de la foto dentro del elemento
+    var esc_ = modo === 'cover' ? Math.max(W / nw, H / nh) : Math.min(W / nw, H / nh);
+    var vw = nw * esc_, vh = nh * esc_, ox = (W - vw) / 2, oy = (H - vh) / 2;
+    var grosor = Math.max(1.5, Math.min(3, vw / 400));
+    dets.forEach(function (d) {
+      var x = ox + d.x / 1000 * vw, y = oy + d.y / 1000 * vh, w = d.w / 1000 * vw, h = d.h / 1000 * vh;
+      ctx.lineWidth = grosor;
+      ctx.strokeStyle = COLOR_DET[d.e] || '#fff';
+      ctx.setLineDash(d.o === 'O' ? [5, 4] : []);
+      ctx.strokeRect(x, y, w, h);
+    });
+  }
+  function pintarLienzo(lienzo, img, dets, modo, ver) {
+    if (!lienzo || !img) return;
+    if (!ver) { lienzo.style.display = 'none'; return; }
+    lienzo.style.display = 'block';
+    if (img.complete && img.naturalWidth) dibujarRecuadros(lienzo, img, dets, modo);
+    else img.addEventListener('load', function () { dibujarRecuadros(lienzo, img, dets, modo); }, { once: true });
+  }
+  function pintarDetecciones() {
+    var m = porId[detalleId]; if (!m) return;
+    var b = document.querySelector('#drawer .foto-detalle');
+    if (b) {
+      b.classList.toggle('con-det', verDetecciones && m.detecciones.length > 0);
+      pintarLienzo(b.querySelector('.det-lienzo'), b.querySelector('img'), m.detecciones, 'cover', verDetecciones);
+    }
+    var v = $('visor');
+    if (v && !v.classList.contains('oculto')) pintarLienzo(v.querySelector('.det-lienzo'), v.querySelector('img'), m.detecciones, 'contain', verDetecciones);
+  }
+  window.addEventListener('resize', function () { if (detalleId) { clearTimeout(pintarDetecciones.t); pintarDetecciones.t = setTimeout(pintarDetecciones, 120); } });
   var focoPrevio = null;
   function abrirDetalle(id) {
     if (!porId[id]) return;
@@ -2042,7 +2093,9 @@
         '<small style="margin-top:4px">Tren ' + esc(m.tren) + (NOMBRE_TREN[m.tren] ? ' · ' + esc(NOMBRE_TREN[m.tren]) : '') + ' · Línea ' + pad2(m.linea) + ' · ' + esc(hace(m.registradaEn)) + '</small></div>' +
         '<button class="btn btn-secundario btn-icono" id="cerrar-detalle" aria-label="Cerrar detalle">' + ico('cerrar') + '</button></header>' +
       '<div class="drawer-cuerpo det-2col"><div class="det-col">' +
-        (fotoDe(m) ? '<button class="foto-detalle" data-accion="ampliar-foto" aria-label="Ampliar fotografía de la muestra"><img alt="Fotografía de la muestra" src="' + esc(fotoDe(m)) + '"><span class="lupa">' + ico('ampliar', 'ch') + 'Ampliar</span></button>'
+        (fotoDe(m) ? '<div class="foto-envoltura"><button class="foto-detalle' + (verDetecciones && m.detecciones.length ? ' con-det' : '') + '" data-accion="ampliar-foto" aria-label="Ampliar fotografía de la muestra"><img alt="Fotografía de la muestra" src="' + esc(fotoDe(m)) + '">' +
+            (m.detecciones.length ? '<canvas class="det-lienzo" aria-hidden="true"></canvas>' : '') + '<span class="lupa">' + ico('ampliar', 'ch') + 'Ampliar</span></button>' +
+            (m.detecciones.length ? '<button class="ver-det" data-accion="ver-detecciones" aria-pressed="' + verDetecciones + '">' + ico('enfocar', 'ch') + 'Ver detecciones</button>' : '') + '</div>'
           : m.tieneFoto && fotos[m.id] === undefined ? '<div class="sin-foto cargando-foto" role="status">' + ico('imagen', 'gr') + 'Cargando fotografía…</div>'
           : '<div class="sin-foto">' + ico('imagen', 'gr') + 'Sin fotografía disponible</div>') +
         (m.estado === 'PENDIENTE'
@@ -2092,6 +2145,7 @@
     dr.innerHTML = html;
     dibujarMiniMapa(m);
     dibujarHistograma(m, nuevo);
+    pintarDetecciones();
     if ($('comentario')) $('comentario').value = previoComentario;
     if (dr.querySelector('.drawer-cuerpo')) dr.querySelector('.drawer-cuerpo').scrollTop = scroll;
     if (eraNueva && !$('panel-campana').classList.contains('oculto')) dibujarCampana();
@@ -2166,8 +2220,9 @@
   function abrirVisor() {
     var m = porId[detalleId]; if (!m || !fotoDe(m)) return;
     var v = $('visor');
-    v.innerHTML = '<img alt="Fotografía ampliada de ' + esc(m.codigo) + '" src="' + esc(fotoDe(m)) + '"><button class="btn btn-icono" id="cerrar-visor" aria-label="Cerrar fotografía">' + ico('cerrar') + '</button>';
+    v.innerHTML = '<div class="visor-marco"><img alt="Fotografía ampliada de ' + esc(m.codigo) + '" src="' + esc(fotoDe(m)) + '">' + (m.detecciones.length ? '<canvas class="det-lienzo" aria-hidden="true"></canvas>' : '') + '</div><button class="btn btn-icono" id="cerrar-visor" aria-label="Cerrar fotografía">' + ico('cerrar') + '</button>';
     v.classList.remove('oculto');
+    pintarDetecciones();
     $('cerrar-visor').focus();
   }
   function cerrarVisor() {
@@ -3140,6 +3195,7 @@
     'dashboard-centro': function (t) { dash.centro = t.dataset.centro; irA('dashboard'); },
     'ver-linea': function (t) { var m = porId[t.dataset.id]; if (!m) return; seleccionarNodo(m.centroId, m.tren, m.linea); cerrarDetalle(); irA('historial'); },
     'ampliar-foto': abrirVisor,
+    'ver-detecciones': function (t) { verDetecciones = !verDetecciones; t.setAttribute('aria-pressed', String(verDetecciones)); pintarDetecciones(); },
     'abrir-demo': function () { cerrarDesplegables(); demoAbierto = true; irA('datos'); setTimeout(function () { var d = $('demo'); if (d) { d.open = true; d.scrollIntoView({ behavior: REDUCIR_MOVIMIENTO ? 'auto' : 'smooth', block: 'center' }); d.querySelector('summary').focus(); } }, 60); },
     'dash-periodo': function (t) { dash.dias = Number(t.dataset.dias); var b = t.parentNode.querySelectorAll('button'); for (var i = 0; i < b.length; i++) b[i].setAttribute('aria-pressed', String(b[i] === t)); VISTAS.dashboard.actualizar(); },
     'datos-pestana': function (t) { datosPestana = t.dataset.pestana; montar(); var b = $('tab-' + datosPestana); if (b) b.focus(); },
