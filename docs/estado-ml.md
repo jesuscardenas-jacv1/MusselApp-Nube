@@ -17,6 +17,7 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 | **Todos** | Foto `_cal` del set de calibre: los 5 medidos en fila, en el orden de la planilla | Ver `equipo.md` §3 |
 | **Todos** | `src/revisar_etiquetas.py` (MusselApp-ML) revisa tu lote contra la planilla | Correrlo antes de entregar cada lote (`equipo.md` §4) |
 | **Todos** | Lista de la prueba final del 3-dic: [`prueba-final-ml.md`](prueba-final-ml.md) | Revisar qué filas te tocan |
+| **Todos** | **Regla del caso ALDEMAR:** el conteo con ML es **experimental** (nunca "cuenta automáticamente"); título "Conteo automático (experimental)" en la app y el portal. Muestreo real: tramo de ~20 cm esparcido en mesa, 100–200 choritos encimados | Ver aviso al inicio de `equipo.md`, `ramon.md` y `jesus.md`; sacar algunas bandejas densas |
 | **Todos** | **Pre-etiquetado:** la sección 3b del notebook dibuja los recuadros con el modelo pre-entrenado; en Label Studio solo se corrigen. Bandejas: 2 de 3 de una sola especie y 1 de 3 mezclada (`equipo.md` §3) | Usarlo antes de etiquetar (README de MusselApp-ML) |
 | **Todos** | Informe técnico y atlas de chorito/cholga en Drive `MusselApp-ML/referencias/` | Hojear el atlas antes de etiquetar |
 | **Jesús** | Datos de prueba del emulador corregidos (las detecciones no se subían; conchas ahora 45–75 mm). Revisión de tu rama | `git merge origin/feature/ml-conteo`, `npm run cargar` otra vez y ver "Revisión de Lucas" en `jesus.md` |
@@ -174,3 +175,9 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   tareas para Label Studio. Probado en Colab con 4 fotos reales de cholgas (en olla): acercamientos perfectos; en
   montones propone ~10 de ~20 con umbral 0,15–0,20. **Falta probar** la importación en Label Studio.
 - Protocolo: 2 de cada 3 bandejas de una sola especie (se pre-etiquetan con especie) y 1 de 3 mezclada.
+- Informe de Lucas sobre el caso ALDEMAR (desde el AVA): el caso **prohíbe afirmar conteo automático real**; el ML va
+  como "conteo experimental de imágenes", con corrección del operario y su error contra conteos a mano. Agregado a
+  `equipo.md`, `ramon.md`, `jesus.md` y al plan.
+- El muestreo real es un tramo de ~20 cm de cuerda esparcido en una mesa (en las fotos del caso, metálica) con 100–200
+  choritos encimados. El protocolo ahora pide algunas bandejas densas. Las **14 fotos reales** de la carpeta del
+  profesor serán la **prueba externa** (paso 9a de Lucas); no están en el Drive del equipo todavía.

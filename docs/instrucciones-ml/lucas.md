@@ -41,6 +41,7 @@ Cada punto es corto; el 3 queda corriendo solo en Colab mientras haces los demá
 | 8 | ✅ Reglas para `ml` y `detecciones` + 27 pruebas + `ResultadoMlNube` (PR #55). **Falta:** la subida en `NubeSync` cuando esté la base v8 de Ramón | Dom 29 – Lun 30 |
 | 7b | ✅ `src/validar_calibre.py` en MusselApp-ML: mide el error del calibre con las fotos `_cal` (mismo cálculo que `Calibre.kt`) | Mié 25 |
 | 9b | ✅ `src/evaluar_tflite.py` en MusselApp-ML: mide el `.tflite` INT8 (lo que corre en el teléfono) contra las metas | Mié 25 |
+| 9a | Copiar a Drive `dataset_v1/aldemar_terreno/` las **14 fotos reales** de la carpeta del profesor "04V - Aldemar - App Móvil Choritos" (AVA), contar a mano y etiquetar: son la **prueba externa** del modelo (no se entrena con ellas) | Jue 26 – Lun 30 |
 | 9 | Entrenamiento final, métricas (notebook + `evaluar_tflite.py` + `validar_calibre.py`) y **go/no-go**; entregar `model_v1.tflite`, `labels.txt` y `modelo.json` a Ramón | Mar 1 – Mié 2 |
 | 12 | Prueba final, PR a `main`, publicar reglas y `v2.0.0` | Jue 3 |
 

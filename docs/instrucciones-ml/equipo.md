@@ -8,6 +8,11 @@ Plan completo: [`docs/plan-fase-final.md`](../plan-fase-final.md) · Reglas para
 
 **Estado actual y bitácora:** [`docs/estado-ml.md`](../estado-ml.md). Léelo antes de empezar y agrega una entrada cuando termines algo.
 
+> **Regla del caso ALDEMAR (no negociable):** el conteo con ML se presenta como **experimental**. Nunca decir ni
+> escribir que la app "cuenta automáticamente" de forma real o validada: el operario siempre revisa y corrige, y en la
+> demo se muestra el error contra conteos a mano. Datos solo ficticios o autorizados; nada interno de ALDEMAR en el
+> repo, videos o presentaciones.
+
 ## 1. Quién hace qué
 
 | Integrante | Su parte | Instrucciones |
@@ -54,6 +59,11 @@ luz difusa a ambos lados, fondo blanco mate, borde libre y conchas separadas):
 7. 2 o 3 fotos por bandeja; después se cambian los individuos.
 
 **Variedad:** secas y escurridas; luz de día y artificial (siempre de costado); distintos tamaños, incluidas cholgas chicas.
+
+**Bandejas como en Aldemar (al menos 1 de cada 5):** en el muestreo real se corta un tramo de cuerda (~20 cm) y se
+esparce **sobre una mesa** (en las fotos del caso, una mesa metálica) con **100 a 200 choritos juntos y varios
+encimados**. El modelo tiene que verlo: algunas bandejas con muchas conchas juntas, sin separarlas, y si se puede sobre
+una superficie metálica o gris. El resto, con el protocolo de arriba.
 
 **Bandejas por especie (recomendado):** unas **2 de cada 3 bandejas con una sola especie** (solo choritos o solo
 cholgas) y **1 de cada 3 mezclada**. Las de una especie se pre-etiquetan solas con la especie correcta (ver §4); las

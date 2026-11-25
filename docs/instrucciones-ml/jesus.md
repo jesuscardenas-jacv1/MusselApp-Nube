@@ -67,7 +67,14 @@ calcula el área visible antes de dibujar los recuadros (o dibújalos en la vist
 
 En `normalizar(id, d)` (cerca de la línea 1199) agrega `ml` (por defecto `null`) y `detecciones` (por defecto `[]`). Una muestra sin `ml` debe verse **igual que hoy**.
 
+> **Regla del caso ALDEMAR (no negociable):** el conteo con ML se presenta como **experimental**. Nunca decir ni
+> escribir que la app "cuenta automáticamente" de forma real o validada: el operario siempre revisa y corrige, y en la
+> demo se muestra el error contra conteos a mano. Datos solo ficticios o autorizados; nada interno de ALDEMAR en el
+> repo, videos o presentaciones.
+
 ## Paso 4 · Tarjeta "Conteo automático" (≈3 h) · Sáb 28 – Lun 30 nov
+
+Título de la tarjeta: **"Conteo automático (experimental)"** (regla del caso ALDEMAR).
 
 En `abrirDetalle` / `dibujarDetalle` (cerca de la línea 1851), si la muestra trae `ml`:
 - Choritos y cholgas, con su porcentaje del total.

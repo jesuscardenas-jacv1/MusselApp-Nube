@@ -7,6 +7,13 @@ Fase final de MusselApp (conteo con ML). Antes, lee [`equipo.md`](equipo.md) y e
 
 > **Tu misión:** que la app pueda **recibir las detecciones de un modelo**, guardarlas en Room y mostrarlas en la pantalla de conteo para que el operario las corrija. Empiezas con un **detector simulado**, sin esperar al modelo real.
 
+> **Regla del caso ALDEMAR (no negociable):** el conteo con ML se presenta como **experimental**. Nunca decir ni
+> escribir que la app "cuenta automáticamente" de forma real o validada: el operario siempre revisa y corrige, y en la
+> demo se muestra el error contra conteos a mano. Datos solo ficticios o autorizados; nada interno de ALDEMAR en el
+> repo, videos o presentaciones.
+
+En la app: el título va como **"Conteo automático (experimental)"** y el operario siempre confirma antes de guardar.
+
 ## Si tienes pocos tokens: por dónde partir
 
 1. **Pasos 4 y 5 primero** (detector simulado y Room v8): Lucas los necesita para la subida a Firestore, y Jesús no

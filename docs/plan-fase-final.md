@@ -166,6 +166,10 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | Error del calibre contra pie de metro | ≤ 3 mm |
 | Inferencia en gama media | ≤ 1,5 s |
 
+**Prueba externa:** además del conjunto de prueba, el modelo se mide en las 14 fotos reales de muestras de ALDEMAR
+(carpeta del caso, 150–200 choritos encimados sobre mesa metálica). Es el caso más difícil y el más honesto para la demo:
+se muestra su error contra el conteo a mano (regla del caso: el conteo con ML es **experimental**).
+
 **Pruebas:**
 - unitarias: calibre, agregados y mapeo de la salida del modelo;
 - integración: Room ↔ Firestore offline y online, y migración 7→8;
