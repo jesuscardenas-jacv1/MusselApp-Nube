@@ -109,6 +109,8 @@ Con `CONTEO_ML = false`, la app debe quedar **idéntica a la v1.3.2**. Extiende 
    - Convierte con **`SalidaRfDetr.decodificar(cajas, puntajes, columnas = 4)`** (ya está hecho y probado, en `data/ml/`,
      PR #55). La especie sale de `SalidaRfDetr.etiqueta(clase, labels)`: 0 = chorito, 1 = cholga, 2 = referencia.
    - Las cajas vienen normalizadas 0..1, igual que `Deteccion`.
+   - **Endereza la foto según su EXIF antes de detectar** (`ExifInterface`, `TAG_ORIENTATION`): el modelo se entrena
+     con fotos derechas, y si la foto llega girada las cajas no calzan con lo que ve el operario.
 4. En `AppContainer.kt`, `DetectorSimulado()` pasa a ser `DetectorLiteRt(context)`.
 5. Prueba con `foto_prueba_sintetica.jpg`: deben salir 28 detecciones. Meta de tiempo: **≤ 1,5 s** en gama media
    (en un PC tarda ~5 s con 4 hilos; en el teléfono probar con 4 hilos y, si es lento, con el delegado de GPU).
