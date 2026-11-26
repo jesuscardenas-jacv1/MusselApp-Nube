@@ -6,9 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import cl.aldemar.musselapp.data.local.dao.CatalogoDao
+import cl.aldemar.musselapp.data.local.dao.DeteccionDao
 import cl.aldemar.musselapp.data.local.dao.MuestraDao
 import cl.aldemar.musselapp.data.local.dao.UsuarioDao
 import cl.aldemar.musselapp.data.local.entidad.CentroEntity
+import cl.aldemar.musselapp.data.local.entidad.DeteccionEntity
 import cl.aldemar.musselapp.data.local.entidad.LineaEntity
 import cl.aldemar.musselapp.data.local.entidad.MuestraEntity
 import cl.aldemar.musselapp.data.local.entidad.RevisionEntity
@@ -29,8 +31,9 @@ import kotlinx.coroutines.withContext
         UsuarioEntity::class,
         MuestraEntity::class,
         RevisionEntity::class,
+        DeteccionEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class MusselDatabase : RoomDatabase() {
@@ -38,6 +41,7 @@ abstract class MusselDatabase : RoomDatabase() {
     abstract fun catalogoDao(): CatalogoDao
     abstract fun usuarioDao(): UsuarioDao
     abstract fun muestraDao(): MuestraDao
+    abstract fun deteccionDao(): DeteccionDao
 
     /** Carga de [DatosIniciales] en curso; solo existe la primera vez que se crea la base. */
     @Volatile

@@ -66,4 +66,14 @@ data class MuestraEntity(
     @ColumnInfo(name = "conteo_operario") val conteoOperario: Int? = null,
     @ColumnInfo(name = "talla_operario") val tallaOperario: Int? = null,
     @ColumnInfo(name = "cholgas_operario") val cholgasOperario: Int? = null,
+    // Desde la versión 8: resumen del conteo automático (detalle en la tabla `detecciones`).
+    // null si la muestra se contó a mano.
+    @ColumnInfo(name = "ml_modelo_version") val mlModeloVersion: String? = null,
+    @ColumnInfo(name = "ml_total") val mlTotal: Int? = null,
+    @ColumnInfo(name = "ml_choritos") val mlChoritos: Int? = null,
+    @ColumnInfo(name = "ml_cholgas") val mlCholgas: Int? = null,
+    /** Milímetros por píxel según la referencia de 40 mm; null si no se detectó. */
+    @ColumnInfo(name = "ml_mm_por_px") val mlMmPorPx: Double? = null,
+    /** true si el operario corrigió lo que detectó el modelo. */
+    @ColumnInfo(name = "ml_editado", defaultValue = "0") val mlEditado: Boolean = false,
 )

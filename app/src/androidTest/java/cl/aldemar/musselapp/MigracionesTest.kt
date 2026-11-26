@@ -215,4 +215,53 @@ class MigracionesTest {
             assertTrue(c.isNull(4))
         }
     }
+
+    @Test
+    fun de7a8_seAgregaElConteoAutomaticoYLasMuestrasSeConservan() {
+        // Base en versión 7 con una muestra corregida por el supervisor, antes del conteo automático
+        helper.createDatabase(nombre, 7).apply {
+            execSQL("INSERT INTO centros (id, nombre, lat, lon, radio_m) VALUES ('dalcahue', 'Centro Dalcahue', -42.374, -73.622, 1500)")
+            execSQL("INSERT INTO trenes (id, centro_id, codigo) VALUES (1, 'dalcahue', 'A')")
+            execSQL("INSERT INTO lineas (id, tren_id, numero) VALUES (1, 1, 4)")
+            execSQL("INSERT INTO usuarios (rut, nombre, rol, pin) VALUES ('111111111', 'Carla Vera', 'OPERARIO', 'x')")
+            execSQL(
+                "INSERT INTO muestras (id, linea_id, operador_rut, profundidad_m, talla_mm, conteo_ind_m, " +
+                    "observacion, estado, registrada_en, sincronizada, foto_ruta, cholgas_ind_m, tramo_cm, conteo_operario) " +
+                    "VALUES (1, 1, '111111111', 3, 55, 401, 'Antes del ML', 'CORREGIDO', 0, 1, NULL, 9, 50, 390)",
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(nombre, 8, true, Migraciones.DE_7_A_8)
+
+        // Conserva sus datos; el resumen del conteo automático queda vacío y sin editar
+        db.query(
+            "SELECT conteo_ind_m, estado, conteo_operario, ml_modelo_version, ml_total, ml_choritos, ml_cholgas, " +
+                "ml_mm_por_px, ml_editado FROM muestras",
+        ).use { c ->
+            assertEquals(1, c.count)
+            c.moveToNext()
+            assertEquals(401, c.getInt(0))
+            assertEquals("CORREGIDO", c.getString(1))
+            assertEquals(390, c.getInt(2))
+            (3..7).forEach { assertTrue(c.isNull(it)) }
+            assertEquals(0, c.getInt(8))
+        }
+
+        // La tabla nueva acepta detecciones y se vacía al borrar la muestra
+        db.execSQL("PRAGMA foreign_keys = ON")
+        db.execSQL(
+            "INSERT INTO detecciones (muestra_id, especie, especie_modelo, confianza, x, y, ancho, alto, largo_mm, origen) " +
+                "VALUES (1, 'CHORITO', 'CHORITO', 0.9, 0.1, 0.1, 0.2, 0.1, 58.5, 'MODELO')",
+        )
+        db.query("SELECT eliminada FROM detecciones").use { c ->
+            c.moveToNext()
+            assertEquals(0, c.getInt(0))
+        }
+        db.execSQL("DELETE FROM muestras WHERE id = 1")
+        db.query("SELECT COUNT(*) FROM detecciones").use { c ->
+            c.moveToNext()
+            assertEquals(0, c.getInt(0))
+        }
+    }
 }

@@ -101,5 +101,28 @@ object Migraciones {
         }
     }
 
-    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5, DE_5_A_6, DE_6_A_7)
+    /**
+     * v7 → v8: conteo automático con ML. Cada muestra guarda el resumen (columnas `ml_*`) y la tabla
+     * `detecciones` guarda cada individuo encontrado. Las muestras que ya estaban guardadas quedan con
+     * null (se contaron a mano) y sin detecciones.
+     */
+    val DE_7_A_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            listOf(
+                "ml_modelo_version TEXT", "ml_total INTEGER", "ml_choritos INTEGER", "ml_cholgas INTEGER",
+                "ml_mm_por_px REAL", "ml_editado INTEGER NOT NULL DEFAULT 0",
+            ).forEach { db.execSQL("ALTER TABLE muestras ADD COLUMN $it") }
+            db.execSQL(
+                """CREATE TABLE IF NOT EXISTS detecciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, muestra_id INTEGER NOT NULL,
+                especie TEXT NOT NULL, especie_modelo TEXT, confianza REAL,
+                x REAL NOT NULL, y REAL NOT NULL, ancho REAL NOT NULL, alto REAL NOT NULL,
+                largo_mm REAL, origen TEXT NOT NULL, eliminada INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY(muestra_id) REFERENCES muestras(id) ON DELETE CASCADE)""",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_detecciones_muestra_id ON detecciones(muestra_id)")
+        }
+    }
+
+    val TODAS = arrayOf(DE_1_A_2, DE_2_A_3, DE_3_A_4, DE_4_A_5, DE_5_A_6, DE_6_A_7, DE_7_A_8)
 }
