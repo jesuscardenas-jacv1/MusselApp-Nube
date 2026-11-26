@@ -48,6 +48,8 @@ android {
 
     buildTypes {
         debug {
+            // Conteo automático con ML (fase final): encendido solo en debug mientras se desarrolla
+            buildConfigField("boolean", "CONTEO_ML", "true")
             // Cobertura de las pruebas unitarias con JaCoCo (no cambia el APK). Reporte filtrado a la
             // lógica: ./gradlew reporteCobertura (ver la tarea al final de este archivo)
             enableUnitTestCoverage = true
@@ -56,6 +58,7 @@ android {
             enableAndroidTestCoverage = providers.gradleProperty("coberturaInstrumentada").isPresent
         }
         release {
+            buildConfigField("boolean", "CONTEO_ML", "false")
             if (hayFirma) signingConfig = signingConfigs.getByName("release")
             // R8: reduce el APK y ofusca el código (reglas propias en src/main/keepRules/rules.keep)
             optimization {
@@ -69,6 +72,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

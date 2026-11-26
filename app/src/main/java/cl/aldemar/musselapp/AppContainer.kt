@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import cl.aldemar.musselapp.data.clima.ClimaRepository
 import cl.aldemar.musselapp.data.local.MusselDatabase
+import cl.aldemar.musselapp.data.ml.DetectorMuestra
+import cl.aldemar.musselapp.data.ml.DetectorSimulado
 import cl.aldemar.musselapp.data.ubicacion.UbicadorGps
 import cl.aldemar.musselapp.data.nube.AvisoRevision
 import cl.aldemar.musselapp.data.nube.BackendSync
@@ -66,6 +68,9 @@ class AppContainer(context: Context) {
     val ubicador: UbicadorGps by lazy { UbicadorGps(appContext) }
 
     val conectividad: Conectividad by lazy { Conectividad(appContext) }
+
+    /** Conteo automático sobre la foto (paso 6). Por ahora simulado; con el modelo real pasa a DetectorLiteRt. */
+    val detector: DetectorMuestra by lazy { DetectorSimulado() }
 
     init {
         // Al volver la conexión se envían solas las muestras que quedaron pendientes (con la app abierta)
