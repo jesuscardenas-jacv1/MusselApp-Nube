@@ -4,7 +4,7 @@
 > Al terminar una sesión de trabajo, **agrega una entrada al final** (fecha, quién, qué hiciste, qué quedó pendiente)
 > y actualiza las tablas si cambió algo. El plan completo está en [`plan-fase-final.md`](plan-fase-final.md).
 
-**Última actualización:** 2026-11-25, tarde (Lucas)
+**Última actualización:** 2026-11-25, noche (Ramón)
 
 ## Novedades (léelas antes de empezar)
 
@@ -13,6 +13,8 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 
 | Para | Qué cambió | Qué hacer |
 |---|---|---|
+| **Lucas** | **Pasos 4 y 5 hechos** en `feature/ml-app` (aún sin PR): `DeteccionEntity` / `DeteccionDao` (`deMuestra`, `reemplazar`, `borrarDeMuestra`), columnas `ml_*` en `MuestraEntity` y Room v8. Detalle en la bitácora (§6) | Para la subida en `NubeSync`: las vigentes son `eliminada = false` y `especie != REFERENCIA`; `origen = OPERARIO` → `agregadaPorOperario` |
+| **Todos** | `BuildConfig.CONTEO_ML` existe (true en debug, false en release). Ojo: el APK de GitHub Releases se compila en **debug**, así que ahí quedaría **encendido** | Decidir antes de publicar la v2.0.0 |
 | **Todos** | **Protocolo de fotos nuevo** (`instrucciones-ml/equipo.md` §3): luz difusa **desde los dos costados**, nunca solo la del techo; fondo blanco o blanco hueso mate; ninguna concha cortada en el borde; escurrir las mojadas. Imita el montaje que propuso el profesor para Aldemar. También hay una tabla para distinguir chorito y cholga y cuándo usar `duda` | Leer §3 **antes de sacar fotos**. Los PDF de instrucciones que se enviaron antes tienen el protocolo antiguo |
 | **Todos** | Foto `_cal` del set de calibre: los 5 medidos en fila, en el orden de la planilla | Ver `equipo.md` §3 |
 | **Todos** | `src/revisar_etiquetas.py` (MusselApp-ML) revisa tu lote contra la planilla | Correrlo antes de entregar cada lote (`equipo.md` §4) |
@@ -46,8 +48,8 @@ cambie algo reemplaza esta sección por sus propias novedades (lo anterior queda
 | 1–2 | Fotos y etiquetado | Los 3 | **Sin empezar.** Fotos listas el vie 27, etiquetas el lun 30 |
 | 3 | Split sin fuga + notebook | Lucas | Listo y probado con datos sintéticos. Falta correrlo con fotos reales |
 | 3a | Pre-entrenar con datos públicos | Lucas | **Hecho** (25-nov): pesos en Drive `checkpoints/preentreno_externo/checkpoint_best_total.pth`; la sección 4 los usa sola |
-| 4 | Detector simulado + `CONTEO_ML` | Ramón | Sin empezar |
-| 5 | Room 7 → 8 | Ramón | Sin empezar |
+| 4 | Detector simulado + `CONTEO_ML` | Ramón | **Hecho** en `feature/ml-app` (5 pruebas unitarias). Falta PR |
+| 5 | Room 7 → 8 | Ramón | **Hecho** en `feature/ml-app`. Pruebas instrumentadas compilan; las corre el CI. Falta PR |
 | 6 | Pantalla de revisión | Ramón | Sin empezar |
 | 7 | `Calibre.kt` + medición de su error | Lucas | **Hecho** (PR #55). `validar_calibre.py` listo; espera las fotos `_cal` |
 | 8 | Reglas `ml`/`detecciones` + formato para Firestore | Lucas | **Hecho** (PR #55). Falta la subida en `NubeSync` (espera el paso 5) |
@@ -193,3 +195,19 @@ Formato: `### AAAA-MM-DD · Nombre` y debajo qué se hizo, qué quedó pendiente
   Agregado `--teselas` (con la foto completa y descarte de pedazos de conchas cortadas). Ver README de MusselApp-ML.
 - **Riesgo nuevo:** el teléfono también necesitará teselar las muestras densas (más tiempo). Se decide el mié 2.
 - Los choritos del caso son chicos (≈ 29–44 mm): el histograma del portal (30–95 mm) igual sirve; el `<30` existe.
+
+### 2026-11-25 (noche) · Ramón
+- **Paso 4** (`feature/ml-app`): `Deteccion.kt` (`Especie`, `Deteccion`, `ResultadoDeteccion`), `DetectorMuestra`,
+  `DetectorSimulado` (36 choritos + 4 cholgas + referencia; siempre igual para el mismo tamaño de foto; la referencia
+  es cuadrada **en píxeles** para que `Calibre.mmPorPixel` la acepte). `BuildConfig.CONTEO_ML` true en debug y false
+  en release (verificado en el `BuildConfig` generado). `AppContainer.detector`; ninguna pantalla lo usa todavía.
+- **Paso 5:** Room 7 → 8 con el SQL de `ramon.md` tal cual. `DeteccionEntity` + `OrigenDeteccion` (`MODELO`,
+  `OPERARIO`), `DeteccionDao` con `insertar`, `deMuestra`, `borrarDeMuestra` y `reemplazar` (transacción, para
+  volver a contar). Seis columnas `ml_*` en `MuestraEntity`, con valores por defecto: el código existente no cambia.
+- Pruebas: `./gradlew assembleDebug testDebugUnitTest compileDebugAndroidTestKotlin` en verde, **230 unitarias**
+  (225 + 5). La migración se comparó en SQLite contra `schemas/8.json`: columnas, tipos, valores por defecto,
+  claves foráneas e índices iguales. `MigracionesTest.de7a8_…` y `DeteccionDaoTest` (4) **compilan y no se han
+  corrido aquí** (sin emulador; no en teléfonos personales): las corre el job "instrumentadas" del CI.
+- PR #57 (mensajes al sincronizar) y #58 (no volver a pedir el tramo) abiertos hacia `feature/ml-conteo`. **#58 debe
+  entrar antes del paso 6**: toca `ConteoSobreFoto.kt` y `VistaPreviaScreen.kt`.
+- Pendiente: paso 6 (sáb 28 – lun 30), fotos para el vie 27.

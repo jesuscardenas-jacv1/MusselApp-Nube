@@ -143,7 +143,7 @@ detecciones: [ { e: "C", p: 0.93, x: 120, y: 340, w: 60, h: 28, mm: 55, o: "M" }
 | [ ] | 1 | Recolectar 150 fotos con la referencia de 40 mm (protocolo del documento de equipo) | Los 3 | 10 | Fotos en Drive + planilla completa |
 | [ ] | 2 | Etiquetado en Label Studio (COCO) + revisión cruzada | Los 3 (Jesús +20 fotos) | 12 | ≥ 500 instancias por especie |
 | [ ] | 3 | Split sin fuga (por bandeja) + notebook de entrenamiento con checkpoints (listos en `MusselApp-ML`; falta correrlo con fotos reales) | Lucas | 8 | El notebook corre de punta a punta |
-| [ ] | 4 | `DetectorMuestra` + `DetectorSimulado` + flag `CONTEO_ML` | Ramón | 5 | Pruebas unitarias del simulado |
+| [x] | 4 | `DetectorMuestra` + `DetectorSimulado` + flag `CONTEO_ML` | Ramón | 5 | Pruebas unitarias del simulado |
 | [ ] | 5 | Room 7→8 + `DeteccionEntity` / `DeteccionDao` + prueba de migración | Ramón | 5 | La migración conserva las muestras |
 | [ ] | 6 | Revisión con especie sobre `ConteoSobreFoto` | Ramón | 8 | Cambiar especie, agregar y eliminar funcionan |
 | [x] | 7 | `Calibre.kt` (mm por píxel y largo por PCA) + validaciones de foto (rama `feature/ml-reglas`, 10 pruebas) | Lucas | 6 | Pruebas unitarias en verde |
