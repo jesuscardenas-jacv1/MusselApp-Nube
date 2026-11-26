@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.percentOffset
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -89,6 +90,21 @@ class ConteoSobreFotoUiTest {
         compose.onNodeWithText("Usar 20 ind/m").assertIsEnabled().performClick()
 
         compose.runOnIdle { assertEquals(20, usado) }
+    }
+
+    @Test
+    fun conTramoYaMedido_noSeVuelveAPedir_peroSePuedeCambiar() {
+        abrir(tramoCm = 40)
+        tocar(0.25f, 0.5f)
+        tocar(0.75f, 0.5f)
+        compose.onNodeWithTag(ETIQUETA_TRAMO).assertDoesNotExist()
+        compose.onNodeWithText("Tramo de 40 cm → 5 ind/m").assertExists()
+
+        compose.onNodeWithText("Cambiar tramo").performClick()
+        compose.onNodeWithTag(ETIQUETA_TRAMO).performTextReplacement("20")
+
+        compose.onNodeWithText("Tramo de 20 cm → 10 ind/m").assertExists()
+        compose.runOnIdle { assertEquals(20, tramo) }
     }
 
     @Test
