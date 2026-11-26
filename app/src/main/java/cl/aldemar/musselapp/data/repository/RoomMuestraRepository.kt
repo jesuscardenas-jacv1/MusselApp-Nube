@@ -182,16 +182,18 @@ class RoomMuestraRepository(
         return ok
     }
 
-    override suspend fun sincronizar(): Int {
+    override suspend fun sincronizar(): Int = sincronizarConDetalle().enviadas
+
+    override suspend fun sincronizarConDetalle(): ResultadoSincronizacion {
         if (nube == null) {
             delay(latenciaSincronizacionMs) // Sin nube: simula el envío por el enlace satelital
-            return muestraDao.marcarSincronizadas()
+            return ResultadoSincronizacion(muestraDao.marcarSincronizadas())
         }
         // Primero se trae lo del backend: si cambió algo, queda pendiente y se sube a Firestore enseguida
-        traerDelBackend()
+        val recibidas = traerDelBackend()
         val enviadas = muestraDao.pendientesDeSincronizar().count { subirMuestra(it) }
         enviarAlBackend()
-        return enviadas
+        return ResultadoSincronizacion(enviadas, recibidas, backend?.sinRespuesta == true)
     }
 
     /** Le envía al backend lo que le falta. No afecta la cola: si está apagado, no pasa nada. */
@@ -200,17 +202,20 @@ class RoomMuestraRepository(
         conBackend.withLock { servicio.enviar(muestraDao.observarTodas().first().map { it.aModelo() }) }
     }
 
-    /** Aplica en Room lo que cambió en el backend (por ejemplo, un POST o un PUT hecho en Swagger). */
-    private suspend fun traerDelBackend() {
-        val servicio = backend ?: return
+    /** Aplica en Room lo que cambió en el backend (por ejemplo, un POST o un PUT hecho en Swagger). Devuelve cuántas muestras cambiaron. */
+    private suspend fun traerDelBackend(): Int {
+        val servicio = backend ?: return 0
+        var recibidas = 0
         conBackend.withLock {
             for (cambio in servicio.cambios()) {
-                val idLocal = aplicandoDictamen.withLock {
-                    if (cambio.idLocal == null) importar(cambio) else aplicarCambio(cambio, cambio.idLocal)
+                val (idLocal, huboCambio) = aplicandoDictamen.withLock {
+                    if (cambio.idLocal == null) importar(cambio).let { it to (it != null) } else aplicarCambio(cambio, cambio.idLocal)
                 }
+                if (huboCambio) recibidas++
                 servicio.revisado(cambio, idLocal)
             }
         }
+        return recibidas
     }
 
     /** Muestra creada en el servidor. Queda pendiente para que también llegue a Firestore y al portal. */
@@ -239,20 +244,21 @@ class RoomMuestraRepository(
 
     /**
      * Cambio en el servidor de una muestra de este teléfono. Solo se toca mientras siga pendiente: si ya
-     * tiene dictamen, vale el primero y lo que diga el backend no lo pisa.
+     * tiene dictamen, vale el primero y lo que diga el backend no lo pisa. Devuelve su id y si cambió algo.
      */
-    private suspend fun aplicarCambio(c: CambioBackend, id: Long): Long? {
-        val local = muestraDao.observarPorId(id).first()?.aModelo() ?: return null
+    private suspend fun aplicarCambio(c: CambioBackend, id: Long): Pair<Long?, Boolean> {
+        val local = muestraDao.observarPorId(id).first()?.aModelo() ?: return null to false
         // Mismo id pero otra muestra (por ejemplo, si se borró la base del teléfono): no se toca
-        if (local.registradaEn != c.registradaEn || local.estado != EstadoMuestra.PENDIENTE) return id
+        if (local.registradaEn != c.registradaEn || local.estado != EstadoMuestra.PENDIENTE) return id to false
         val conteo = c.valoresOperario?.conteoIndM ?: c.conteoIndM
         val talla = c.valoresOperario?.tallaMm ?: c.tallaMm
         val cholgas = if (c.valoresOperario != null) c.valoresOperario.cholgasIndM else c.cholgasIndM
         val cambia = local.conteoIndM != conteo || local.tallaMm != talla || local.cholgasIndM != cholgas ||
             local.profundidadM != c.profundidadM || local.tramoCm != c.tramoCm || local.observacion != c.observacion
         if (cambia) muestraDao.actualizarDesdeRemoto(id, c.profundidadM, talla, conteo, cholgas, c.tramoCm, c.observacion)
-        if (aplicarDictamen(c, id)) alRevisar(local, c.estado, c.comentario)
-        return id
+        val dictaminada = aplicarDictamen(c, id)
+        if (dictaminada) alRevisar(local, c.estado, c.comentario)
+        return id to (cambia || dictaminada)
     }
 
     private suspend fun aplicarDictamen(c: CambioBackend, id: Long): Boolean {

@@ -13,6 +13,7 @@ import cl.aldemar.musselapp.data.nube.RevisionEnviarDto
 import cl.aldemar.musselapp.data.nube.ServidorDto
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,7 +27,10 @@ class BackendSyncTest {
         val locales = mutableMapOf<String, Long>()
         val versiones = mutableMapOf<String, Long>()
         val huellas = mutableMapOf<String, String>()
+        var usado = false
         override fun instalacion() = "tel01"
+        override fun yaRespondio() = usado
+        override fun marcarRespuesta() { usado = true }
         override fun idLocalDe(idCliente: String) = locales[idCliente]
         override fun idClienteDe(idLocal: Long) = locales.entries.find { it.value == idLocal }?.key
         override fun asociar(idCliente: String, idLocal: Long) { locales[idCliente] = idLocal }
@@ -103,6 +107,19 @@ class BackendSyncTest {
         assertTrue(sync.cambios().isEmpty())
         sync.eliminar(15)
         assertTrue(almacen.huellas.isEmpty())
+    }
+
+    @Test
+    fun sinRespuesta_soloSiYaSeHabiaUsado() = runTest {
+        servidor.apagado = true
+        sync.cambios()
+        assertFalse(sync.sinRespuesta)
+        servidor.apagado = false
+        sync.cambios()
+        assertFalse(sync.sinRespuesta)
+        servidor.apagado = true
+        sync.cambios()
+        assertTrue(sync.sinRespuesta)
     }
 
     @Test

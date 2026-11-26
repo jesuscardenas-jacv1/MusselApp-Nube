@@ -17,6 +17,8 @@ import kotlinx.coroutines.launch
 
 class PrincipalViewModel(
     private val muestraRepository: MuestraRepository = MusselApplication.contenedor.muestraRepository,
+    /** Si hay internet, para explicar el resultado de sincronizar. */
+    private val enLinea: () -> Boolean = { MusselApplication.contenedor.conectividad.enLinea.value },
 ) : ViewModel() {
 
     private data class EstadoLocal(
@@ -52,8 +54,8 @@ class PrincipalViewModel(
         viewModelScope.launch {
             // Si el envío falla, el ícono no debe quedar girando para siempre
             val mensaje = try {
-                val enviadas = muestraRepository.sincronizar()
-                Textos.resultadoSincronizacion(enviadas, enCola = muestraRepository.contarPendientes())
+                val resultado = muestraRepository.sincronizarConDetalle()
+                Textos.resultadoSincronizacion(resultado, muestraRepository.contarPendientes(), runCatching(enLinea).getOrDefault(true))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

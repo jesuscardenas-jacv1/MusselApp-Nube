@@ -104,6 +104,15 @@ class PrincipalViewModelTest {
     }
 
     @Test
+    fun sincronizar_sinInternetNiPendientes_noDiceQueTodoEstaAlDia() = runTest(main.dispatcher) {
+        val vm = PrincipalViewModel(repo, enLinea = { false })
+        observar(vm)
+        vm.sincronizar()
+        vm.sincronizar()
+        assertEquals("Sin conexión. No hay muestras pendientes de envío", vm.uiState.value.mensaje)
+    }
+
+    @Test
     fun onMensajeMostrado_limpiaElAviso() = runTest(main.dispatcher) {
         val vm = PrincipalViewModel(repo)
         observar(vm)
